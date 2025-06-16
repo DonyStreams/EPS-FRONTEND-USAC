@@ -1,0 +1,94 @@
+{
+	"data":[
+    {
+        "id": "482",
+        "nombre": "Adam",
+        "apellido": "Aguirre",
+        "username": "jennawerner",
+        "email": "cmendez@chavez-stewart.org",
+        "estado": 1,
+        "rol": "admin"
+    },
+    {
+        "id": "13",
+        "nombre": "Derek",
+        "apellido": "Thompson",
+        "username": "matthewmorris",
+        "email": "kennedymelody@gmail.com",
+        "estado": 1,
+        "rol": "admin"
+    },
+    {
+        "id": "626",
+        "nombre": "David",
+        "apellido": "Vance",
+        "username": "robertscandice",
+        "email": "veronica98@yahoo.com",
+        "estado": 1,
+        "rol": "admin"
+    },
+    {
+        "id": "25",
+        "nombre": "Kathleen",
+        "apellido": "Johnson",
+        "username": "amber71",
+        "email": "tdecker@foster-scott.net",
+        "estado": 0,
+        "rol": "admin"
+    },
+    {
+        "id": "636",
+        "nombre": "Isabella",
+        "apellido": "Galvan",
+        "username": "bdawson",
+        "email": "ericwagner@wilson-miller.net",
+        "estado": 1,
+        "rol": "admin"
+    },
+    {
+        "id": "122",
+        "nombre": "Elizabeth",
+        "apellido": "Trevino",
+        "username": "kelli84",
+        "email": "kimberlyowens@berger.biz",
+        "estado": 1,
+        "rol": "moderator"
+    },
+    {
+        "id": "652",
+        "nombre": "Susan",
+        "apellido": "Woodard",
+        "username": "mbush",
+        "email": "samantha22@peterson.com",
+        "estado": 1,
+        "rol": "moderator"
+    },
+    {
+        "id": "975",
+        "nombre": "Duane",
+        "apellido": "Mack",
+        "username": "rgonzalez",
+        "email": "hermanbryan@hotmail.com",
+        "estado": 0,
+        "rol": "user"
+    },
+    {
+        "id": "165",
+        "nombre": "Michael",
+        "apellido": "Smith",
+        "username": "csanchez",
+        "email": "fhuerta@yahoo.com",
+        "estado": 0,
+        "rol": "admin"
+    },
+    {
+        "id": "460",
+        "nombre": "Jacqueline",
+        "apellido": "Oneill",
+        "username": "amy05",
+        "email": "mcdonaldcassandra@yahoo.com",
+        "estado": 0,
+        "rol": "admin"
+    }
+]
+}

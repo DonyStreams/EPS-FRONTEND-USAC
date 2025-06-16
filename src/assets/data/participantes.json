@@ -1,0 +1,94 @@
+{
+	"data":[
+        {
+            "id_empresa": null,
+            "razon_social": "Moore-Mahoney",
+            "nit": "90750143-0",
+            "direccion": "749 Myers Square Suite 970, North Nicholas, MI 35538",
+            "telefono": "(907)865-1729x59700",
+            "estado": true,
+            "fecha_creacion": "2023-07-31T13:22:08"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Mcclain, Williams and Lynch",
+            "nit": "90736179-8",
+            "direccion": "73304 Hernandez Harbors Apt. 203, East Victor, SD 15926",
+            "telefono": "(597)440-0091x0173",
+            "estado": false,
+            "fecha_creacion": "2020-05-26T05:56:14"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Ingram, Ramirez and Diaz",
+            "nit": "90799167-4",
+            "direccion": "6406 David Circles, South Aaron, LA 19160",
+            "telefono": "001-160-793-0460x38089",
+            "estado": false,
+            "fecha_creacion": "2020-12-31T05:55:36"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Brown Ltd",
+            "nit": "38210028-3",
+            "direccion": "67759 Alicia Walks Apt. 145, East Katherine, MO 88995",
+            "telefono": "001-966-180-4065",
+            "estado": false,
+            "fecha_creacion": "2020-12-10T05:17:31"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Good-Montoya",
+            "nit": "73475964-1",
+            "direccion": "95031 Stephanie Shoals Apt. 162, Perezton, KY 94547",
+            "telefono": "0391404476",
+            "estado": false,
+            "fecha_creacion": "2020-05-29T06:29:46"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Stevenson-Savage",
+            "nit": "50931112-4",
+            "direccion": "51999 Harris Springs Apt. 463, Patriciaport, NY 14124",
+            "telefono": "(251)978-0174x53339",
+            "estado": false,
+            "fecha_creacion": "2021-07-07T21:00:00"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Page, Lopez and Bryant",
+            "nit": "86622206-8",
+            "direccion": "83084 Butler Place, Charlesshire, IL 79194",
+            "telefono": "(822)317-4273",
+            "estado": false,
+            "fecha_creacion": "2021-12-26T07:00:46"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Morris-George",
+            "nit": "34621242-4",
+            "direccion": "7790 Meyer Skyway Suite 931, Hillshire, DC 08130",
+            "telefono": "(994)903-5231x59145",
+            "estado": false,
+            "fecha_creacion": "2021-05-30T17:30:38"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Patel-Manning",
+            "nit": "12685557-8",
+            "direccion": "220 Smith Hill, South Deborah, LA 52721",
+            "telefono": "+1-058-310-0728x6706",
+            "estado": false,
+            "fecha_creacion": "2022-05-01T07:20:35"
+        },
+        {
+            "id_empresa": null,
+            "razon_social": "Hansen Inc",
+            "nit": "66721190-8",
+            "direccion": "723 Christopher Dale, Caseyland, MD 52235",
+            "telefono": "631.233.2144",
+            "estado": true,
+            "fecha_creacion": "2024-04-02T04:10:26"
+        }
+]
+}
