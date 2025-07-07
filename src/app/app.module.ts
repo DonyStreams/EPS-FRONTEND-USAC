@@ -16,10 +16,11 @@ import { PhotoService } from './demo/service/photo.service';
 
 import { UsuarioService } from './service/usuario.service';
 import { ParticipanteService } from './service/participantes.service';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
     declarations: [AppComponent, NotfoundComponent],
-    imports: [AppRoutingModule, AppLayoutModule],
+    imports: [AppRoutingModule, AppLayoutModule, HttpClientModule],
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },
         CountryService, CustomerService, EventService, IconService, NodeService,

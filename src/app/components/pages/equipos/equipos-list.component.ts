@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { EquiposService } from '../../../service/equipos.service';
+import { Equipo } from '../../../api/equipos';
 
 interface EstadoOption {
   label: string;
@@ -11,7 +12,8 @@ interface EstadoOption {
   templateUrl: './equipos-list.component.html'
 })
 export class EquiposListComponent implements OnInit {
-  equipos: any[] = [];
+  equipos: Equipo[] = [];
+  equiposSeleccionados: Equipo[] = [];
   filtro = {
     area: '',
     estado: '',
@@ -27,20 +29,23 @@ export class EquiposListComponent implements OnInit {
 
   mostrarModalNuevoEquipo = false;
 
-  nuevoEquipo = {
+  nuevoEquipo: Equipo = {
+    numeroInventario: '',
+    numeroSerie: '',
     nombre: '',
     codigoInacif: '',
     marca: '',
     modelo: '',
-    serie: '',
     ubicacion: '',
-    magnitud: '',
-    rango: '',
-    manual: '',
-    software: '',
-    condiciones: '',
+    magnitudMedicion: '',
+    rangoCapacidad: '',
+    manualFabricante: '',
+    fotografia: null,
+    softwareFirmware: '',
+    condicionesOperacion: '',
     descripcion: '',
-    fotografia: null // archivo
+    estado: true,
+    area: ''
   };
 
   areas = [
@@ -67,12 +72,35 @@ export class EquiposListComponent implements OnInit {
   }
 
   registrarEquipo() {
-    // Aquí va la lógica para guardar el equipo (llamada a servicio)
-    // Luego de guardar:
-    this.mostrarModalNuevoEquipo = false;
-    this.cargarEquipos();
-    // Limpia el formulario si lo deseas
-    this.nuevoEquipo = { nombre: '', codigoInacif: '', marca: '', modelo: '', serie: '', ubicacion: '', magnitud: '', rango: '', manual: '', software: '', condiciones: '', descripcion: '', fotografia: null };
+    this.equiposService.crearEquipo(this.nuevoEquipo).subscribe({
+      next: () => {
+        this.mostrarModalNuevoEquipo = false;
+        this.cargarEquipos();
+        this.nuevoEquipo = {
+          numeroInventario: '',
+          numeroSerie: '',
+          nombre: '',
+          codigoInacif: '',
+          marca: '',
+          modelo: '',
+          ubicacion: '',
+          magnitudMedicion: '',
+          rangoCapacidad: '',
+          manualFabricante: '',
+          fotografia: null,
+          softwareFirmware: '',
+          condicionesOperacion: '',
+          descripcion: '',
+          estado: true,
+          area: ''
+        };
+        this.previewUrl = null;
+      },
+      error: (err) => {
+        // Aquí puedes mostrar un mensaje de error
+        alert('Error al registrar el equipo');
+      }
+    });
   }
 
   onFileSelected(event: any) {
@@ -84,6 +112,27 @@ export class EquiposListComponent implements OnInit {
       reader.readAsDataURL(file);
     } else {
       this.previewUrl = null;
+    }
+  }
+
+  descargarFicha(equipo: Equipo) {
+    // Aquí irá la lógica para generar y descargar el PDF
+    // Por ahora solo muestra un mensaje
+    alert('Funcionalidad de descarga de ficha en PDF próximamente.');
+  }
+
+  eliminarSeleccionados() {
+    if (!this.equiposSeleccionados.length) return;
+    if (confirm('¿Está seguro de eliminar los equipos seleccionados?')) {
+      const eliminaciones = this.equiposSeleccionados.map(equipo =>
+        this.equiposService.eliminarEquipo(equipo.idEquipo!).toPromise()
+      );
+      Promise.all(eliminaciones).then(() => {
+        this.cargarEquipos();
+        this.equiposSeleccionados = [];
+      }).catch(() => {
+        alert('Ocurrió un error al eliminar uno o más equipos.');
+      });
     }
   }
 }
