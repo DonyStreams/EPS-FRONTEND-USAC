@@ -6,67 +6,40 @@
       (click)="mostrarModalNuevoEquipo = true"></button>
   </div>
 
-  <div class="surface-100 p-3 border-round mb-3">
-    <div class="grid formgrid">
-      <div class="field col-12 md:col-3">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-hashtag"></i>
-          <input pInputText [(ngModel)]="filtro.inventario" placeholder="N° Inventario" (input)="cargarEquipos()" class="w-full">
-        </span>
-      </div>
-      <div class="field col-12 md:col-3">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-barcode"></i>
-          <input pInputText [(ngModel)]="filtro.serie" placeholder="N° Serie" (input)="cargarEquipos()" class="w-full">
-        </span>
-      </div>
-      <div class="field col-12 md:col-3">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-sitemap"></i>
-          <input pInputText [(ngModel)]="filtro.area" placeholder="Área" (input)="cargarEquipos()" class="w-full">
-        </span>
-      </div>
-      <div class="field col-12 md:col-3">
-        <p-dropdown 
-          [options]="estados" 
-          [(ngModel)]="filtro.estado" 
-          placeholder="Estado" 
-          (onChange)="cargarEquipos()"
-          optionLabel="label"
-          optionValue="value"
-          class="w-full">
-        </p-dropdown>
-      </div>
-      <div class="field col-12 md:col-12 flex gap-2 justify-content-end mt-2">
-        <button pButton type="button" label="Buscar" icon="pi pi-search" class="p-button-primary" (click)="cargarEquipos()"></button>
-        <button pButton type="button" label="Limpiar" icon="pi pi-filter-slash" class="p-button-secondary" (click)="limpiarFiltros()"></button>
-      </div>
+  <!-- Filtros externos eliminados, solo se usan los nativos de PrimeNG en la tabla -->
+  <div class="flex justify-content-between align-items-center mb-2">
+    <div class="w-50">
+      <span class="p-input-icon-left w-full">
+        <i class="pi pi-search"></i>
+        <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Filtrar equipos..." class="w-full" />
+      </span>
     </div>
-  </div>
-  <div class="flex justify-content-end mb-2">
     <button pButton type="button" label="Eliminar seleccionados" icon="pi pi-trash" class="p-button-danger" [disabled]="!equiposSeleccionados?.length" (click)="eliminarSeleccionados()"></button>
   </div>
-  <p-table 
+  <p-table #dt
     [value]="equipos"
     [(selection)]="equiposSeleccionados"
-    dataKey="numeroInventario"
+    dataKey="idEquipo"
     [paginator]="true"
     [rows]="10"
     [rowsPerPageOptions]="[5,10,20]"
     [responsiveLayout]="'scroll'"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} equipos"
+    [globalFilterFields]="['nombre','numeroSerie','marca','modelo','ubicacion','estado']"
   >
     <ng-template pTemplate="header">
       <tr>
         <th style="width: 3rem">
           <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
         </th>
-        <th>N° Inventario</th>
-        <th>N° Serie</th>
-        <th>Descripción</th>
-        <th>Estado</th>
-        <th>Área</th>
+        <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
+        <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
+        <th pSortableColumn="marca">Marca <p-sortIcon field="marca"></p-sortIcon></th>
+        <th pSortableColumn="modelo">Modelo <p-sortIcon field="modelo"></p-sortIcon></th>
+        <th pSortableColumn="ubicacion">Ubicación <p-sortIcon field="ubicacion"></p-sortIcon></th>
+        <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
+        <th>Fotografía</th>
         <th>Acciones</th>
       </tr>
     </ng-template>
@@ -75,15 +48,19 @@
         <td>
           <p-tableCheckbox [value]="equipo"></p-tableCheckbox>
         </td>
-        <td>{{ equipo.numeroInventario }}</td>
+        <td>{{ equipo.nombre }}</td>
         <td>{{ equipo.numeroSerie }}</td>
-        <td>{{ equipo.descripcion }}</td>
+        <td>{{ equipo.marca }}</td>
+        <td>{{ equipo.modelo }}</td>
+        <td>{{ equipo.ubicacion }}</td>
         <td>
           <span [ngClass]="{'text-green-600': equipo.estado === true || equipo.estado === 'Activo', 'text-red-500': equipo.estado === false || equipo.estado === 'Inactivo'}">
             {{ equipo.estado === true || equipo.estado === 'Activo' ? 'Activo' : 'Inactivo' }}
           </span>
         </td>
-        <td>{{ equipo.area }}</td>
+        <td>
+          <img *ngIf="equipo.fotografia" [src]="equipo.fotografia" alt="Foto" style="max-width: 60px; max-height: 40px; border-radius: 4px;" />
+        </td>
         <td>
           <button pButton icon="pi pi-history" class="p-button-text" pTooltip="Ver historial"></button>
           <button pButton icon="pi pi-wrench" class="p-button-text" pTooltip="Ver mantenimientos"></button>

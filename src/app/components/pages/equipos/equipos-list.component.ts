@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { EquiposService } from '../../../service/equipos.service';
+import { FtpService } from '../../../service/ftp.service';
 import { Equipo } from '../../../api/equipos';
 
 interface EstadoOption {
@@ -15,10 +16,12 @@ export class EquiposListComponent implements OnInit {
   equipos: Equipo[] = [];
   equiposSeleccionados: Equipo[] = [];
   filtro = {
-    area: '',
-    estado: '',
-    inventario: '',
-    serie: ''
+    nombre: '',
+    numeroSerie: '',
+    marca: '',
+    modelo: '',
+    ubicacion: '',
+    estado: ''
   };
 
   estados: EstadoOption[] = [
@@ -54,9 +57,12 @@ export class EquiposListComponent implements OnInit {
     { id: 2, nombre: 'Química' }
   ];
 
-  previewUrl: string | ArrayBuffer | null = null;
+  previewUrl: string | null = null;
 
-  constructor(private equiposService: EquiposService) {}
+  mostrarModalEditarEquipo = false;
+  equipoEditando: Equipo | null = null;
+
+  constructor(private equiposService: EquiposService, private ftpService: FtpService) {}
 
   ngOnInit() {
     this.cargarEquipos();
@@ -66,41 +72,83 @@ export class EquiposListComponent implements OnInit {
     this.equiposService.getEquipos(this.filtro).subscribe(data => this.equipos = data);
   }
 
+  aplicarFiltro() {
+    this.cargarEquipos();
+  }
+
   limpiarFiltros() {
-    this.filtro = { area: '', estado: '', inventario: '', serie: '' };
+    this.filtro = { nombre: '', numeroSerie: '', marca: '', modelo: '', ubicacion: '', estado: '' };
     this.cargarEquipos();
   }
 
   registrarEquipo() {
-    this.equiposService.crearEquipo(this.nuevoEquipo).subscribe({
+    if (this.nuevoEquipo.fotografia instanceof File) {
+      this.ftpService.subirArchivo(this.nuevoEquipo.fotografia).subscribe({
+        next: (url) => {
+          this.nuevoEquipo.fotografia = url;
+          this.guardarEquipo(this.nuevoEquipo);
+        },
+        error: () => {
+          alert('Error al subir la imagen al servidor FTP');
+        }
+      });
+    } else {
+      this.guardarEquipo(this.nuevoEquipo);
+    }
+  }
+
+  guardarEquipo(equipo: Equipo) {
+    this.equiposService.crearEquipo(equipo).subscribe({
       next: () => {
         this.mostrarModalNuevoEquipo = false;
         this.cargarEquipos();
         this.nuevoEquipo = {
-          numeroInventario: '',
-          numeroSerie: '',
           nombre: '',
-          codigoInacif: '',
+          numeroSerie: '',
           marca: '',
           modelo: '',
           ubicacion: '',
-          magnitudMedicion: '',
-          rangoCapacidad: '',
-          manualFabricante: '',
           fotografia: null,
-          softwareFirmware: '',
-          condicionesOperacion: '',
           descripcion: '',
-          estado: true,
-          area: ''
+          estado: true
         };
         this.previewUrl = null;
       },
-      error: (err) => {
-        // Aquí puedes mostrar un mensaje de error
+      error: () => {
         alert('Error al registrar el equipo');
       }
     });
+  }
+
+  editarEquipo(equipo: Equipo) {
+    this.equipoEditando = { ...equipo };
+    this.mostrarModalEditarEquipo = true;
+    this.previewUrl = typeof equipo.fotografia === 'string' ? equipo.fotografia : null;
+  }
+
+  guardarEdicionEquipo() {
+    if (this.equipoEditando?.fotografia instanceof File) {
+      this.ftpService.subirArchivo(this.equipoEditando.fotografia).subscribe({
+        next: (url) => {
+          this.equipoEditando!.fotografia = url;
+          this.actualizarEquipo(this.equipoEditando!);
+        },
+        error: () => {
+          alert('Error al subir la imagen al servidor FTP');
+        }
+      });
+    } else {
+      this.actualizarEquipo(this.equipoEditando!);
+    }
+  }
+
+  actualizarEquipo(equipo: Equipo) {
+    // Aquí deberías llamar a un método de edición en el servicio (debes implementarlo)
+    // this.equiposService.editarEquipo(equipo).subscribe(...)
+    this.mostrarModalEditarEquipo = false;
+    this.cargarEquipos();
+    this.equipoEditando = null;
+    this.previewUrl = null;
   }
 
   onFileSelected(event: any) {
@@ -108,7 +156,7 @@ export class EquiposListComponent implements OnInit {
     this.nuevoEquipo.fotografia = file;
     if (file) {
       const reader = new FileReader();
-      reader.onload = e => this.previewUrl = reader.result;
+      reader.onload = e => this.previewUrl = typeof reader.result === 'string' ? reader.result : null;
       reader.readAsDataURL(file);
     } else {
       this.previewUrl = null;
