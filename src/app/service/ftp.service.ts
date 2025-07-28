@@ -9,13 +9,28 @@ export class FtpService {
   constructor(private http: HttpClient) {}
 
   subirArchivo(file: File): Observable<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // ❗NO enviar headers manuales de Content-Type para FormData
-    return this.http.post(this.ftpApiUrl, formData, {
-      observe: 'body', // podría cambiar a 'events' si quieres progreso
-      responseType: 'text' // porque tu backend responde con texto plano
+    // Leer el archivo como ArrayBuffer y enviarlo como binario
+    return new Observable(observer => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const arrayBuffer = reader.result as ArrayBuffer;
+        // Forzar el tipo application/octet-stream para el backend
+        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+        this.http.post(this.ftpApiUrl, blob, {
+          headers: new HttpHeaders({
+            'X-Filename': file.name,
+            'Content-Type': 'application/octet-stream'
+          }),
+          observe: 'body',
+          responseType: 'text'
+        }).subscribe({
+          next: resp => observer.next(resp),
+          error: err => observer.error(err),
+          complete: () => observer.complete()
+        });
+      };
+      reader.onerror = err => observer.error(err);
+      reader.readAsArrayBuffer(file);
     });
   }
 }

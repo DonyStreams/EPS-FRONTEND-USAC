@@ -74,6 +74,12 @@
   <!-- Modal para registrar nuevo equipo -->
   <p-dialog header="Registrar Nuevo Equipo" [(visible)]="mostrarModalNuevoEquipo" [modal]="true" [style]="{width: '700px'}" [closable]="false">
     <form #formEquipo="ngForm" (ngSubmit)="registrarEquipo()" autocomplete="off">
+      <div *ngIf="mensaje" class="p-message p-message-success mb-3">
+        <div class="p-message-wrapper">
+          <span class="p-message-icon pi pi-check"></span>
+          <span class="p-message-text">{{ mensaje }}</span>
+        </div>
+      </div>
       <div class="grid">
         <div class="col-12 md:col-6">
           <div class="field mb-2">
@@ -133,6 +139,12 @@
                           class="w-full" />
             <div *ngIf="previewUrl" class="mt-2">
               <img [src]="previewUrl" alt="Previsualización" class="border-round" style="max-width: 100%; max-height: 180px;">
+            </div>
+            <div *ngIf="errorImagen" class="p-message p-message-error mt-2">
+              <div class="p-message-wrapper">
+                <span class="p-message-icon pi pi-times"></span>
+                <span class="p-message-text">{{ errorImagen }}</span>
+              </div>
             </div>
           </div>
           <div class="field mb-2">

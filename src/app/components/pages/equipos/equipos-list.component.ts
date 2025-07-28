@@ -58,6 +58,8 @@ export class EquiposListComponent implements OnInit {
   ];
 
   previewUrl: string | null = null;
+  mensaje: string | null = null;
+  errorImagen: string | null = null;
 
   mostrarModalEditarEquipo = false;
   equipoEditando: Equipo | null = null;
@@ -82,14 +84,26 @@ export class EquiposListComponent implements OnInit {
   }
 
   registrarEquipo() {
+    this.mensaje = null;
+    this.errorImagen = null;
     if (this.nuevoEquipo.fotografia instanceof File) {
       this.ftpService.subirArchivo(this.nuevoEquipo.fotografia).subscribe({
-        next: (url) => {
-          this.nuevoEquipo.fotografia = url;
+        next: (resp) => {
+          let ruta = '';
+          try {
+            ruta = JSON.parse(resp).ruta;
+          } catch {
+            ruta = resp;
+          }
+          this.nuevoEquipo.fotografia = ruta;
           this.guardarEquipo(this.nuevoEquipo);
         },
-        error: () => {
-          alert('Error al subir la imagen al servidor FTP');
+        error: (err) => {
+          if (err.status === 409) {
+            this.errorImagen = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
+          } else {
+            this.errorImagen = 'Error al subir la imagen al servidor FTP.';
+          }
         }
       });
     } else {
@@ -103,18 +117,29 @@ export class EquiposListComponent implements OnInit {
         this.mostrarModalNuevoEquipo = false;
         this.cargarEquipos();
         this.nuevoEquipo = {
-          nombre: '',
+          numeroInventario: '',
           numeroSerie: '',
+          nombre: '',
+          codigoInacif: '',
           marca: '',
           modelo: '',
           ubicacion: '',
+          magnitudMedicion: '',
+          rangoCapacidad: '',
+          manualFabricante: '',
           fotografia: null,
+          softwareFirmware: '',
+          condicionesOperacion: '',
           descripcion: '',
-          estado: true
+          estado: true,
+          area: ''
         };
         this.previewUrl = null;
+        this.mensaje = 'Equipo registrado correctamente.';
+        setTimeout(() => this.mensaje = null, 3500);
       },
       error: () => {
+        this.mensaje = null;
         alert('Error al registrar el equipo');
       }
     });
@@ -154,6 +179,7 @@ export class EquiposListComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.files?.[0];
     this.nuevoEquipo.fotografia = file;
+    this.errorImagen = null;
     if (file) {
       const reader = new FileReader();
       reader.onload = e => this.previewUrl = typeof reader.result === 'string' ? reader.result : null;
