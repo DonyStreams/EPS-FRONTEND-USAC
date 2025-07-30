@@ -1,0 +1,78 @@
+<div class="grid"></div>
+    <div class="col-12">
+        <div class="card">
+            <h5>Información del Usuario y Permisos</h5>
+            
+            <!-- Información del usuario autenticado -->
+            <div class="p-3 border-round-md bg-primary-50 mb-3">
+                <h6>Usuario Actual:</h6>
+                <p><strong>Usuario:</strong> {{ usuarioInfo?.username }}</p>
+                <p><strong>Email:</strong> {{ usuarioInfo?.email }}</p>
+                <p><strong>Nombre:</strong> {{ usuarioInfo?.fullName }}</p>
+                <p><strong>Roles:</strong> {{ usuarioInfo?.roles?.join(', ') }}</p>
+            </div>
+
+            <!-- Ejemplos de botones con permisos -->
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button *appHasRole="'ADMIN'" 
+                        pButton 
+                        type="button" 
+                        label="Solo Admin" 
+                        class="p-button-danger">
+                </button>
+
+                <button *appHasRole="['ADMIN', 'SUPERVISOR']" 
+                        pButton 
+                        type="button" 
+                        label="Admin o Supervisor" 
+                        class="p-button-warning">
+                </button>
+
+                <button *appHasRole="['ADMIN', 'SUPERVISOR', 'TECNICO']" 
+                        pButton 
+                        type="button" 
+                        label="Admin, Supervisor o Técnico" 
+                        class="p-button-info">
+                </button>
+
+                <button *appHasRole="'USER'" 
+                        pButton 
+                        type="button" 
+                        label="Solo Usuario" 
+                        class="p-button-success">
+                </button>
+            </div>
+
+            <!-- Ejemplo de sección con múltiples roles requeridos -->
+            <div *appHasRole="['ADMIN', 'SUPERVISOR']; requireAll: true" 
+                 class="p-3 border-round-md bg-orange-50 mb-3">
+                <h6>Sección para usuarios con AMBOS roles: ADMIN Y SUPERVISOR</h6>
+                <p>Esta sección solo es visible si el usuario tiene tanto el rol ADMIN como SUPERVISOR.</p>
+            </div>
+
+            <!-- Tabla de permisos actuales -->
+            <div class="p-3 border-round-md bg-gray-50">
+                <h6>Permisos del Usuario Actual:</h6>
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <h6>Equipos:</h6>
+                        <ul>
+                            <li>Ver: {{ usuarioInfo?.permissions?.equipos?.view ? '✅' : '❌' }}</li>
+                            <li>Crear: {{ usuarioInfo?.permissions?.equipos?.create ? '✅' : '❌' }}</li>
+                            <li>Editar: {{ usuarioInfo?.permissions?.equipos?.edit ? '✅' : '❌' }}</li>
+                            <li>Eliminar: {{ usuarioInfo?.permissions?.equipos?.delete ? '✅' : '❌' }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <h6>Mantenimientos:</h6>
+                        <ul>
+                            <li>Ver: {{ usuarioInfo?.permissions?.mantenimientos?.view ? '✅' : '❌' }}</li>
+                            <li>Crear: {{ usuarioInfo?.permissions?.mantenimientos?.create ? '✅' : '❌' }}</li>
+                            <li>Ejecutar: {{ usuarioInfo?.permissions?.mantenimientos?.execute ? '✅' : '❌' }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

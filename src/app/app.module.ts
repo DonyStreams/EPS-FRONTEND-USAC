@@ -17,9 +17,10 @@ import { PhotoService } from './demo/service/photo.service';
 import { UsuarioService } from './service/usuario.service';
 import { ParticipanteService } from './service/participantes.service';
 import { HttpClientModule } from '@angular/common/http';
+import { HasRoleDirective } from './directives/has-role.directive';
 
 @NgModule({
-    declarations: [AppComponent, NotfoundComponent],
+    declarations: [AppComponent, NotfoundComponent, HasRoleDirective],
     imports: [AppRoutingModule, AppLayoutModule, HttpClientModule],
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },

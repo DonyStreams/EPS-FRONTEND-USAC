@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { EquiposService } from '../../../service/equipos.service';
 import { FtpService } from '../../../service/ftp.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
 
@@ -72,7 +73,32 @@ export class EquiposListComponent implements OnInit {
   mostrarModalEditarEquipo = false;
   equipoEditando: Equipo | null = null;
 
-  constructor(private equiposService: EquiposService, private ftpService: FtpService) {}
+  constructor(
+    private equiposService: EquiposService, 
+    private ftpService: FtpService,
+    private keycloakService: KeycloakService
+  ) {}
+
+  // Métodos de permisos usando Keycloak
+  get puedeCrearEquipos(): boolean {
+    return this.keycloakService.canCreateEquipos();
+  }
+
+  get puedeEditarEquipos(): boolean {
+    return this.keycloakService.canEditEquipos();
+  }
+
+  get puedeEliminarEquipos(): boolean {
+    return this.keycloakService.canDeleteEquipos();
+  }
+
+  get puedeVerEquipos(): boolean {
+    return this.keycloakService.canAccessEquipos();
+  }
+
+  get usuarioInfo() {
+    return this.keycloakService.getUserInfo();
+  }
 
   // Método helper para construir URLs de imágenes del FTP
   construirUrlImagen(rutaImagen: string | File | null): string | null {

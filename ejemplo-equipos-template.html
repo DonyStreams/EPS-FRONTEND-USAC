@@ -1,0 +1,119 @@
+<!-- Ejemplo de template equipos-list.component.html con permisos -->
+
+<!-- Header con botones según permisos -->
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <div class="flex justify-content-between align-items-center mb-3">
+                <h5>Gestión de Equipos</h5>
+                <div class="flex gap-2">
+                    <!-- Solo ADMIN o SUPERVISOR pueden crear equipos -->
+                    <button *appHasRole="['ADMIN', 'SUPERVISOR']"
+                            pButton 
+                            type="button" 
+                            label="Nuevo Equipo" 
+                            icon="pi pi-plus"
+                            class="p-button-success"
+                            (click)="abrirModalNuevoEquipo()">
+                    </button>
+                    
+                    <!-- Solo ADMIN puede eliminar múltiples -->
+                    <button *appHasRole="'ADMIN'"
+                            pButton 
+                            type="button" 
+                            label="Eliminar Seleccionados" 
+                            icon="pi pi-trash"
+                            class="p-button-danger"
+                            [disabled]="!equiposSeleccionados.length"
+                            (click)="eliminarSeleccionados()">
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtros (todos pueden ver si tienen acceso a equipos) -->
+            <div *appHasRole="['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS', 'USER']" 
+                 class="formgrid grid mb-3">
+                <div class="field col-12 md:col-3">
+                    <label for="filtroNombre">Nombre</label>
+                    <input pInputText 
+                           id="filtroNombre" 
+                           [(ngModel)]="filtro.nombre" 
+                           placeholder="Buscar por nombre">
+                </div>
+                <!-- Más filtros... -->
+            </div>
+
+            <!-- Tabla de equipos -->
+            <p-table [value]="equipos" 
+                     [paginator]="true" 
+                     [rows]="10"
+                     [(selection)]="equiposSeleccionados"
+                     dataKey="idEquipo">
+                
+                <!-- Solo ADMIN puede seleccionar múltiples para eliminar -->
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th *appHasRole="'ADMIN'">
+                            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                        </th>
+                        <th>Nombre</th>
+                        <th>Serie</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-equipo>
+                    <tr>
+                        <td *appHasRole="'ADMIN'">
+                            <p-tableCheckbox [value]="equipo"></p-tableCheckbox>
+                        </td>
+                        <td>{{ equipo.nombre }}</td>
+                        <td>{{ equipo.numeroSerie }}</td>
+                        <td>{{ equipo.estado ? 'Activo' : 'Inactivo' }}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <!-- Ver detalles - todos con acceso -->
+                                <button *appHasRole="['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS', 'USER']"
+                                        pButton 
+                                        type="button" 
+                                        icon="pi pi-eye"
+                                        class="p-button-info p-button-sm"
+                                        pTooltip="Ver detalles">
+                                </button>
+                                
+                                <!-- Editar - solo ADMIN y SUPERVISOR -->
+                                <button *appHasRole="['ADMIN', 'SUPERVISOR']"
+                                        pButton 
+                                        type="button" 
+                                        icon="pi pi-pencil"
+                                        class="p-button-warning p-button-sm"
+                                        pTooltip="Editar"
+                                        (click)="editarEquipo(equipo)">
+                                </button>
+                                
+                                <!-- Eliminar - solo ADMIN -->
+                                <button *appHasRole="'ADMIN'"
+                                        pButton 
+                                        type="button" 
+                                        icon="pi pi-trash"
+                                        class="p-button-danger p-button-sm"
+                                        pTooltip="Eliminar">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+
+            <!-- Información del usuario actual (solo para debug) -->
+            <div *appHasRole="'ADMIN'" class="mt-3 p-3 bg-gray-100 border-round">
+                <small>
+                    <strong>Debug Info:</strong> 
+                    Usuario: {{ usuarioInfo?.username }} | 
+                    Roles: {{ usuarioInfo?.roles?.join(', ') }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
