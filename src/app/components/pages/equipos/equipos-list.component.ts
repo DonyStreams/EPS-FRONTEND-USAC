@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { EquiposService } from '../../../service/equipos.service';
 import { FtpService } from '../../../service/ftp.service';
 import { Equipo } from '../../../api/equipos';
+import { FileUpload } from 'primeng/fileupload';
 
 interface EstadoOption {
   label: string;
@@ -13,6 +14,9 @@ interface EstadoOption {
   templateUrl: './equipos-list.component.html'
 })
 export class EquiposListComponent implements OnInit {
+  @ViewChild('fileUpload') fileUpload!: FileUpload;
+  @ViewChild('fileUploadEdit') fileUploadEdit!: FileUpload;
+  
   equipos: Equipo[] = [];
   equiposSeleccionados: Equipo[] = [];
   filtro = {
@@ -61,10 +65,33 @@ export class EquiposListComponent implements OnInit {
   mensaje: string | null = null;
   errorImagen: string | null = null;
 
+  // Variables para el modal de edición
+  previewUrlEdit: string | null = null;
+  errorImagenEdit: string | null = null;
+
   mostrarModalEditarEquipo = false;
   equipoEditando: Equipo | null = null;
 
   constructor(private equiposService: EquiposService, private ftpService: FtpService) {}
+
+  // Método helper para construir URLs de imágenes del FTP
+  construirUrlImagen(rutaImagen: string | File | null): string | null {
+    if (!rutaImagen || typeof rutaImagen !== 'string') {
+      return null;
+    }
+
+    // Si la ruta empieza con /imagenes/equipos/, extraer solo el nombre del archivo
+    if (rutaImagen.startsWith('/imagenes/equipos/')) {
+      const filename = rutaImagen.substring('/imagenes/equipos/'.length);
+      return `http://localhost:8080/MantenimientosBackend/api/ftp/image/${filename}`;
+    } else if (rutaImagen.startsWith('http')) {
+      // Si ya es una URL completa, usarla directamente
+      return rutaImagen;
+    } else {
+      // Asumir que es solo el nombre del archivo
+      return `http://localhost:8080/MantenimientosBackend/api/ftp/image/${rutaImagen}`;
+    }
+  }
 
   ngOnInit() {
     this.cargarEquipos();
@@ -83,6 +110,45 @@ export class EquiposListComponent implements OnInit {
     this.cargarEquipos();
   }
 
+  abrirModalNuevoEquipo() {
+    this.resetearFormulario();
+    this.mostrarModalNuevoEquipo = true;
+  }
+
+  cerrarModalNuevoEquipo() {
+    this.mostrarModalNuevoEquipo = false;
+    this.resetearFormulario();
+  }
+
+  resetearFormulario() {
+    this.nuevoEquipo = {
+      numeroInventario: '',
+      numeroSerie: '',
+      nombre: '',
+      codigoInacif: '',
+      marca: '',
+      modelo: '',
+      ubicacion: '',
+      magnitudMedicion: '',
+      rangoCapacidad: '',
+      manualFabricante: '',
+      fotografia: null,
+      softwareFirmware: '',
+      condicionesOperacion: '',
+      descripcion: '',
+      estado: true,
+      area: ''
+    };
+    this.previewUrl = null;
+    this.errorImagen = null;
+    this.mensaje = null;
+    
+    // Resetear el componente fileUpload
+    if (this.fileUpload) {
+      this.fileUpload.clear();
+    }
+  }
+
   registrarEquipo() {
     this.mensaje = null;
     this.errorImagen = null;
@@ -99,6 +165,15 @@ export class EquiposListComponent implements OnInit {
           this.guardarEquipo(this.nuevoEquipo);
         },
         error: (err) => {
+          // Resetear el componente fileUpload para permitir seleccionar otra imagen
+          if (this.fileUpload) {
+            this.fileUpload.clear();
+          }
+          
+          // Limpiar la previsualización y el archivo del modelo
+          this.previewUrl = null;
+          this.nuevoEquipo.fotografia = null;
+          
           if (err.status === 409) {
             this.errorImagen = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
           } else {
@@ -116,25 +191,7 @@ export class EquiposListComponent implements OnInit {
       next: () => {
         this.mostrarModalNuevoEquipo = false;
         this.cargarEquipos();
-        this.nuevoEquipo = {
-          numeroInventario: '',
-          numeroSerie: '',
-          nombre: '',
-          codigoInacif: '',
-          marca: '',
-          modelo: '',
-          ubicacion: '',
-          magnitudMedicion: '',
-          rangoCapacidad: '',
-          manualFabricante: '',
-          fotografia: null,
-          softwareFirmware: '',
-          condicionesOperacion: '',
-          descripcion: '',
-          estado: true,
-          area: ''
-        };
-        this.previewUrl = null;
+        this.resetearFormulario();
         this.mensaje = 'Equipo registrado correctamente.';
         setTimeout(() => this.mensaje = null, 3500);
       },
@@ -148,41 +205,131 @@ export class EquiposListComponent implements OnInit {
   editarEquipo(equipo: Equipo) {
     this.equipoEditando = { ...equipo };
     this.mostrarModalEditarEquipo = true;
-    this.previewUrl = typeof equipo.fotografia === 'string' ? equipo.fotografia : null;
+    
+    // Manejar la previsualización de la imagen existente
+    this.previewUrlEdit = this.construirUrlImagen(equipo.fotografia);
+    
+    this.errorImagenEdit = null;
+    this.mensaje = null;
   }
 
-  guardarEdicionEquipo() {
-    if (this.equipoEditando?.fotografia instanceof File) {
-      this.ftpService.subirArchivo(this.equipoEditando.fotografia).subscribe({
-        next: (url) => {
-          this.equipoEditando!.fotografia = url;
-          this.actualizarEquipo(this.equipoEditando!);
-        },
-        error: () => {
-          alert('Error al subir la imagen al servidor FTP');
-        }
-      });
-    } else {
-      this.actualizarEquipo(this.equipoEditando!);
+  cerrarModalEditarEquipo() {
+    this.mostrarModalEditarEquipo = false;
+    this.equipoEditando = null;
+    this.previewUrlEdit = null;
+    this.errorImagenEdit = null;
+    this.mensaje = null;
+    
+    // Resetear el componente fileUpload de edición
+    if (this.fileUploadEdit) {
+      this.fileUploadEdit.clear();
     }
   }
 
-  actualizarEquipo(equipo: Equipo) {
-    // Aquí deberías llamar a un método de edición en el servicio (debes implementarlo)
-    // this.equiposService.editarEquipo(equipo).subscribe(...)
-    this.mostrarModalEditarEquipo = false;
-    this.cargarEquipos();
-    this.equipoEditando = null;
-    this.previewUrl = null;
+  onFileSelectedEdit(event: any) {
+    const file = event.files?.[0];
+    if (this.equipoEditando) {
+      this.equipoEditando.fotografia = file;
+    }
+    this.errorImagenEdit = null;
+    
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewUrlEdit = e.target.result;
+      };
+      reader.onerror = (error) => {
+        console.error('Error al leer archivo (edición):', error);
+        this.previewUrlEdit = null;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.previewUrlEdit = null;
+    }
+  }
+
+  actualizarEquipo() {
+    if (!this.equipoEditando) return;
+
+    this.mensaje = null;
+    this.errorImagenEdit = null;
+
+    if (this.equipoEditando.fotografia instanceof File) {
+      // Si hay una nueva imagen, subirla primero
+      this.ftpService.subirArchivo(this.equipoEditando.fotografia).subscribe({
+        next: (resp) => {
+          let ruta = '';
+          try {
+            ruta = JSON.parse(resp).ruta;
+          } catch {
+            ruta = resp;
+          }
+          this.equipoEditando!.fotografia = ruta;
+          this.guardarCambiosEquipo();
+        },
+        error: (err) => {
+          // Resetear el componente fileUpload para permitir seleccionar otra imagen
+          if (this.fileUploadEdit) {
+            this.fileUploadEdit.clear();
+          }
+          
+          // Limpiar la previsualización y el archivo del modelo
+          this.previewUrlEdit = null;
+          this.equipoEditando!.fotografia = null;
+          
+          if (err.status === 409) {
+            this.errorImagenEdit = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
+          } else {
+            this.errorImagenEdit = 'Error al subir la imagen al servidor FTP.';
+          }
+        }
+      });
+    } else {
+      // Si no hay nueva imagen, solo actualizar los datos
+      this.guardarCambiosEquipo();
+    }
+  }
+
+  guardarCambiosEquipo() {
+    if (!this.equipoEditando) return;
+
+    this.equiposService.editarEquipo(this.equipoEditando).subscribe({
+      next: () => {
+        this.mostrarModalEditarEquipo = false;
+        this.cargarEquipos();
+        this.equipoEditando = null;
+        this.previewUrlEdit = null;
+        this.errorImagenEdit = null;
+        
+        // Resetear el componente fileUpload de edición
+        if (this.fileUploadEdit) {
+          this.fileUploadEdit.clear();
+        }
+        
+        this.mensaje = 'Equipo actualizado correctamente.';
+        setTimeout(() => this.mensaje = null, 3500);
+      },
+      error: () => {
+        this.mensaje = null;
+        alert('Error al actualizar el equipo');
+      }
+    });
   }
 
   onFileSelected(event: any) {
     const file = event.files?.[0];
     this.nuevoEquipo.fotografia = file;
     this.errorImagen = null;
+    
     if (file) {
       const reader = new FileReader();
-      reader.onload = e => this.previewUrl = typeof reader.result === 'string' ? reader.result : null;
+      reader.onload = (e: any) => {
+        this.previewUrl = e.target.result;
+      };
+      reader.onerror = (error) => {
+        console.error('Error al leer archivo:', error);
+        this.previewUrl = null;
+      };
       reader.readAsDataURL(file);
     } else {
       this.previewUrl = null;
@@ -195,18 +342,48 @@ export class EquiposListComponent implements OnInit {
     alert('Funcionalidad de descarga de ficha en PDF próximamente.');
   }
 
-  eliminarSeleccionados() {
+  async eliminarSeleccionados() {
     if (!this.equiposSeleccionados.length) return;
-    if (confirm('¿Está seguro de eliminar los equipos seleccionados?')) {
-      const eliminaciones = this.equiposSeleccionados.map(equipo =>
-        this.equiposService.eliminarEquipo(equipo.idEquipo!).toPromise()
-      );
-      Promise.all(eliminaciones).then(() => {
-        this.cargarEquipos();
-        this.equiposSeleccionados = [];
-      }).catch(() => {
-        alert('Ocurrió un error al eliminar uno o más equipos.');
-      });
+    
+    if (confirm(`¿Está seguro de eliminar ${this.equiposSeleccionados.length} equipo(s) seleccionado(s)?`)) {
+      const equiposEliminados: string[] = [];
+      const equiposFallidos: string[] = [];
+      
+      for (const equipo of this.equiposSeleccionados) {
+        try {
+          await this.equiposService.eliminarEquipo(equipo.idEquipo!).toPromise();
+          equiposEliminados.push(`${equipo.nombre} (${equipo.numeroSerie || 'Sin serie'})`);
+        } catch (error) {
+          equiposFallidos.push(`${equipo.nombre} (${equipo.numeroSerie || 'Sin serie'})`);
+        }
+      }
+      
+      // Recargar la lista siempre, sin importar si hubo errores
+      this.cargarEquipos();
+      this.equiposSeleccionados = [];
+      
+      // Mostrar resultado detallado
+      let mensaje = '';
+      if (equiposEliminados.length > 0) {
+        mensaje += `✅ Equipos eliminados exitosamente (${equiposEliminados.length}):\n`;
+        mensaje += equiposEliminados.map(eq => `• ${eq}`).join('\n');
+      }
+      
+      if (equiposFallidos.length > 0) {
+        if (mensaje) mensaje += '\n\n';
+        mensaje += `❌ Equipos que no se pudieron eliminar (${equiposFallidos.length}):\n`;
+        mensaje += equiposFallidos.map(eq => `• ${eq}`).join('\n');
+        mensaje += '\n\nPosibles causas: El equipo tiene registros relacionados o no existe.';
+      }
+      
+      if (mensaje) {
+        alert(mensaje);
+      }
+      
+      if (equiposFallidos.length === 0) {
+        this.mensaje = `${equiposEliminados.length} equipo(s) eliminado(s) correctamente.`;
+        setTimeout(() => this.mensaje = null, 3500);
+      }
     }
   }
 }

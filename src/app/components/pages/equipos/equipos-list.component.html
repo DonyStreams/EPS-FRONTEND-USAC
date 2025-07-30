@@ -3,7 +3,7 @@
     <h4 class="m-0">Listado de Equipos</h4>
     <button pButton type="button" icon="pi pi-plus" label="Registrar nuevo equipo"
       class="p-button-success" style="min-width: 220px"
-      (click)="mostrarModalNuevoEquipo = true"></button>
+      (click)="abrirModalNuevoEquipo()"></button>
   </div>
 
   <!-- Filtros externos eliminados, solo se usan los nativos de PrimeNG en la tabla -->
@@ -26,7 +26,7 @@
     [responsiveLayout]="'scroll'"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} equipos"
-    [globalFilterFields]="['nombre','numeroSerie','marca','modelo','ubicacion','estado']"
+    [globalFilterFields]="['nombre','codigoInacif','marca','modelo','numeroSerie']"
   >
     <ng-template pTemplate="header">
       <tr>
@@ -34,12 +34,10 @@
           <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
         </th>
         <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
-        <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
+        <th pSortableColumn="codigoInacif">Código INACIF <p-sortIcon field="codigoInacif"></p-sortIcon></th>
         <th pSortableColumn="marca">Marca <p-sortIcon field="marca"></p-sortIcon></th>
         <th pSortableColumn="modelo">Modelo <p-sortIcon field="modelo"></p-sortIcon></th>
-        <th pSortableColumn="ubicacion">Ubicación <p-sortIcon field="ubicacion"></p-sortIcon></th>
-        <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
-        <th>Fotografía</th>
+        <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
         <th>Acciones</th>
       </tr>
     </ng-template>
@@ -49,22 +47,14 @@
           <p-tableCheckbox [value]="equipo"></p-tableCheckbox>
         </td>
         <td>{{ equipo.nombre }}</td>
-        <td>{{ equipo.numeroSerie }}</td>
+        <td>{{ equipo.codigoInacif }}</td>
         <td>{{ equipo.marca }}</td>
         <td>{{ equipo.modelo }}</td>
-        <td>{{ equipo.ubicacion }}</td>
+        <td>{{ equipo.numeroSerie }}</td>
         <td>
-          <span [ngClass]="{'text-green-600': equipo.estado === true || equipo.estado === 'Activo', 'text-red-500': equipo.estado === false || equipo.estado === 'Inactivo'}">
-            {{ equipo.estado === true || equipo.estado === 'Activo' ? 'Activo' : 'Inactivo' }}
-          </span>
-        </td>
-        <td>
-          <img *ngIf="equipo.fotografia" [src]="equipo.fotografia" alt="Foto" style="max-width: 60px; max-height: 40px; border-radius: 4px;" />
-        </td>
-        <td>
+          <button pButton icon="pi pi-pencil" class="p-button-text p-button-info" pTooltip="Editar" (click)="editarEquipo(equipo)"></button>
           <button pButton icon="pi pi-history" class="p-button-text" pTooltip="Ver historial"></button>
           <button pButton icon="pi pi-wrench" class="p-button-text" pTooltip="Ver mantenimientos"></button>
-          <button pButton icon="pi pi-pencil" class="p-button-text" pTooltip="Editar"></button>
           <button pButton icon="pi pi-download" class="p-button-text" pTooltip="Descargar ficha" (click)="descargarFicha(equipo)"></button>
         </td>
       </tr>
@@ -126,12 +116,14 @@
         <div class="col-12 md:col-6">
           <div class="field mb-3">
             <label for="fotografia">Fotografía</label>
-            <p-fileUpload mode="basic"
+            <p-fileUpload #fileUpload
+                          mode="basic"
                           name="fotografia"
                           accept="image/*"
                           maxFileSize="2000000"
                           chooseLabel="Seleccionar imagen"
                           (onSelect)="onFileSelected($event)"
+                          (onUpload)="onFileSelected($event)"
                           [auto]="true"
                           [customUpload]="true"
                           [showUploadButton]="false"
@@ -158,8 +150,103 @@
         </div>
       </div>
       <div class="flex justify-content-end gap-2 mt-4">
-        <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="mostrarModalNuevoEquipo = false"></button>
+        <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="cerrarModalNuevoEquipo()"></button>
         <button pButton type="submit" label="Registrar" class="p-button-success" [disabled]="formEquipo.invalid"></button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <!-- Modal para editar equipo -->
+  <p-dialog header="Editar Equipo" [(visible)]="mostrarModalEditarEquipo" [modal]="true" [style]="{width: '700px'}" [closable]="false">
+    <form #formEditarEquipo="ngForm" (ngSubmit)="actualizarEquipo()" autocomplete="off" *ngIf="equipoEditando">
+      <div *ngIf="mensaje" class="p-message p-message-success mb-3">
+        <div class="p-message-wrapper">
+          <span class="p-message-icon pi pi-check"></span>
+          <span class="p-message-text">{{ mensaje }}</span>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="col-12 md:col-6">
+          <div class="field mb-2">
+            <label for="editNombre">Nombre del equipo</label>
+            <input pInputText id="editNombre" name="editNombre" [(ngModel)]="equipoEditando.nombre" required maxlength="100" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editCodigoInacif">Código del INACIF</label>
+            <input pInputText id="editCodigoInacif" name="editCodigoInacif" [(ngModel)]="equipoEditando.codigoInacif" maxlength="50" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editMarca">Marca</label>
+            <input pInputText id="editMarca" name="editMarca" [(ngModel)]="equipoEditando.marca" maxlength="50" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editModelo">Modelo</label>
+            <input pInputText id="editModelo" name="editModelo" [(ngModel)]="equipoEditando.modelo" maxlength="50" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editSerie">No. de serie</label>
+            <input pInputText id="editSerie" name="editSerie" [(ngModel)]="equipoEditando.numeroSerie" maxlength="50" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editUbicacion">Ubicación</label>
+            <input pInputText id="editUbicacion" name="editUbicacion" [(ngModel)]="equipoEditando.ubicacion" maxlength="100" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editMagnitud">Magnitud de medición</label>
+            <input pInputText id="editMagnitud" name="editMagnitud" [(ngModel)]="equipoEditando.magnitudMedicion" maxlength="100" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editRango">Rango o capacidad</label>
+            <input pInputText id="editRango" name="editRango" [(ngModel)]="equipoEditando.rangoCapacidad" maxlength="100" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editManual">Código y nombre del manual del fabricante</label>
+            <input pInputText id="editManual" name="editManual" [(ngModel)]="equipoEditando.manualFabricante" maxlength="100" class="w-full" />
+          </div>
+          <div class="field mb-2">
+            <label for="editSoftware">Software/Firmware</label>
+            <input pInputText id="editSoftware" name="editSoftware" [(ngModel)]="equipoEditando.softwareFirmware" maxlength="100" class="w-full" />
+          </div>
+        </div>
+        <div class="col-12 md:col-6">
+          <div class="field mb-3">
+            <label for="editFotografia">Fotografía</label>
+            <p-fileUpload #fileUploadEdit
+                          mode="basic"
+                          name="editFotografia"
+                          accept="image/*"
+                          maxFileSize="2000000"
+                          chooseLabel="Cambiar imagen"
+                          (onSelect)="onFileSelectedEdit($event)"
+                          (onUpload)="onFileSelectedEdit($event)"
+                          [auto]="true"
+                          [customUpload]="true"
+                          [showUploadButton]="false"
+                          [showCancelButton]="false"
+                          class="w-full" />
+            <div *ngIf="previewUrlEdit" class="mt-2">
+              <img [src]="previewUrlEdit" alt="Previsualización" class="border-round" style="max-width: 100%; max-height: 180px;">
+            </div>
+            <div *ngIf="errorImagenEdit" class="p-message p-message-error mt-2">
+              <div class="p-message-wrapper">
+                <span class="p-message-icon pi pi-times"></span>
+                <span class="p-message-text">{{ errorImagenEdit }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="field mb-2">
+            <label for="editCondiciones">Condiciones de operación</label>
+            <textarea pInputTextarea id="editCondiciones" name="editCondiciones" [(ngModel)]="equipoEditando.condicionesOperacion" rows="3" class="w-full"></textarea>
+          </div>
+          <div class="field mb-2"> 
+            <label for="editDescripcion">Descripción del equipo</label>
+            <textarea pInputTextarea id="editDescripcion" name="editDescripcion" [(ngModel)]="equipoEditando.descripcion" rows="3" class="w-full"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-content-end gap-2 mt-4">
+        <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="cerrarModalEditarEquipo()"></button>
+        <button pButton type="submit" label="Actualizar" class="p-button-success" [disabled]="formEditarEquipo.invalid"></button>
       </div>
     </form>
   </p-dialog>

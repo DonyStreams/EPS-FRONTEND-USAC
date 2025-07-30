@@ -21,30 +21,11 @@ export class EquiposService {
   }
 
   crearEquipo(equipo: Equipo): Observable<Equipo> {
-    const formData = new FormData();
-    // Solo los campos importantes
-    if (equipo.nombre) formData.append('nombre', equipo.nombre);
-    if (equipo.numeroSerie) formData.append('numeroSerie', equipo.numeroSerie);
-    if (equipo.marca) formData.append('marca', equipo.marca);
-    if (equipo.modelo) formData.append('modelo', equipo.modelo);
-    if (equipo.ubicacion) formData.append('ubicacion', equipo.ubicacion);
-    if (equipo.estado !== undefined && equipo.estado !== null) formData.append('estado', String(equipo.estado));
-    if (equipo.fotografia) formData.append('fotografia', equipo.fotografia);
-    if (equipo.descripcion) formData.append('descripcion', equipo.descripcion);
-    return this.http.post<Equipo>(this.apiUrl, formData);
+    return this.http.post<Equipo>(this.apiUrl, equipo);
   }
 
   editarEquipo(equipo: Equipo): Observable<Equipo> {
-    const formData = new FormData();
-    if (equipo.nombre) formData.append('nombre', equipo.nombre);
-    if (equipo.numeroSerie) formData.append('numeroSerie', equipo.numeroSerie);
-    if (equipo.marca) formData.append('marca', equipo.marca);
-    if (equipo.modelo) formData.append('modelo', equipo.modelo);
-    if (equipo.ubicacion) formData.append('ubicacion', equipo.ubicacion);
-    if (equipo.estado !== undefined && equipo.estado !== null) formData.append('estado', String(equipo.estado));
-    if (equipo.fotografia) formData.append('fotografia', equipo.fotografia);
-    if (equipo.descripcion) formData.append('descripcion', equipo.descripcion);
-    return this.http.put<Equipo>(`${this.apiUrl}/${equipo.idEquipo}`, formData);
+    return this.http.put<Equipo>(`${this.apiUrl}/${equipo.idEquipo}`, equipo);
   }
 
   eliminarEquipo(id: number): Observable<any> {
