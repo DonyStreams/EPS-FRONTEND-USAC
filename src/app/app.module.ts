@@ -1,6 +1,6 @@
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { KeycloakInterceptor } from './interceptors/keycloak.interceptor';
-import { NgModule } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 import { HashLocationStrategy, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
@@ -16,21 +16,34 @@ import { PhotoService } from './demo/service/photo.service';
 
 import { UsuarioService } from './service/usuario.service';
 import { ParticipanteService } from './service/participantes.service';
+import { KeycloakService } from './service/keycloak.service';
 import { HttpClientModule } from '@angular/common/http';
 import { HasRoleDirective } from './directives/has-role.directive';
+import { ButtonModule } from 'primeng/button';
+
+// Función para inicializar Keycloak
+export function initializeKeycloak(keycloak: KeycloakService) {
+  return () => keycloak.init();
+}
 
 @NgModule({
     declarations: [AppComponent, NotfoundComponent, HasRoleDirective],
-    imports: [AppRoutingModule, AppLayoutModule, HttpClientModule],
+    imports: [AppRoutingModule, AppLayoutModule, HttpClientModule, ButtonModule],
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },
         CountryService, CustomerService, EventService, IconService, NodeService,
-        PhotoService, ProductService, UsuarioService,ParticipanteService,
+        PhotoService, ProductService, UsuarioService, ParticipanteService,
         {
-    provide: HTTP_INTERCEPTORS,
-    useClass: KeycloakInterceptor,
-    multi: true
-    }        
+            provide: HTTP_INTERCEPTORS,
+            useClass: KeycloakInterceptor,
+            multi: true
+        },
+        {
+            provide: APP_INITIALIZER,
+            useFactory: initializeKeycloak,
+            deps: [KeycloakService],
+            multi: true
+        }
     ],
     
     bootstrap: [AppComponent],

@@ -4,6 +4,7 @@ import { FtpService } from '../../../service/ftp.service';
 import { KeycloakService } from '../../../service/keycloak.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
+import { environment } from '../../../../environments/environment';
 
 interface EstadoOption {
   label: string;
@@ -109,13 +110,13 @@ export class EquiposListComponent implements OnInit {
     // Si la ruta empieza con /imagenes/equipos/, extraer solo el nombre del archivo
     if (rutaImagen.startsWith('/imagenes/equipos/')) {
       const filename = rutaImagen.substring('/imagenes/equipos/'.length);
-      return `http://localhost:8080/MantenimientosBackend/api/ftp/image/${filename}`;
+      return `${environment.apiUrl}/ftp/image/${filename}`;
     } else if (rutaImagen.startsWith('http')) {
       // Si ya es una URL completa, usarla directamente
       return rutaImagen;
     } else {
       // Asumir que es solo el nombre del archivo
-      return `http://localhost:8080/MantenimientosBackend/api/ftp/image/${rutaImagen}`;
+      return `${environment.apiUrl}/ftp/image/${rutaImagen}`;
     }
   }
 

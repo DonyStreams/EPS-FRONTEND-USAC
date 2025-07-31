@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class FtpService {
-  private ftpApiUrl = 'http://localhost:8080/MantenimientosBackend/api/ftp/upload';
+  private ftpApiUrl = `${environment.apiUrl}/ftp/upload`;
 
   constructor(private http: HttpClient) {}
 

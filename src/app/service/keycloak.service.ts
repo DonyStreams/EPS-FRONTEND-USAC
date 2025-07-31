@@ -1,33 +1,35 @@
 import { Injectable } from '@angular/core';
-import * as Keycloak from 'keycloak-js';
+import Keycloak from 'keycloak-js';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class KeycloakService {
-  private keycloakInstance: Keycloak.KeycloakInstance;
+  private keycloakInstance!: Keycloak.KeycloakInstance;
+  private initialized: boolean = false;
+
+  constructor() {
+    this.keycloakInstance = new (Keycloak as any)({
+      url: 'http://localhost:8080',
+      realm: 'MantenimientosINACIF',
+      clientId: 'inacif-frontend'
+    });
+  }
 
   init(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      this.keycloakInstance = Keycloak({
-        url: 'http://localhost:8080',
-        realm: 'demo',
-        clientId: 'my-angular-client',
-      });
-
-      this.keycloakInstance.init({ onLoad: 'login-required' })
-        .success(authenticated => {
-          console.log('[Keycloak] authenticated', authenticated);
-          if (authenticated) {
-            console.log('[Keycloak] User roles:', this.getUserRoles());
-            console.log('[Keycloak] User info:', this.getUserInfo());
-          }
-          resolve(authenticated);
-        })
-        .error(err => {
-          console.error('[Keycloak] Init failed', err);
-          reject(err);
-        });
+    console.log('[Keycloak Real] Inicializando servicio real...');
+    
+    return (this.keycloakInstance.init({
+      onLoad: 'check-sso',
+      checkLoginIframe: false
+    }) as any).then((authenticated: boolean) => {
+      this.initialized = true;
+      console.log('[Keycloak Real] Servicio inicializado correctamente');
+      console.log('[Keycloak Real] Usuario autenticado:', authenticated);
+      return authenticated;
+    }).catch((error: any) => {
+      console.error('[Keycloak Real] Error al inicializar:', error);
+      throw error;
     });
   }
 
@@ -48,7 +50,9 @@ export class KeycloakService {
   }
 
   getUserFullName(): string | undefined {
-    return this.keycloakInstance?.tokenParsed?.['name'];
+    const firstName = this.keycloakInstance?.tokenParsed?.['given_name'] || '';
+    const lastName = this.keycloakInstance?.tokenParsed?.['family_name'] || '';
+    return `${firstName} ${lastName}`.trim() || this.getUsername();
   }
 
   // Obtener roles del realm
@@ -58,7 +62,8 @@ export class KeycloakService {
 
   // Obtener roles del cliente
   getClientRoles(): string[] {
-    return this.keycloakInstance?.tokenParsed?.['resource_access']?.['my-angular-client']?.['roles'] || [];
+    const clientAccess = this.keycloakInstance?.tokenParsed?.['resource_access'];
+    return clientAccess?.['inacif-frontend']?.['roles'] || [];
   }
 
   // Obtener todos los roles del usuario
@@ -77,9 +82,9 @@ export class KeycloakService {
     return roles.some(role => userRoles.includes(role));
   }
 
-  // Verificar permisos por módulo
-  canAccessEquipos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS', 'USER']);
+  // Métodos de compatibilidad adicionales
+  canManageEquipos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
   canCreateEquipos(): boolean {
@@ -90,35 +95,35 @@ export class KeycloakService {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
-  canDeleteEquipos(): boolean {
-    return this.hasRole('ADMIN');
-  }
-
-  canAccessMantenimientos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  canAccessEquipos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS', 'USER']);
   }
 
   canCreateMantenimientos(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
+  canAccessMantenimientos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  }
+
   canExecuteMantenimientos(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
   }
 
-  canManageUsers(): boolean {
-    return this.hasRole('ADMIN');
+  canAccessParticipantes(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
   }
 
-  canViewReports(): boolean {
+  canManageParticipantes(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
-  canExportReports(): boolean {
+  canAccessUsuarios(): boolean {
     return this.hasRole('ADMIN');
   }
 
-  // Información completa del usuario
+  // Información completa del usuario para compatibilidad
   getUserInfo() {
     if (!this.isLoggedIn()) return null;
     
@@ -140,26 +145,59 @@ export class KeycloakService {
           create: this.canCreateMantenimientos(),
           execute: this.canExecuteMantenimientos()
         },
-        users: {
-          manage: this.canManageUsers()
-        },
-        reports: {
-          view: this.canViewReports(),
-          export: this.canExportReports()
+        usuarios: {
+          manage: this.canAccessUsuarios()
         }
       }
     };
   }
 
+  // Método de compatibilidad para canDeleteEquipos
+  canDeleteEquipos(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
   logout(): void {
-    this.keycloakInstance.logout();
+    console.log('[Keycloak Real] Logout llamado');
+    this.keycloakInstance?.logout({
+      redirectUri: window.location.origin + '/auth/login'
+    });
   }
 
   isLoggedIn(): boolean {
-    return this.keycloakInstance?.authenticated ?? false;
+    const result = this.initialized && !!this.keycloakInstance?.authenticated;
+    console.log('[Keycloak Real] isLoggedIn check:', {
+      initialized: this.initialized,
+      authenticated: this.keycloakInstance?.authenticated,
+      result: result
+    });
+    return result;
+  }
+
+  isInitialized(): boolean {
+    return this.initialized;
   }
 
   login(): void {
+    console.log('[Keycloak Real] Login llamado - redirigiendo a Keycloak...');
     this.keycloakInstance?.login();
+  }
+
+  // Método para obtener el token actualizado
+  updateToken(minValidity: number = 5): Promise<boolean> {
+    if (!this.keycloakInstance) {
+      return Promise.resolve(false);
+    }
+    
+    return (this.keycloakInstance.updateToken(minValidity) as any).then((refreshed: boolean) => {
+      return refreshed;
+    }).catch(() => {
+      return false;
+    });
+  }
+
+  // Método para verificar si el token está próximo a expirar
+  isTokenExpired(minValidity: number = 0): boolean {
+    return this.keycloakInstance?.isTokenExpired(minValidity) || true;
   }
 }
