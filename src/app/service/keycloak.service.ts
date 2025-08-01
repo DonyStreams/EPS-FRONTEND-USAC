@@ -20,17 +20,39 @@ export class KeycloakService {
     console.log('[Keycloak Real] Inicializando servicio real...');
     
     return (this.keycloakInstance.init({
-      onLoad: 'check-sso',
-      checkLoginIframe: false
+      checkLoginIframe: false,
+      onLoad: 'check-sso'  // Verificar si hay sesión válida
     }) as any).then((authenticated: boolean) => {
       this.initialized = true;
       console.log('[Keycloak Real] Servicio inicializado correctamente');
       console.log('[Keycloak Real] Usuario autenticado:', authenticated);
+      
+      // Configurar renovación automática de tokens
+      if (authenticated) {
+        this.setupTokenRefresh();
+      }
+      
       return authenticated;
     }).catch((error: any) => {
       console.error('[Keycloak Real] Error al inicializar:', error);
-      throw error;
+      // En caso de error, inicializar de todas formas pero sin autenticación
+      this.initialized = true;
+      return false;
     });
+  }
+
+  // Método para configurar renovación automática de tokens
+  private setupTokenRefresh(): void {
+    // Renovar token cada 60 segundos si expira en menos de 70 segundos
+    setInterval(() => {
+      this.updateToken(70).then((refreshed) => {
+        if (refreshed) {
+          console.log('[Keycloak Real] Token renovado automáticamente');
+        }
+      }).catch((error) => {
+        console.error('[Keycloak Real] Error al renovar token:', error);
+      });
+    }, 60000); // Cada 60 segundos
   }
 
   getToken(): string | undefined {
