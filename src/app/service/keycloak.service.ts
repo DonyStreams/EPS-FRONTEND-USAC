@@ -10,7 +10,7 @@ export class KeycloakService {
 
   constructor() {
     this.keycloakInstance = new (Keycloak as any)({
-      url: 'http://localhost:8080',
+      url: 'http://172.16.1.192:8080/auth',
       realm: 'MantenimientosINACIF',
       clientId: 'inacif-frontend'
     });
@@ -43,16 +43,18 @@ export class KeycloakService {
 
   // Método para configurar renovación automática de tokens
   private setupTokenRefresh(): void {
-    // Renovar token cada 60 segundos si expira en menos de 70 segundos
+    // Renovar token cada 5 minutos si expira en menos de 10 minutos
     setInterval(() => {
-      this.updateToken(70).then((refreshed) => {
-        if (refreshed) {
-          console.log('[Keycloak Real] Token renovado automáticamente');
-        }
-      }).catch((error) => {
-        console.error('[Keycloak Real] Error al renovar token:', error);
-      });
-    }, 60000); // Cada 60 segundos
+      if (this.isLoggedIn() && !this.isTokenExpired(600)) { // 10 minutos
+        this.updateToken(300).then((refreshed) => { // Renovar si expira en 5 minutos
+          if (refreshed) {
+            console.log('[Keycloak Real] Token renovado automáticamente');
+          }
+        }).catch((error) => {
+          console.error('[Keycloak Real] Error al renovar token:', error);
+        });
+      }
+    }, 300000); // Cada 5 minutos
   }
 
   getToken(): string | undefined {
@@ -220,6 +222,9 @@ export class KeycloakService {
 
   // Método para verificar si el token está próximo a expirar
   isTokenExpired(minValidity: number = 0): boolean {
-    return this.keycloakInstance?.isTokenExpired(minValidity) || true;
+    if (!this.keycloakInstance || !this.isLoggedIn()) {
+      return true; // Sin instancia o no logueado = token expirado
+    }
+    return this.keycloakInstance.isTokenExpired(minValidity);
   }
 }

@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8081/MantenimientosBackend/api',
-  keycloakUrl: 'http://localhost:8080',
+  keycloakUrl: 'http://172.16.1.192:8080/auth',
   keycloakRealm: 'MantenimientosINACIF',
   keycloakClientId: 'inacif-frontend'
 };
