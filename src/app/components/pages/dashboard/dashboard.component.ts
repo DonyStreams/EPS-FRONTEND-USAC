@@ -4,6 +4,9 @@ import { Product } from '../../../demo/api/product';
 import { ProductService } from '../../../demo/service/product.service';
 import { Subscription, debounceTime } from 'rxjs';
 import { LayoutService } from 'src/app/layout/service/app.layout.service';
+import { AlertasService, DashboardAlertas } from '../../../service/alertas.service';
+import { ProgramacionesService } from '../../../service/programaciones.service';
+import { EquiposService } from '../../../service/equipos.service';
 
 @Component({
     templateUrl: './dashboard.component.html',
@@ -16,15 +19,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     chartOptions: any;
     subscription!: Subscription;
 
-    // Indicadores clave (KPIs)
-    mantenimientosProgramados: number = 0;
-    mantenimientosEjecutados: number = 0;
+    // Indicadores clave (KPIs) - ACTUALIZADOS
+    totalProgramaciones: number = 0;
+    totalVencidas: number = 0;
+    totalAlertas: number = 0;
     equiposActivos: number = 0;
-    areaMayorEquipos: string = '';
-    ticketsAbiertos: number = 1;
-    ticketsAsignados: number = 0;
-    ticketsResueltos: number = 0;
-    contratosPorVencer: number = 1;
+    ticketsAbiertos: number = 0;
+    mantenimientosDelMes: number = 0;
+    contratosActivos: number = 0;
+    contratosPorVencer: number = 0;
+    
+    // Dashboard de alertas
+    dashboardAlertas: DashboardAlertas | null = null;
 
     // Datos para gráficos sugeridos
     equiposPorAreaChartData: any = {}; // Gráfico de barras/donut de equipos por área
@@ -38,7 +44,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ticketsPorPrioridadChartOptions: any = {};
     mantenimientosPorFechaChartOptions: any = {};
 
-    constructor(private productService: ProductService, public layoutService: LayoutService) {
+    constructor(
+        private productService: ProductService, 
+        public layoutService: LayoutService,
+        private alertasService: AlertasService,
+        private programacionesService: ProgramacionesService,
+        private equiposService: EquiposService
+    ) {
         this.subscription = this.layoutService.configUpdate$
         .pipe(debounceTime(25))
         .subscribe((config) => {
@@ -48,12 +60,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         this.initChart();
+        this.loadDashboardData();
+
         this.productService.getProductsSmall().then(data => this.products = data);
 
         this.items = [
-            { label: 'Add New', icon: 'pi pi-fw pi-plus' },
-            { label: 'Remove', icon: 'pi pi-fw pi-minus' }
+            { label: 'Nuevo Equipo', icon: 'pi pi-fw pi-plus', routerLink: ['/administracion/equipos'] },
+            { label: 'Programar Mantenimiento', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/administracion/programaciones/nuevo'] },
+            { label: 'Ver Alertas', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/administracion/programaciones'] },
+            { label: 'Crear Ticket', icon: 'pi pi-fw pi-ticket', routerLink: ['/administracion/tickets/nuevo'] }
         ];
+    }
+
+    loadDashboardData(): void {
+        // Cargar dashboard de alertas
+        this.alertasService.getDashboard().subscribe({
+            next: (dashboard) => {
+                this.dashboardAlertas = dashboard;
+                this.totalProgramaciones = dashboard.total_programaciones_activas;
+                this.totalVencidas = dashboard.total_vencidas;
+                this.totalAlertas = dashboard.total_alertas;
+            },
+            error: (error) => {
+                console.error('Error al cargar dashboard de alertas:', error);
+            }
+        });
+
+        // Cargar estadísticas de equipos
+        this.equiposService.getEquipos({}).subscribe({
+            next: (equipos) => {
+                this.equiposActivos = equipos.length;
+            },
+            error: (error) => {
+                console.error('Error al cargar equipos:', error);
+            }
+        });
     }
 
     initChart() {
@@ -63,19 +104,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
 
         this.chartData = {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio'],
             datasets: [
                 {
-                    label: 'First Dataset',
-                    data: [65, 59, 80, 81, 56, 55, 40],
+                    label: 'Mantenimientos Programados',
+                    data: [12, 19, 15, 25, 22, 18, 20],
                     fill: false,
                     backgroundColor: documentStyle.getPropertyValue('--bluegray-700'),
                     borderColor: documentStyle.getPropertyValue('--bluegray-700'),
                     tension: .4
                 },
                 {
-                    label: 'Second Dataset',
-                    data: [28, 48, 40, 19, 86, 27, 90],
+                    label: 'Mantenimientos Ejecutados',
+                    data: [10, 16, 12, 20, 18, 15, 17],
                     fill: false,
                     backgroundColor: documentStyle.getPropertyValue('--green-600'),
                     borderColor: documentStyle.getPropertyValue('--green-600'),

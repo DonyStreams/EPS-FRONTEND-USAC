@@ -1,7 +1,7 @@
 <div class="layout-topbar">
     <a class="layout-topbar-logo" routerLink="">
-        <img src="assets/layout/images/{{layoutService.config().colorScheme === 'light' ? 'logo-dark' : 'logo-white'}}.svg" alt="logo">
-        <span>SAKAI</span>
+        <img src="assets/images/logooficial.png" alt="logo">
+        <span>Mantenimientos</span>
     </a>
 
     <button #menubutton class="p-link layout-menu-button layout-topbar-button" (click)="layoutService.onMenuToggle()">
@@ -12,14 +12,7 @@
         <i class="pi pi-ellipsis-v"></i>
     </button>
 
-    <div #topbarmenu class="layout-topbar-menu" [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">
-        <button class="p-link layout-topbar-button">
-            <i class="pi pi-calendar"></i>
-            <span>Calendar</span>
-        </button>
-        
-        <!-- Menú de usuario con dropdown -->
-        <div class="user-menu-container">
+    <div #topbarmenu class="layout-topbar-menu" [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">                
             <button class="p-link layout-topbar-button" 
                     #userMenuButton
                     type="button" 
@@ -27,8 +20,7 @@
                     aria-haspopup="true" 
                     [attr.aria-expanded]="userMenuVisible">
                 <i class="pi pi-user"></i>
-                <span>{{ getUserName() }}</span>
-                <i class="pi pi-chevron-down" style="margin-left: 0.5rem; font-size: 0.8rem;"></i>
+                <span>{{ getUserName() }}</span>                
             </button>
             
             <!-- Menú personalizado -->
@@ -45,20 +37,6 @@
                         <span>{{ getUserEmail() }}</span>
                     </div>
                 </div>
-                
-                <div class="menu-separator"></div>
-                
-                <div class="menu-actions">
-                    <button class="menu-action-item" (click)="openProfile()">
-                        <i class="pi pi-user-edit"></i>
-                        <span>Perfil</span>
-                    </button>
-                    <button class="menu-action-item" (click)="openSettings()">
-                        <i class="pi pi-cog"></i>
-                        <span>Configuración</span>
-                    </button>
-                </div>
-                
                 <div class="menu-separator"></div>
                 
                 <div class="menu-actions">
@@ -69,10 +47,4 @@
                 </div>
             </div>
         </div>
-        
-        <button class="p-link layout-topbar-button" [routerLink]="'/documentation'">
-            <i class="pi pi-cog"></i>
-            <span>Settings</span>
-        </button>
-    </div>
 </div>

@@ -28,52 +28,53 @@ export class AppMenuComponent implements OnInit {
                 ]
             },
             {
-                label: 'Mantenimientos',
+                label: 'Gestión de Mantenimientos',
                 icon: 'pi pi-fw pi-cog',
                 items: [
-                    { label: 'Programados', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/mantenimientos'] },
-                    { label: 'Ejecuciones', icon: 'pi pi-fw pi-check-circle', routerLink: ['/ejecuciones'] },
-                    { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/tipos-mantenimiento'] },
-                    { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/proveedores'] }
+                    { label: 'Mantenimientos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/administracion/mantenimientos'] },
+                    { label: 'Programaciones', icon: 'pi pi-fw pi-clock', routerLink: ['/administracion/programaciones'] },
+                    { label: 'Ejecuciones', icon: 'pi pi-fw pi-check-circle', routerLink: ['/administracion/ejecuciones'] },
+                    { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/administracion/tipos-mantenimiento'] },
+                    { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/administracion/proveedores'] }
                 ]
             },
             {
                 label: 'Tickets',
                 icon: 'pi pi-fw pi-ticket',
                 items: [
-                    { label: 'Todos los Tickets', icon: 'pi pi-fw pi-inbox', routerLink: ['/tickets'] },
-                    { label: 'Crear Ticket', icon: 'pi pi-fw pi-plus', routerLink: ['/tickets/nuevo'] },
-                    { label: 'Prioridades', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/tickets/prioridades'] }
+                    { label: 'Todos los Tickets', icon: 'pi pi-fw pi-inbox', routerLink: ['/administracion/tickets'] },
+                    { label: 'Crear Ticket', icon: 'pi pi-fw pi-plus', routerLink: ['/administracion/tickets/nuevo'] },
+                    { label: 'Prioridades', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/administracion/tickets/prioridades'] }
                 ]
             },
             {
                 label: 'Contratos',
                 icon: 'pi pi-fw pi-file',
                 items: [
-                    { label: 'Contratos', icon: 'pi pi-fw pi-file', routerLink: ['/contratos'] },
-                    { label: 'Subir Contrato', icon: 'pi pi-fw pi-upload', routerLink: ['/contratos/nuevo'] }
+                    { label: 'Contratos', icon: 'pi pi-fw pi-file', routerLink: ['/administracion/contratos'] },
+                    { label: 'Subir Contrato', icon: 'pi pi-fw pi-upload', routerLink: ['/administracion/contratos/nuevo'] }
                 ]
             },
             {
                 label: 'Reportes',
                 icon: 'pi pi-fw pi-chart-bar',
                 items: [
-                    { label: 'Reportes Técnicos', icon: 'pi pi-fw pi-chart-line', routerLink: ['/reportes'] }
+                    { label: 'Reportes Técnicos', icon: 'pi pi-fw pi-chart-line', routerLink: ['/administracion/reportes'] }
                 ]
             },
             {
                 label: 'Administración',
                 icon: 'pi pi-fw pi-cog',
                 items: [
-                    { label: 'Áreas', icon: 'pi pi-fw pi-sitemap', routerLink: ['/areas'] },
-                    { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/usuarios'] }
+                    { label: 'Áreas', icon: 'pi pi-fw pi-sitemap', routerLink: ['/administracion/areas'] },
+                    { label: 'Usuarios', icon: 'pi pi-fw pi-users', routerLink: ['/administracion/usuarios'] }
                 ]
             },
             {
                 label: 'Notificaciones',
                 icon: 'pi pi-fw pi-bell',
                 items: [
-                    { label: 'Panel de Notificaciones', icon: 'pi pi-fw pi-bell', routerLink: ['/notificaciones'] }
+                    { label: 'Panel de Notificaciones', icon: 'pi pi-fw pi-bell', routerLink: ['/administracion/notificaciones'] }
                 ]
             }
         ];

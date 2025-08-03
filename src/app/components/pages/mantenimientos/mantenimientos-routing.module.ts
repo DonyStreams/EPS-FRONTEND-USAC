@@ -1,11 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { CrudComponent } from './mantenimientos.component';
+import { MantenimientosComponent } from './mantenimientos.component';
 
 @NgModule({
 	imports: [RouterModule.forChild([
-		{ path: '', component: CrudComponent }
+		{ path: '', component: MantenimientosComponent }
 	])],
 	exports: [RouterModule]
 })
-export class CrudRoutingModule { }
+export class MantenimientosRoutingModule { }

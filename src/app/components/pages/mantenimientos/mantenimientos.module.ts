@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CrudRoutingModule } from './mantenimientos-routing.module';
-import { CrudComponent } from './mantenimientos.component';
+import { MantenimientosRoutingModule } from './mantenimientos-routing.module';
+import { MantenimientosComponent } from './mantenimientos.component';
 import { TableModule } from 'primeng/table';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ButtonModule } from 'primeng/button';
@@ -16,11 +16,16 @@ import { DropdownModule } from 'primeng/dropdown';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { CalendarModule } from 'primeng/calendar';
+import { CheckboxModule } from 'primeng/checkbox';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { TagModule } from 'primeng/tag';
 
 @NgModule({
     imports: [
         CommonModule,
-        CrudRoutingModule,
+        MantenimientosRoutingModule,
         TableModule,
         FileUploadModule,
         FormsModule,
@@ -34,8 +39,13 @@ import { DialogModule } from 'primeng/dialog';
         DropdownModule,
         RadioButtonModule,
         InputNumberModule,
-        DialogModule
+        DialogModule,
+        ConfirmDialogModule,
+        CalendarModule,
+        CheckboxModule,
+        MultiSelectModule,
+        TagModule
     ],
-    declarations: [CrudComponent]
+    declarations: [MantenimientosComponent]
 })
-export class CrudModule { }
+export class MantenimientosModule { }
