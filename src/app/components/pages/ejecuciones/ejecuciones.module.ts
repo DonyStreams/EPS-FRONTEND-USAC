@@ -1,11 +1,20 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
+import { CalendarModule } from 'primeng/calendar';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputTextareaModule } from 'primeng/inputtextarea';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { TagModule } from 'primeng/tag';
 
 import { EjecucionesRoutingModule } from './ejecuciones-routing.module';
 import { EjecucionesComponent } from './ejecuciones.component';
@@ -15,11 +24,21 @@ import { EjecucionesComponent } from './ejecuciones.component';
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        FormsModule,
         EjecucionesRoutingModule,
         TableModule,
         ButtonModule,
         ToastModule,
-        ToolbarModule
+        ToolbarModule,
+        DialogModule,
+        DropdownModule,
+        CalendarModule,
+        InputTextModule,
+        InputTextareaModule,
+        InputNumberModule,
+        ConfirmDialogModule,
+        TooltipModule,
+        TagModule
     ]
 })
 export class EjecucionesModule { }

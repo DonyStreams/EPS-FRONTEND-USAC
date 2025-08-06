@@ -1,0 +1,218 @@
+<div class="card">
+    <h5>Ejecuciones de Mantenimiento</h5>
+    
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <button pButton pRipple label="Nueva Ejecución" icon="pi pi-plus" 
+                class="p-button-success mr-2" (click)="openNew()"></button>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input pInputText type="text" placeholder="Buscar..." 
+                    (input)="applyFilterGlobal($event, 'contains')" />
+            </span>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table #dt [value]="ejecuciones" styleClass="p-datatable-gridlines" 
+        [loading]="loading" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros">
+        
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="fechaEjecucion">
+                    Fecha Ejecución <p-sortIcon field="fechaEjecucion"></p-sortIcon>
+                </th>
+                <th pSortableColumn="fechaInicio">
+                    Fecha Inicio <p-sortIcon field="fechaInicio"></p-sortIcon>
+                </th>
+                <th pSortableColumn="fechaFin">
+                    Fecha Fin <p-sortIcon field="fechaFin"></p-sortIcon>
+                </th>
+                <th>Proveedor</th>
+                <th>Equipo</th>
+                <th>Tipo Mantenimiento</th>
+                <th pSortableColumn="costo">
+                    Costo <p-sortIcon field="costo"></p-sortIcon>
+                </th>
+                <th pSortableColumn="estado">
+                    Estado <p-sortIcon field="estado"></p-sortIcon>
+                </th>
+                <th>Acciones</th>
+            </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="body" let-ejecucion>
+            <tr>
+                <td>{{ formatDate(ejecucion.fechaEjecucion) || 'Sin fecha' }}</td>
+                <td>{{ formatDate(ejecucion.fechaInicio) || 'N/A' }}</td>
+                <td>{{ formatDate(ejecucion.fechaFin) || 'N/A' }}</td>
+                <td>{{ ejecucion.contrato?.proveedor?.nombre || ejecucion.contrato?.descripcion || 'N/A' }}</td>
+                <td>{{ ejecucion.equipo?.nombre || ejecucion.equipo?.descripcion || 'N/A' }}</td>
+                <td>{{ ejecucion.tipoMantenimiento?.nombre || 'N/A' }}</td>
+                <td>{{ formatCurrency(ejecucion.costo || 0) }}</td>
+                <td>
+                    <span class="p-tag" [ngClass]="{
+                        'p-tag-warning': ejecucion.estado === 'PENDIENTE',
+                        'p-tag-info': ejecucion.estado === 'EN_PROGRESO',
+                        'p-tag-success': ejecucion.estado === 'COMPLETADO',
+                        'p-tag-danger': ejecucion.estado === 'CANCELADO',
+                        'p-tag-secondary': !ejecucion.estado
+                    }">
+                        {{ ejecucion.estado || 'PENDIENTE' }}
+                    </span>
+                </td>
+                <td>
+                    <button pButton pRipple icon="pi pi-pencil" 
+                        class="p-button-rounded p-button-success mr-2" 
+                        (click)="editEjecucion(ejecucion)"
+                        pTooltip="Editar"></button>
+                    <button pButton pRipple icon="pi pi-trash" 
+                        class="p-button-rounded p-button-warning" 
+                        (click)="deleteEjecucion(ejecucion)"
+                        pTooltip="Eliminar"></button>
+                </td>
+            </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="9" class="text-center">
+                    <div class="p-4">
+                        <i class="pi pi-info-circle text-4xl text-blue-500 mb-3"></i>
+                        <p>No se encontraron ejecuciones de mantenimiento</p>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<!-- Dialog para crear/editar ejecuciones -->
+<p-dialog [(visible)]="showDialog" [style]="{width: '700px'}" 
+    [header]="isEditMode ? 'Editar Ejecución' : 'Nueva Ejecución'" 
+    [modal]="true" class="p-fluid">
+    
+    <ng-template pTemplate="content">
+        <div class="grid">
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="contrato">Contrato *</label>
+                    <p-dropdown id="contrato" 
+                        [(ngModel)]="selectedEjecucion.idContrato"
+                        [options]="contratos" 
+                        optionLabel="descripcion" 
+                        optionValue="idContrato"
+                        placeholder="Seleccione un contrato"
+                        [filter]="true"
+                        filterBy="descripcion,proveedor.nombre">
+                        <ng-template pTemplate="selectedItem">
+                            <div *ngIf="selectedEjecucion.idContrato">
+                                {{ getContratoDescripcion(selectedEjecucion.idContrato) }}
+                            </div>
+                        </ng-template>
+                        <ng-template let-contrato pTemplate="item">
+                            <div>
+                                <div>{{ contrato.descripcion }}</div>
+                                <small>{{ contrato.proveedor?.nombre }}</small>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+            </div>
+            
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="fechaEjecucion">Fecha de Ejecución *</label>
+                    <p-calendar id="fechaEjecucion" 
+                        [(ngModel)]="selectedEjecucion.fechaEjecucion"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true">
+                    </p-calendar>
+                </div>
+            </div>
+            
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="fechaInicio">Fecha de Inicio</label>
+                    <p-calendar id="fechaInicio" 
+                        [(ngModel)]="selectedEjecucion.fechaInicio"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true">
+                    </p-calendar>
+                </div>
+            </div>
+            
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="fechaFin">Fecha de Fin</label>
+                    <p-calendar id="fechaFin" 
+                        [(ngModel)]="selectedEjecucion.fechaFin"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true">
+                    </p-calendar>
+                </div>
+            </div>
+            
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="costo">Costo</label>
+                    <p-inputNumber id="costo" 
+                        [(ngModel)]="selectedEjecucion.costo"
+                        mode="currency" 
+                        currency="GTQ" 
+                        locale="es-GT">
+                    </p-inputNumber>
+                </div>
+            </div>
+            
+            <div class="col-12 md:col-6">
+                <div class="field">
+                    <label for="estado">Estado</label>
+                    <p-dropdown id="estado" 
+                        [(ngModel)]="selectedEjecucion.estado"
+                        [options]="statuses" 
+                        optionLabel="label" 
+                        optionValue="value"
+                        placeholder="Seleccione un estado">
+                    </p-dropdown>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="field">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" 
+                        pInputTextarea 
+                        [(ngModel)]="selectedEjecucion.observaciones"
+                        rows="3" 
+                        cols="30">
+                    </textarea>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="field">
+                    <label for="bitacora">Bitácora</label>
+                    <textarea id="bitacora" 
+                        pInputTextarea 
+                        [(ngModel)]="selectedEjecucion.bitacora"
+                        rows="4" 
+                        cols="30">
+                    </textarea>
+                </div>
+            </div>
+        </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
+            class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Guardar" icon="pi pi-check" 
+            class="p-button-text" (click)="saveEjecucion()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog></p-confirmDialog>
+<p-toast></p-toast>

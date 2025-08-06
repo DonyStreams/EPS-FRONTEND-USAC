@@ -20,6 +20,7 @@ import { KeycloakService } from './service/keycloak.service';
 import { HttpClientModule } from '@angular/common/http';
 import { HasRoleDirective } from './directives/has-role.directive';
 import { ButtonModule } from 'primeng/button';
+import { MessageService, ConfirmationService } from 'primeng/api';
 
 // Función para inicializar Keycloak
 export function initializeKeycloak(keycloak: KeycloakService) {
@@ -33,6 +34,7 @@ export function initializeKeycloak(keycloak: KeycloakService) {
         { provide: LocationStrategy, useClass: PathLocationStrategy },
         CountryService, CustomerService, EventService, IconService, NodeService,
         PhotoService, ProductService, UsuarioService, ParticipanteService,
+        MessageService, ConfirmationService,
         {
             provide: HTTP_INTERCEPTORS,
             useClass: KeycloakInterceptor,
