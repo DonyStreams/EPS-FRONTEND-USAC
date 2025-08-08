@@ -21,23 +21,17 @@ export class EjecucionesComponent implements OnInit {
     
     selectedEjecucion: Partial<EjecucionMantenimiento> = {};
     isEditMode = false;
+    equiposContrato: any[] = [];
     
     cols = [
-        { field: 'fechaInicio', header: 'Fecha Inicio' },
-        { field: 'fechaFin', header: 'Fecha Fin' },
+        { field: 'fechaEjecucion', header: 'Fecha Ejecución' },
         { field: 'contrato.proveedor.nombre', header: 'Proveedor' },
+        { field: 'contrato.descripcion', header: 'Contrato' },
         { field: 'equipo.nombre', header: 'Equipo' },
-        { field: 'tipoMantenimiento.nombre', header: 'Tipo Mantenimiento' },
-        { field: 'costo', header: 'Costo' },
-        { field: 'observaciones', header: 'Observaciones' }
+        { field: 'bitacora', header: 'Bitácora' }
     ];
 
-    statuses = [
-        { label: 'Pendiente', value: 'PENDIENTE' },
-        { label: 'En Progreso', value: 'EN_PROGRESO' },
-        { label: 'Completado', value: 'COMPLETADO' },
-        { label: 'Cancelado', value: 'CANCELADO' }
-    ];
+    // No necesitamos statuses ya que no hay campo estado
 
     constructor(
         private ejecucionesService: EjecucionesService,
@@ -66,12 +60,9 @@ export class EjecucionesComponent implements OnInit {
                     console.log(`Ejecución ${index + 1}:`, {
                         id: ejecucion.idEjecucion,
                         fechaEjecucion: ejecucion.fechaEjecucion,
-                        fechaInicio: ejecucion.fechaInicio,
-                        fechaFin: ejecucion.fechaFin,
                         contrato: ejecucion.contrato,
                         equipo: ejecucion.equipo,
-                        estado: ejecucion.estado,
-                        costo: ejecucion.costo
+                        bitacora: ejecucion.bitacora
                     });
                 });
             },
@@ -126,15 +117,35 @@ export class EjecucionesComponent implements OnInit {
     }
 
     openNew() {
-        this.selectedEjecucion = {};
+        console.log('openNew() called'); // Debug
+        // Validar que contratos estén cargados antes de abrir el diálogo
+        if (!this.contratos || this.contratos.length === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'No hay contratos disponibles. No se puede crear una nueva ejecución.'
+            });
+            return;
+        }
+        this.selectedEjecucion = {
+            fechaEjecucion: new Date(),
+            bitacora: '',
+            idContrato: undefined,
+            idEquipo: undefined
+        };
         this.isEditMode = false;
         this.showDialog = true;
+        console.log('Dialog should be visible:', this.showDialog); // Debug
+        this.equiposContrato = [];
+        console.log('Contratos disponibles:', this.contratos);
+        console.log('Proveedores disponibles:', this.proveedores);
     }
 
     editEjecucion(ejecucion: EjecucionMantenimiento) {
         this.selectedEjecucion = { ...ejecucion };
         this.isEditMode = true;
         this.showDialog = true;
+        this.onContratoChange();
     }
 
     deleteEjecucion(ejecucion: EjecucionMantenimiento) {
@@ -168,10 +179,14 @@ export class EjecucionesComponent implements OnInit {
     }
 
     saveEjecucion() {
-        if (this.selectedEjecucion.idContrato && (this.selectedEjecucion.fechaEjecucion || this.selectedEjecucion.fechaInicio)) {
+        if (this.selectedEjecucion.idContrato && this.selectedEjecucion.idEquipo && this.selectedEjecucion.fechaEjecucion) {
+            // Debug: mostrar qué datos se están enviando
+            console.log('Datos a enviar:', this.selectedEjecucion);
+            
             if (this.isEditMode && this.selectedEjecucion.idEjecucion) {
                 this.ejecucionesService.update(this.selectedEjecucion.idEjecucion, this.selectedEjecucion).subscribe({
-                    next: () => {
+                    next: (response) => {
+                        console.log('Respuesta del update:', response);
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Éxito',
@@ -191,7 +206,8 @@ export class EjecucionesComponent implements OnInit {
                 });
             } else {
                 this.ejecucionesService.create(this.selectedEjecucion).subscribe({
-                    next: () => {
+                    next: (response) => {
+                        console.log('Respuesta del create:', response);
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Éxito',
@@ -275,5 +291,37 @@ export class EjecucionesComponent implements OnInit {
         if (!idContrato) return '';
         const contrato = this.contratos.find(c => c.idContrato === idContrato);
         return contrato?.descripcion || '';
+    }
+
+    /**
+     * Obtiene los equipos asociados al contrato seleccionado
+     */
+    getEquiposDelContrato(): any[] {
+        // Ya no se usa en el template, solo para lógica interna si se requiere
+        return this.equiposContrato;
+    }
+
+    /**
+     * Se ejecuta cuando cambia el contrato seleccionado
+     */
+    onContratoChange() {
+        // Limpiar equipo seleccionado cuando cambia el contrato
+        this.selectedEjecucion.idEquipo = undefined;
+        if (!this.selectedEjecucion.idContrato) {
+            this.equiposContrato = [];
+            return;
+        }
+        const contrato = this.contratos.find(c => c.idContrato === this.selectedEjecucion.idContrato);
+        if (!contrato || !contrato.equipos) {
+            this.equiposContrato = [];
+            return;
+        }
+        this.equiposContrato = contrato.equipos.map((contratoEquipo: any) => ({
+            idEquipo: contratoEquipo.equipo?.idEquipo || contratoEquipo.idEquipo,
+            nombre: contratoEquipo.equipo?.nombre || contratoEquipo.nombre,
+            codigoInacif: contratoEquipo.equipo?.codigoInacif || contratoEquipo.codigoInacif,
+            ubicacion: contratoEquipo.equipo?.ubicacion || contratoEquipo.ubicacion
+        }));
+        console.log('Equipos del contrato:', this.equiposContrato);
     }
 }

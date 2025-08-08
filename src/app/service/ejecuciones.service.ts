@@ -6,23 +6,18 @@ import { environment } from '../../environments/environment';
 export interface EjecucionMantenimiento {
     idEjecucion?: number;
     fechaEjecucion?: Date;
-    fechaInicio?: Date;
-    fechaFin?: Date;
-    costo?: number;
-    estado?: string;
-    observaciones?: string;
     bitacora?: string;
+    usuarioResponsable?: number;
     usuarioCreacion?: number;
     fechaCreacion?: Date;
     usuarioModificacion?: number;
     fechaModificacion?: Date;
     
-    // Referencias
+    // Referencias (IDs)
     idContrato?: number;
     idEquipo?: number;
-    idTipoMantenimiento?: number;
     
-    // Objetos anidados
+    // Objetos anidados para mostrar información relacionada
     contrato?: {
         idContrato?: number;
         descripcion?: string;
@@ -51,29 +46,10 @@ export interface EjecucionMantenimiento {
         };
     };
     
-    tipoMantenimiento?: {
-        idTipoMantenimiento?: number;
-        nombre?: string;
-        descripcion?: string;
-    };
-    
-    usuarioResponsable?: {
+    usuarioResponsableObj?: {
         id?: number;
         nombreCompleto?: string;
     };
-    
-    // Propiedades para el formulario (snake_case si es necesario)
-    id_ejecucion?: number;
-    fecha_ejecucion?: Date;
-    fecha_inicio?: Date;
-    fecha_fin?: Date;
-    id_contrato?: number;
-    id_equipo?: number;
-    id_tipo_mantenimiento?: number;
-    usuario_creacion?: number;
-    fecha_creacion?: Date;
-    usuario_modificacion?: number;
-    fecha_modificacion?: Date;
 }
 
 @Injectable({

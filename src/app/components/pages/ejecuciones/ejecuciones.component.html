@@ -24,21 +24,10 @@
                 <th pSortableColumn="fechaEjecucion">
                     Fecha Ejecución <p-sortIcon field="fechaEjecucion"></p-sortIcon>
                 </th>
-                <th pSortableColumn="fechaInicio">
-                    Fecha Inicio <p-sortIcon field="fechaInicio"></p-sortIcon>
-                </th>
-                <th pSortableColumn="fechaFin">
-                    Fecha Fin <p-sortIcon field="fechaFin"></p-sortIcon>
-                </th>
                 <th>Proveedor</th>
+                <th>Contrato</th>
                 <th>Equipo</th>
-                <th>Tipo Mantenimiento</th>
-                <th pSortableColumn="costo">
-                    Costo <p-sortIcon field="costo"></p-sortIcon>
-                </th>
-                <th pSortableColumn="estado">
-                    Estado <p-sortIcon field="estado"></p-sortIcon>
-                </th>
+                <th>Bitácora</th>
                 <th>Acciones</th>
             </tr>
         </ng-template>
@@ -46,23 +35,10 @@
         <ng-template pTemplate="body" let-ejecucion>
             <tr>
                 <td>{{ formatDate(ejecucion.fechaEjecucion) || 'Sin fecha' }}</td>
-                <td>{{ formatDate(ejecucion.fechaInicio) || 'N/A' }}</td>
-                <td>{{ formatDate(ejecucion.fechaFin) || 'N/A' }}</td>
-                <td>{{ ejecucion.contrato?.proveedor?.nombre || ejecucion.contrato?.descripcion || 'N/A' }}</td>
-                <td>{{ ejecucion.equipo?.nombre || ejecucion.equipo?.descripcion || 'N/A' }}</td>
-                <td>{{ ejecucion.tipoMantenimiento?.nombre || 'N/A' }}</td>
-                <td>{{ formatCurrency(ejecucion.costo || 0) }}</td>
-                <td>
-                    <span class="p-tag" [ngClass]="{
-                        'p-tag-warning': ejecucion.estado === 'PENDIENTE',
-                        'p-tag-info': ejecucion.estado === 'EN_PROGRESO',
-                        'p-tag-success': ejecucion.estado === 'COMPLETADO',
-                        'p-tag-danger': ejecucion.estado === 'CANCELADO',
-                        'p-tag-secondary': !ejecucion.estado
-                    }">
-                        {{ ejecucion.estado || 'PENDIENTE' }}
-                    </span>
-                </td>
+                <td>{{ ejecucion.contrato?.proveedor?.nombre || 'N/A' }}</td>
+                <td>{{ ejecucion.contrato?.descripcion || 'N/A' }}</td>
+                <td>{{ ejecucion.equipo?.nombre || 'N/A' }}</td>
+                <td>{{ ejecucion.bitacora || 'Sin bitácora' }}</td>
                 <td>
                     <button pButton pRipple icon="pi pi-pencil" 
                         class="p-button-rounded p-button-success mr-2" 
@@ -78,7 +54,7 @@
         
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="9" class="text-center">
+                <td colspan="6" class="text-center">
                     <div class="p-4">
                         <i class="pi pi-info-circle text-4xl text-blue-500 mb-3"></i>
                         <p>No se encontraron ejecuciones de mantenimiento</p>
@@ -106,7 +82,8 @@
                         optionValue="idContrato"
                         placeholder="Seleccione un contrato"
                         [filter]="true"
-                        filterBy="descripcion,proveedor.nombre">
+                        filterBy="descripcion,proveedor.nombre"
+                        (onChange)="onContratoChange()">
                         <ng-template pTemplate="selectedItem">
                             <div *ngIf="selectedEjecucion.idContrato">
                                 {{ getContratoDescripcion(selectedEjecucion.idContrato) }}
@@ -135,60 +112,26 @@
             
             <div class="col-12 md:col-6">
                 <div class="field">
-                    <label for="fechaInicio">Fecha de Inicio</label>
-                    <p-calendar id="fechaInicio" 
-                        [(ngModel)]="selectedEjecucion.fechaInicio"
-                        dateFormat="dd/mm/yy"
-                        [showIcon]="true">
-                    </p-calendar>
-                </div>
-            </div>
-            
-            <div class="col-12 md:col-6">
-                <div class="field">
-                    <label for="fechaFin">Fecha de Fin</label>
-                    <p-calendar id="fechaFin" 
-                        [(ngModel)]="selectedEjecucion.fechaFin"
-                        dateFormat="dd/mm/yy"
-                        [showIcon]="true">
-                    </p-calendar>
-                </div>
-            </div>
-            
-            <div class="col-12 md:col-6">
-                <div class="field">
-                    <label for="costo">Costo</label>
-                    <p-inputNumber id="costo" 
-                        [(ngModel)]="selectedEjecucion.costo"
-                        mode="currency" 
-                        currency="GTQ" 
-                        locale="es-GT">
-                    </p-inputNumber>
-                </div>
-            </div>
-            
-            <div class="col-12 md:col-6">
-                <div class="field">
-                    <label for="estado">Estado</label>
-                    <p-dropdown id="estado" 
-                        [(ngModel)]="selectedEjecucion.estado"
-                        [options]="statuses" 
-                        optionLabel="label" 
-                        optionValue="value"
-                        placeholder="Seleccione un estado">
+                    <label for="equipo">Equipo *</label>
+                    <p-dropdown id="equipo" 
+                        [(ngModel)]="selectedEjecucion.idEquipo"
+                        [options]="getEquiposDelContrato()" 
+                        optionLabel="nombre" 
+                        optionValue="idEquipo"
+                        placeholder="Seleccione un equipo"
+                        [disabled]="!selectedEjecucion.idContrato"
+                        [filter]="true"
+                        filterBy="nombre,codigoInacif">
+                        <ng-template let-equipo pTemplate="item">
+                            <div>
+                                <div>{{ equipo.nombre }}</div>
+                                <small>{{ equipo.codigoInacif }} - {{ equipo.ubicacion }}</small>
+                            </div>
+                        </ng-template>
                     </p-dropdown>
-                </div>
-            </div>
-            
-            <div class="col-12">
-                <div class="field">
-                    <label for="observaciones">Observaciones</label>
-                    <textarea id="observaciones" 
-                        pInputTextarea 
-                        [(ngModel)]="selectedEjecucion.observaciones"
-                        rows="3" 
-                        cols="30">
-                    </textarea>
+                    <small *ngIf="!selectedEjecucion.idContrato" class="p-error">
+                        Primero seleccione un contrato
+                    </small>
                 </div>
             </div>
             
@@ -199,7 +142,8 @@
                         pInputTextarea 
                         [(ngModel)]="selectedEjecucion.bitacora"
                         rows="4" 
-                        cols="30">
+                        cols="30"
+                        placeholder="Descripción del mantenimiento realizado">
                     </textarea>
                 </div>
             </div>

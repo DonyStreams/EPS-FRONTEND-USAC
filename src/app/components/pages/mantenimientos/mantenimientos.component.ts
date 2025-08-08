@@ -5,170 +5,7 @@ import { MantenimientoService, Mantenimiento, Equipo, Proveedor, TipoMantenimien
 
 @Component({
     selector: 'app-mantenimientos',
-    template: `
-        <div class="grid">
-            <div class="col-12">
-                <div class="card px-6 py-6">
-                    <p-toast></p-toast>
-                    
-                    <p-toolbar styleClass="mb-4">
-                        <ng-template pTemplate="left">
-                            <div class="my-2">
-                                <button pButton pRipple label="Nuevo Mantenimiento" icon="pi pi-plus" class="p-button-success mr-2" 
-                                        (click)="openNew()"></button>
-                                <button pButton pRipple label="Eliminar" icon="pi pi-trash" class="p-button-danger" 
-                                        (click)="deleteSelectedMantenimientos()" 
-                                        [disabled]="!selectedMantenimientos || !selectedMantenimientos.length"></button>
-                            </div>
-                        </ng-template>
-
-                        <ng-template pTemplate="right">
-                            <button pButton pRipple label="Exportar" icon="pi pi-upload" class="p-button-help" 
-                                    (click)="exportMantenimientos()"></button>
-                        </ng-template>
-                    </p-toolbar>
-
-                    <!-- TABLA DE PRIMENG -->
-                    <p-table #dt [value]="mantenimientos" [columns]="cols" responsiveLayout="scroll" 
-                             [rows]="10" [globalFilterFields]="['descripcion','proveedor.nombre','frecuencia']" 
-                             [loading]="loading" [paginator]="true" [rowsPerPageOptions]="rowsPerPageOptions" 
-                             [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mantenimientos"
-                             [(selection)]="selectedMantenimientos" selectionMode="multiple" [rowHover]="true" dataKey="idContrato">
-                        
-                        <ng-template pTemplate="caption">
-                            <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                                <h5 class="m-0">Gestión de Mantenimientos</h5>
-                                <span class="block mt-2 md:mt-0 p-input-icon-left">
-                                    <i class="pi pi-search"></i>
-                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" 
-                                           placeholder="Buscar..." class="w-full sm:w-auto"/>
-                                </span>
-                            </div>
-                        </ng-template>
-                        
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th style="width: 3rem">
-                                    <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-                                </th>
-                                <th pSortableColumn="descripcion">Descripción <p-sortIcon field="descripcion"></p-sortIcon></th>
-                                <th pSortableColumn="proveedor.nombre">Proveedor <p-sortIcon field="proveedor.nombre"></p-sortIcon></th>
-                                <th pSortableColumn="fechaInicio">Fecha Inicio <p-sortIcon field="fechaInicio"></p-sortIcon></th>
-                                <th pSortableColumn="fechaFin">Fecha Fin <p-sortIcon field="fechaFin"></p-sortIcon></th>
-                                <th pSortableColumn="frecuencia">Frecuencia <p-sortIcon field="frecuencia"></p-sortIcon></th>
-                                <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
-                                <th>Acciones</th>
-                            </tr>
-                        </ng-template>
-                        
-                        <ng-template pTemplate="body" let-mantenimiento>
-                            <tr>
-                                <td>
-                                    <p-tableCheckbox [value]="mantenimiento"></p-tableCheckbox>
-                                </td>
-                                <td style="width:14%; min-width:10rem;">
-                                    <span class="p-column-title">Descripción</span>
-                                    {{mantenimiento.descripcion}}
-                                </td>
-                                <td style="width:14%; min-width:10rem;">
-                                    <span class="p-column-title">Proveedor</span>
-                                    {{mantenimiento.proveedor?.nombre || 'Sin proveedor'}}
-                                </td>
-                                <td style="width:14%; min-width:8rem;">
-                                    <span class="p-column-title">Fecha Inicio</span>
-                                    {{formatDate(mantenimiento.fechaInicio)}}
-                                </td>
-                                <td style="width:14%; min-width:8rem;">
-                                    <span class="p-column-title">Fecha Fin</span>
-                                    {{formatDate(mantenimiento.fechaFin)}}
-                                </td>
-                                <td style="width:14%; min-width:10rem;">
-                                    <span class="p-column-title">Frecuencia</span>
-                                    <p-tag [value]="mantenimiento.frecuencia || 'Sin frecuencia'" severity="info"></p-tag>
-                                </td>
-                                <td style="width:14%; min-width:10rem;">
-                                    <span class="p-column-title">Estado</span>
-                                    <p-tag [value]="getEstadoText(mantenimiento.estado)" 
-                                           [severity]="getEstadoSeverity(mantenimiento.estado)"></p-tag>
-                                </td>
-                                <td>
-                                    <div class="flex">
-                                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" 
-                                                (click)="editMantenimiento(mantenimiento)"></button>
-                                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" 
-                                                (click)="deleteMantenimiento(mantenimiento)"></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </ng-template>
-                        
-                        <ng-template pTemplate="emptymessage">
-                            <tr>
-                                <td colspan="8" class="text-center">No se encontraron mantenimientos</td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Diálogo simple para crear mantenimiento -->
-        <p-dialog [(visible)]="mantenimientoDialog" [style]="{width: '500px'}" header="Nuevo Mantenimiento" 
-                  [modal]="true" class="p-fluid">
-            <ng-template pTemplate="content">
-                <div class="field">
-                    <label for="descripcion">Descripción *</label>
-                    <input type="text" pInputText id="descripcion" [(ngModel)]="mantenimiento.descripcion" 
-                           required autofocus [class.ng-invalid]="submitted && !mantenimiento.descripcion" />
-                </div>
-                
-                <div class="field">
-                    <label for="fechaInicio">Fecha Inicio *</label>
-                    <p-calendar [(ngModel)]="mantenimiento.fechaInicio" dateFormat="dd/mm/yy" 
-                                [showIcon]="true" inputId="fechaInicio"></p-calendar>
-                </div>
-                
-                <div class="field">
-                    <label for="fechaFin">Fecha Fin *</label>
-                    <p-calendar [(ngModel)]="mantenimiento.fechaFin" dateFormat="dd/mm/yy" 
-                                [showIcon]="true" inputId="fechaFin"></p-calendar>
-                </div>
-                
-                <div class="field">
-                    <label for="frecuencia">Frecuencia *</label>
-                    <p-dropdown [options]="frecuenciaOptions" [(ngModel)]="mantenimiento.frecuencia" 
-                                placeholder="Seleccionar frecuencia"></p-dropdown>
-                </div>
-                
-                <div class="field">
-                    <label for="proveedor">Proveedor *</label>
-                    <p-dropdown [options]="proveedoresDisponibles" [(ngModel)]="mantenimiento.proveedor" 
-                                optionLabel="nombre" placeholder="Seleccionar proveedor"></p-dropdown>
-                </div>
-            </ng-template>
-
-            <ng-template pTemplate="footer">
-                <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" 
-                        (click)="hideDialog()"></button>
-                <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" 
-                        (click)="saveMantenimiento()"></button>
-            </ng-template>
-        </p-dialog>
-
-        <!-- Diálogo de confirmación para eliminar -->
-        <p-dialog [(visible)]="deleteMantenimientoDialog" header="Confirmar" [modal]="true" [style]="{width:'450px'}">
-            <div class="flex align-items-center justify-content-center">
-                <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-                <span *ngIf="mantenimiento">¿Está seguro que desea eliminar <b>{{mantenimiento.descripcion}}</b>?</span>
-            </div>
-            <ng-template pTemplate="footer">
-                <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" 
-                        (click)="deleteMantenimientoDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" 
-                        (click)="confirmDelete()"></button>
-            </ng-template>
-        </p-dialog>
-    `,
+    templateUrl: './mantenimientos.component.html',
     providers: [MessageService, ConfirmationService]
 })
 export class MantenimientosComponent implements OnInit {
@@ -176,10 +13,12 @@ export class MantenimientosComponent implements OnInit {
     mantenimientoDialog: boolean = false;
     deleteMantenimientoDialog: boolean = false;
     deleteMantenimientosDialog: boolean = false;
+    equiposDialog: boolean = false;
 
     mantenimientos: Mantenimiento[] = [];
     mantenimiento: Mantenimiento = this.getEmptyMantenimiento();
     selectedMantenimientos: Mantenimiento[] = [];
+    equiposSeleccionados: Equipo[] = [];
 
     equiposDisponibles: Equipo[] = [];
     proveedoresDisponibles: Proveedor[] = [];
@@ -187,6 +26,7 @@ export class MantenimientosComponent implements OnInit {
 
     submitted: boolean = false;
     loading: boolean = false;
+    loadingEquipos: boolean = false;
 
     cols: any[] = [];
     frecuenciaOptions: any[] = [];
@@ -218,6 +58,10 @@ export class MantenimientosComponent implements OnInit {
                 console.log('[Mantenimientos] Primer mantenimiento:', data[0]);
                 if (data[0]) {
                     console.log('[Mantenimientos] Estructura del objeto:', Object.keys(data[0]));
+                    console.log('[Mantenimientos] fechaInicio:', data[0].fechaInicio, typeof data[0].fechaInicio);
+                    console.log('[Mantenimientos] fechaFin:', data[0].fechaFin, typeof data[0].fechaFin);
+                    console.log('[Mantenimientos] equipos:', data[0].equipos);
+                    console.log('[Mantenimientos] equiposCompletos:', data[0].equiposCompletos);
                 }
                 this.mantenimientos = data;
                 this.loading = false;
@@ -284,6 +128,7 @@ export class MantenimientosComponent implements OnInit {
             { field: 'fechaInicio', header: 'Fecha Inicio' },
             { field: 'fechaFin', header: 'Fecha Fin' },
             { field: 'frecuencia', header: 'Frecuencia' },
+            { field: 'equipos', header: 'Equipos' },
             { field: 'estado', header: 'Estado' }
         ];
     }
@@ -323,6 +168,14 @@ export class MantenimientosComponent implements OnInit {
      */
     editMantenimiento(mantenimiento: Mantenimiento) {
         this.mantenimiento = { ...mantenimiento };
+        
+        // Si el mantenimiento tiene equipos completos del backend, extraer solo los IDs
+        if (this.mantenimiento.equiposCompletos && this.mantenimiento.equiposCompletos.length > 0) {
+            this.mantenimiento.equipos = this.mantenimiento.equiposCompletos.map(equipo => equipo.idEquipo);
+        } else if (!this.mantenimiento.equipos) {
+            this.mantenimiento.equipos = [];
+        }
+        
         this.mantenimientoDialog = true;
     }
 
@@ -385,7 +238,7 @@ export class MantenimientosComponent implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Error al eliminar mantenimiento'
+                    detail: 'No se pudo eliminar el mantenimiento. Puede tener ejecuciones asociadas.'
                 });
             }
         });
@@ -396,6 +249,7 @@ export class MantenimientosComponent implements OnInit {
      */
     hideDialog() {
         this.mantenimientoDialog = false;
+        this.mantenimiento = this.getEmptyMantenimiento();
         this.submitted = false;
     }
 
@@ -406,15 +260,31 @@ export class MantenimientosComponent implements OnInit {
         this.submitted = true;
 
         if (this.isValidMantenimiento()) {
+            // Preparar el payload para el backend - NO incluir equipos en la creación inicial
+            const payload = {
+                descripcion: this.mantenimiento.descripcion,
+                fechaInicio: this.mantenimiento.fechaInicio,
+                fechaFin: this.mantenimiento.fechaFin,
+                frecuencia: this.mantenimiento.frecuencia,
+                estado: this.mantenimiento.estado,
+                proveedor: this.mantenimiento.proveedor
+                // NO incluir equipos aquí - se manejarán por separado
+            };
+
+            console.log('[Mantenimiento] Payload a enviar:', payload);
+
             if (this.mantenimiento.idContrato) {
-                // Actualizar
+                // Actualizar existente
                 this.mantenimientoService.updateMantenimiento(
                     this.mantenimiento.idContrato, 
-                    this.mantenimiento
+                    payload
                 ).subscribe({
                     next: (updatedMantenimiento) => {
+                        // Actualizar en la lista
                         const index = this.findIndexById(this.mantenimiento.idContrato!);
-                        this.mantenimientos[index] = updatedMantenimiento;
+                        if (index !== -1) {
+                            this.mantenimientos[index] = updatedMantenimiento;
+                        }
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Éxito',
@@ -423,6 +293,7 @@ export class MantenimientosComponent implements OnInit {
                         this.hideDialog();
                     },
                     error: (error) => {
+                        console.error('[Mantenimiento] Error al actualizar:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -432,21 +303,32 @@ export class MantenimientosComponent implements OnInit {
                 });
             } else {
                 // Crear nuevo
-                this.mantenimientoService.createMantenimiento(this.mantenimiento).subscribe({
+                this.mantenimientoService.createMantenimiento(payload).subscribe({
                     next: (newMantenimiento) => {
+                        console.log('[Mantenimiento] Respuesta del backend al crear:', newMantenimiento);
+                        console.log('[Mantenimiento] Estructura respuesta:', Object.keys(newMantenimiento));
+                        console.log('[Mantenimiento] fechaInicio respuesta:', newMantenimiento.fechaInicio);
+                        console.log('[Mantenimiento] fechaFin respuesta:', newMantenimiento.fechaFin);
+                        console.log('[Mantenimiento] equipos respuesta:', newMantenimiento.equipos);
+                        
                         this.mantenimientos.push(newMantenimiento);
                         this.messageService.add({
                             severity: 'success',
                             summary: 'Éxito',
-                            detail: 'Mantenimiento creado'
+                            detail: 'Mantenimiento creado exitosamente'
                         });
                         this.hideDialog();
+                        
+                        // Recargar la lista para obtener datos completos del backend
+                        console.log('[Mantenimiento] Recargando lista...');
+                        this.loadMantenimientos();
                     },
                     error: (error) => {
+                        console.error('[Mantenimiento] Error al crear:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
-                            detail: 'Error al crear mantenimiento'
+                            detail: 'Error al crear mantenimiento. Verifique los datos.'
                         });
                     }
                 });
@@ -483,7 +365,8 @@ export class MantenimientosComponent implements OnInit {
             fechaInicio: new Date(),
             fechaFin: new Date(),
             frecuencia: '',
-            estado: true
+            estado: true,
+            equipos: [] // Array de IDs de equipos seleccionados
         };
     }
 
@@ -497,10 +380,86 @@ export class MantenimientosComponent implements OnInit {
     /**
      * Formatear fecha para mostrar
      */
-    formatDate(date: Date | string): string {
-        if (!date) return '';
-        const d = new Date(date);
-        return d.toLocaleDateString('es-GT');
+    formatDate(date: Date | string | null | undefined): string {
+        if (!date) return 'Sin fecha';
+        
+        console.log('[formatDate] Input:', date, 'Tipo:', typeof date);
+        
+        let d: Date;
+        
+        if (typeof date === 'string') {
+            // Limpiar la cadena de espacios en blanco y sufijos problemáticos
+            let cleanDate = date.trim();
+            
+            // Remover el sufijo [UTC] que puede venir del backend
+            if (cleanDate.endsWith('[UTC]')) {
+                cleanDate = cleanDate.replace('[UTC]', '');
+                console.log('[formatDate] Removido [UTC], nueva fecha:', cleanDate);
+            }
+            
+            // Manejar diferentes formatos de string de fecha
+            if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
+                // Formato YYYY-MM-DD
+                d = new Date(cleanDate + 'T00:00:00');
+            } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(cleanDate)) {
+                // Formato ISO completo (con o sin Z)
+                d = new Date(cleanDate);
+            } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleanDate)) {
+                // Formato DD/MM/YYYY
+                const parts = cleanDate.split('/');
+                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else if (/^\d{2}-\d{2}-\d{4}$/.test(cleanDate)) {
+                // Formato DD-MM-YYYY
+                const parts = cleanDate.split('-');
+                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDate)) {
+                // Formato D/M/YYYY o DD/M/YYYY
+                const parts = cleanDate.split('/');
+                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else if (/^\d{4}\/\d{2}\/\d{2}$/.test(cleanDate)) {
+                // Formato YYYY/MM/DD
+                const parts = cleanDate.split('/');
+                d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else if (/^\[object Date\]$/.test(cleanDate)) {
+                // Si es un objeto Date serializado mal
+                console.warn('[formatDate] Fecha serializada incorrectamente:', cleanDate);
+                return 'Error de formato';
+            } else {
+                // Intentar parsearlo directamente
+                d = new Date(cleanDate);
+            }
+        } else if (date instanceof Date) {
+            d = date;
+        } else if (typeof date === 'number') {
+            // Si es un timestamp
+            d = new Date(date);
+        } else if (date && typeof date === 'object') {
+            // Si es un objeto con propiedades de fecha
+            console.warn('[formatDate] Objeto fecha no estándar:', date);
+            if ((date as any).time) {
+                d = new Date((date as any).time);
+            } else if ((date as any).year && (date as any).month && (date as any).day) {
+                d = new Date((date as any).year, (date as any).month - 1, (date as any).day);
+            } else {
+                return 'Formato no reconocido';
+            }
+        } else {
+            console.warn('[formatDate] Tipo de fecha no reconocido:', typeof date, date);
+            return 'Tipo inválido';
+        }
+        
+        console.log('[formatDate] Fecha parseada:', d, 'Valid:', !isNaN(d.getTime()));
+        
+        if (isNaN(d.getTime())) {
+            console.warn('[formatDate] Fecha inválida después del parseo:', date);
+            return 'Error al procesar';
+        }
+        
+        return d.toLocaleDateString('es-GT', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
     }
 
     /**
@@ -515,6 +474,137 @@ export class MantenimientosComponent implements OnInit {
      */
     getEstadoSeverity(estado: boolean): string {
         return estado ? 'success' : 'danger';
+    }
+
+    /**
+     * Obtener nombres de equipos asociados al mantenimiento
+     */
+    getEquiposNames(mantenimiento: Mantenimiento): string {
+        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
+            // Si tiene equipos completos del backend, usar esos nombres
+            return mantenimiento.equiposCompletos.map(equipo => equipo.nombre).join(', ');
+        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
+            // Si solo tiene IDs, buscar los nombres en equiposDisponibles
+            const nombres = mantenimiento.equipos.map(idEquipo => {
+                const equipo = this.equiposDisponibles.find(e => e.idEquipo === idEquipo);
+                return equipo ? equipo.nombre : `ID: ${idEquipo}`;
+            });
+            return nombres.join(', ');
+        } else if ((mantenimiento as any).contratoEquipos && (mantenimiento as any).contratoEquipos.length > 0) {
+            // Si viene como contratoEquipos
+            return (mantenimiento as any).contratoEquipos.map((ce: any) => 
+                ce.equipo?.nombre || ce.nombre || 'Equipo sin nombre'
+            ).join(', ');
+        } else if ((mantenimiento as any).equiposAsociados && (mantenimiento as any).equiposAsociados.length > 0) {
+            // Si viene como equiposAsociados
+            return (mantenimiento as any).equiposAsociados.map((ea: any) => 
+                ea.nombre || ea.equipo?.nombre || 'Equipo sin nombre'
+            ).join(', ');
+        } else if ((mantenimiento as any).listaEquipos && (mantenimiento as any).listaEquipos.length > 0) {
+            // Si viene como listaEquipos
+            return (mantenimiento as any).listaEquipos.map((le: any) => 
+                le.nombre || le.equipo?.nombre || 'Equipo sin nombre'
+            ).join(', ');
+        }
+        return '';
+    }
+
+    /**
+     * Verificar si el mantenimiento tiene equipos
+     */
+    hasEquipos(mantenimiento: Mantenimiento): boolean {
+        // TEMPORAL: Como el backend no está enviando equipos por la configuración LAZY,
+        // vamos a mostrar siempre un botón que permita buscar/ver equipos
+        // TODO: Cuando el backend se configure con EAGER o endpoint específico, usar la lógica original
+        return true; // Siempre mostrar el botón de equipos para que el usuario pueda ver/agregar
+    }
+
+    /**
+     * Obtener el número de equipos asociados
+     */
+    getEquiposCount(mantenimiento: Mantenimiento): number {
+        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
+            return mantenimiento.equiposCompletos.length;
+        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
+            return mantenimiento.equipos.length;
+        } else if ((mantenimiento as any).contratoEquipos && (mantenimiento as any).contratoEquipos.length > 0) {
+            return (mantenimiento as any).contratoEquipos.length;
+        } else if ((mantenimiento as any).equiposAsociados && (mantenimiento as any).equiposAsociados.length > 0) {
+            return (mantenimiento as any).equiposAsociados.length;
+        } else if ((mantenimiento as any).listaEquipos && (mantenimiento as any).listaEquipos.length > 0) {
+            return (mantenimiento as any).listaEquipos.length;
+        }
+        // Retornar 0 pero mostrar como "Ver" en lugar de "0 equipos"
+        return 0;
+    }
+
+    /**
+     * Obtener texto para el botón de equipos - SIEMPRE "Ver equipos"
+     */
+    getEquiposButtonText(mantenimiento: Mantenimiento): string {
+        return 'Ver equipos';
+    }
+
+    /**
+     * Ver equipos asociados al mantenimiento
+     */
+    verEquipos(mantenimiento: Mantenimiento) {
+        console.log('[verEquipos] Iniciando para contrato:', mantenimiento.idContrato, mantenimiento.descripcion);
+        
+        // Guardar referencia del mantenimiento actual para el modal
+        this.mantenimiento = { ...mantenimiento };
+        
+        // Abrir el modal inmediatamente
+        this.equiposDialog = true;
+        
+        // Intentar usar equipos ya cargados primero
+        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
+            // Si ya tiene los equipos completos del backend
+            console.log('[verEquipos] Usando equiposCompletos:', mantenimiento.equiposCompletos);
+            this.equiposSeleccionados = [...mantenimiento.equiposCompletos];
+        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
+            // Si solo tiene IDs, buscar los objetos completos
+            console.log('[verEquipos] Buscando equipos por IDs:', mantenimiento.equipos);
+            this.equiposSeleccionados = mantenimiento.equipos.map(idEquipo => {
+                return this.equiposDisponibles.find(e => e.idEquipo === idEquipo);
+            }).filter(equipo => equipo !== undefined) as Equipo[];
+        } else {
+            // No hay equipos en el objeto - consultar al backend directamente
+            console.log('[verEquipos] Consultando equipos al backend para contrato:', mantenimiento.idContrato);
+            this.equiposSeleccionados = []; // Limpiar primero
+            this.loadingEquipos = true; // Activar loading
+            
+            if (mantenimiento.idContrato) {
+                this.mantenimientoService.getEquiposByContrato(mantenimiento.idContrato).subscribe({
+                    next: (equipos) => {
+                        console.log('[verEquipos] Equipos recibidos del backend:', equipos);
+                        this.equiposSeleccionados = equipos;
+                        this.loadingEquipos = false;
+                        
+                        // Actualizar también el objeto mantenimiento para futuras consultas
+                        this.mantenimiento.equiposCompletos = equipos;
+                    },
+                    error: (error) => {
+                        console.error('[verEquipos] Error al cargar equipos:', error);
+                        this.equiposSeleccionados = [];
+                        this.loadingEquipos = false;
+                        
+                        // Mostrar mensaje informativo
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'No se pudieron cargar los equipos asociados o no hay equipos para este contrato.'
+                        });
+                    }
+                });
+            } else {
+                console.warn('[verEquipos] No hay ID de contrato para consultar equipos');
+                this.equiposSeleccionados = [];
+                this.loadingEquipos = false;
+            }
+        }
+        
+        console.log('[verEquipos] Modal abierto, equipos iniciales:', this.equiposSeleccionados);
     }
 
     /**

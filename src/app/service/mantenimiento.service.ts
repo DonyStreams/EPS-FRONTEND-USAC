@@ -11,7 +11,8 @@ export interface Mantenimiento {
   frecuencia: string;
   estado?: boolean;
   proveedor?: Proveedor;
-  equipos?: Equipo[];
+  equipos?: number[]; // Array de IDs de equipos seleccionados para envío al backend
+  equiposCompletos?: Equipo[]; // Array de objetos Equipo completos recibidos del backend
   tiposMantenimiento?: TipoMantenimiento[];
   fechaCreacion?: Date;
   fechaModificacion?: Date;
@@ -136,5 +137,13 @@ export class MantenimientoService {
    */
   getMantenimientosByProveedor(proveedorId: number): Observable<Mantenimiento[]> {
     return this.http.get<Mantenimiento[]>(`${this.apiUrl}/proveedor/${proveedorId}`);
+  }
+
+  /**
+   * Obtener equipos asociados a un contrato específico
+   */
+  getEquiposByContrato(contratoId: number): Observable<Equipo[]> {
+    const contratoUrl = `${environment.apiUrl}/contratos`;
+    return this.http.get<Equipo[]>(`${contratoUrl}/${contratoId}/equipos`);
   }
 }
