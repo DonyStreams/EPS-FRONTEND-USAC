@@ -4,14 +4,14 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface TipoMantenimiento {
-    id_tipo?: number;
+    idTipo?: number;
     codigo: string;
     nombre: string;
     estado?: boolean;
-    fecha_creacion?: Date;
-    fecha_modificacion?: Date;
-    usuario_creacion?: number;
-    usuario_modificacion?: number;
+    fechaCreacion?: Date;
+    fechaModificacion?: Date;
+    usuarioCreacion?: number;
+    usuarioModificacion?: number;
 }
 
 @Injectable({

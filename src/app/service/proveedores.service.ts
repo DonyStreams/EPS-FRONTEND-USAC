@@ -7,18 +7,11 @@ export interface Proveedor {
     idProveedor?: number;
     nit: string;
     nombre: string;
-    estado: boolean;
+    estado?: boolean;
     fechaCreacion?: Date;
     fechaModificacion?: Date;
     usuarioCreacion?: number;
     usuarioModificacion?: number;
-    
-    // Propiedades para el formulario (snake_case)
-    id_proveedor?: number;
-    fecha_creacion?: Date;
-    fecha_modificacion?: Date;
-    usuario_creacion?: number;
-    usuario_modificacion?: number;
 }
 
 @Injectable({
