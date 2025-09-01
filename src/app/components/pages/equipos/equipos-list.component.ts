@@ -5,6 +5,7 @@ import { KeycloakService } from '../../../service/keycloak.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
 import { environment } from '../../../../environments/environment';
+import { HttpClient } from '@angular/common/http';
 
 interface EstadoOption {
   label: string;
@@ -77,7 +78,8 @@ export class EquiposListComponent implements OnInit {
   constructor(
     private equiposService: EquiposService, 
     private ftpService: FtpService,
-    private keycloakService: KeycloakService
+    private keycloakService: KeycloakService,
+    private http: HttpClient
   ) {}
 
   // Métodos de permisos usando Keycloak
@@ -110,13 +112,13 @@ export class EquiposListComponent implements OnInit {
     // Si la ruta empieza con /imagenes/equipos/, extraer solo el nombre del archivo
     if (rutaImagen.startsWith('/imagenes/equipos/')) {
       const filename = rutaImagen.substring('/imagenes/equipos/'.length);
-      return `${environment.apiUrl}/ftp/image/${filename}`;
+      return `${environment.apiUrl}/imagenes/view/${filename}`;
     } else if (rutaImagen.startsWith('http')) {
       // Si ya es una URL completa, usarla directamente
       return rutaImagen;
     } else {
       // Asumir que es solo el nombre del archivo
-      return `${environment.apiUrl}/ftp/image/${rutaImagen}`;
+      return `${environment.apiUrl}/imagenes/view/${rutaImagen}`;
     }
   }
 
@@ -179,33 +181,26 @@ export class EquiposListComponent implements OnInit {
   registrarEquipo() {
     this.mensaje = null;
     this.errorImagen = null;
+    
     if (this.nuevoEquipo.fotografia instanceof File) {
-      this.ftpService.subirArchivo(this.nuevoEquipo.fotografia).subscribe({
-        next: (resp) => {
-          let ruta = '';
-          try {
-            ruta = JSON.parse(resp).ruta;
-          } catch {
-            ruta = resp;
-          }
-          this.nuevoEquipo.fotografia = ruta;
-          this.guardarEquipo(this.nuevoEquipo);
-        },
-        error: (err) => {
-          // Resetear el componente fileUpload para permitir seleccionar otra imagen
-          if (this.fileUpload) {
-            this.fileUpload.clear();
-          }
-          
-          // Limpiar la previsualización y el archivo del modelo
-          this.previewUrl = null;
-          this.nuevoEquipo.fotografia = null;
-          
-          if (err.status === 409) {
-            this.errorImagen = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
-          } else {
-            this.errorImagen = 'Error al subir la imagen al servidor FTP.';
-          }
+      // 🆕 USAR SISTEMA LOCAL DE IMÁGENES en lugar de FTP
+      this.subirImagenLocal(this.nuevoEquipo.fotografia).then((nombreArchivo) => {
+        this.nuevoEquipo.fotografia = nombreArchivo;
+        this.guardarEquipo(this.nuevoEquipo);
+      }).catch((error) => {
+        // Resetear el componente fileUpload para permitir seleccionar otra imagen
+        if (this.fileUpload) {
+          this.fileUpload.clear();
+        }
+        
+        // Limpiar la previsualización y el archivo del modelo
+        this.previewUrl = null;
+        this.nuevoEquipo.fotografia = null;
+        
+        if (error.status === 409) {
+          this.errorImagen = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
+        } else {
+          this.errorImagen = `Error al subir la imagen: ${error.message || 'Error desconocido'}`;
         }
       });
     } else {
@@ -282,33 +277,24 @@ export class EquiposListComponent implements OnInit {
     this.errorImagenEdit = null;
 
     if (this.equipoEditando.fotografia instanceof File) {
-      // Si hay una nueva imagen, subirla primero
-      this.ftpService.subirArchivo(this.equipoEditando.fotografia).subscribe({
-        next: (resp) => {
-          let ruta = '';
-          try {
-            ruta = JSON.parse(resp).ruta;
-          } catch {
-            ruta = resp;
-          }
-          this.equipoEditando!.fotografia = ruta;
-          this.guardarCambiosEquipo();
-        },
-        error: (err) => {
-          // Resetear el componente fileUpload para permitir seleccionar otra imagen
-          if (this.fileUploadEdit) {
-            this.fileUploadEdit.clear();
-          }
-          
-          // Limpiar la previsualización y el archivo del modelo
-          this.previewUrlEdit = null;
-          this.equipoEditando!.fotografia = null;
-          
-          if (err.status === 409) {
-            this.errorImagenEdit = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
-          } else {
-            this.errorImagenEdit = 'Error al subir la imagen al servidor FTP.';
-          }
+      // 🆕 USAR SISTEMA LOCAL DE IMÁGENES en lugar de FTP para edición
+      this.subirImagenLocal(this.equipoEditando.fotografia).then((nombreArchivo) => {
+        this.equipoEditando!.fotografia = nombreArchivo;
+        this.guardarCambiosEquipo();
+      }).catch((error) => {
+        // Resetear el componente fileUpload para permitir seleccionar otra imagen
+        if (this.fileUploadEdit) {
+          this.fileUploadEdit.clear();
+        }
+        
+        // Limpiar la previsualización y el archivo del modelo
+        this.previewUrlEdit = null;
+        this.equipoEditando!.fotografia = null;
+        
+        if (error.status === 409) {
+          this.errorImagenEdit = 'Ya existe una imagen con ese nombre. Cambia el nombre o selecciona otra imagen.';
+        } else {
+          this.errorImagenEdit = `Error al subir la imagen: ${error.message || 'Error desconocido'}`;
         }
       });
     } else {
@@ -412,6 +398,38 @@ export class EquiposListComponent implements OnInit {
         setTimeout(() => this.mensaje = null, 3500);
       }
     }
+  }
+
+  // 🆕 MÉTODO PARA SUBIR IMÁGENES AL SISTEMA LOCAL
+  private subirImagenLocal(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      console.log('📸 Subiendo imagen al sistema local:', file.name);
+      
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Filename': file.name
+      };
+      
+      this.http.post(`${environment.apiUrl}/imagenes/upload`, file, { 
+        headers: headers,
+        responseType: 'text'
+      }).subscribe({
+        next: (response) => {
+          console.log('✅ Imagen subida exitosamente:', response);
+          try {
+            const jsonResponse = JSON.parse(response);
+            resolve(jsonResponse.fileName); // Devolver solo el nombre del archivo
+          } catch (e) {
+            // Si no es JSON válido, asumir que es el nombre del archivo directamente
+            resolve(response);
+          }
+        },
+        error: (error) => {
+          console.error('❌ Error al subir imagen:', error);
+          reject(error);
+        }
+      });
+    });
   }
 }
 

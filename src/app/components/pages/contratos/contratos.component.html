@@ -265,16 +265,17 @@
     
     <div class="mb-4">
         <h6>Subir nuevos archivos</h6>
-        <p-fileUpload name="files" [multiple]="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+        <p class="text-sm text-gray-600 mb-2">Solo se permiten archivos PDF, DOC y DOCX (máximo 10MB cada uno)</p>
+        <p-fileUpload name="files" [multiple]="true" accept=".pdf,.doc,.docx"
                       [maxFileSize]="maxFileSize" (onSelect)="onFileSelect($event)"
                       [showUploadButton]="false" [showCancelButton]="false">
             <ng-template pTemplate="content">
                 <ul *ngIf="uploadedFiles.length > 0">
                     <li *ngFor="let file of uploadedFiles" class="mb-2">
                         <div class="flex align-items-center gap-2">
-                            <i class="pi pi-file text-xl"></i>
+                            <i [class]="archivosService.getIconoArchivo(file.name)" class="text-xl"></i>
                             <span class="font-medium">{{file.name}}</span>
-                            <span class="text-sm text-gray-500">({{(file.size / 1024 / 1024).toFixed(2)}} MB)</span>
+                            <span class="text-sm text-gray-500">({{archivosService.formatearTamano(file.size)}})</span>
                         </div>
                     </li>
                 </ul>

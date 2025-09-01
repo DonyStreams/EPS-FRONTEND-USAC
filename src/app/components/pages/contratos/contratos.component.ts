@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ContratoService, Contrato, EstadisticasContratos } from '../../../service/contrato.service';
 import { ProveedoresService, Proveedor } from '../../../service/proveedores.service';
+import { ArchivosService, ArchivoResponse } from '../../../service/archivos.service';
 
 @Component({
     selector: 'app-contratos',
@@ -49,7 +50,8 @@ export class ContratosComponent implements OnInit {
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private contratoService: ContratoService,
-        private proveedoresService: ProveedoresService
+        private proveedoresService: ProveedoresService,
+        public archivosService: ArchivosService  // 🆕 Hacer público para usar en template
     ) {
         this.contratoForm = this.createForm();
     }
@@ -276,27 +278,123 @@ export class ContratosComponent implements OnInit {
             });
             return;
         }
-        
-        // TODO: Implementar upload real
-        console.log('Subiendo archivos:', this.uploadedFiles);
-        
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: `${this.uploadedFiles.length} archivo(s) subido(s) correctamente`
+
+        // 🆕 IMPLEMENTACIÓN REAL DE SUBIDA DE ARCHIVOS
+        let archivosSubidos = 0;
+        let errores = 0;
+
+        this.uploadedFiles.forEach((file, index) => {
+            // Validar que sea un archivo de contrato válido
+            if (!this.archivosService.esArchivoValidoContrato(file)) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Archivo no válido',
+                    detail: `${file.name}: Solo se permiten archivos PDF, DOC y DOCX`
+                });
+                errores++;
+                return;
+            }
+
+            // Validar tamaño del archivo
+            if (!this.archivosService.validarTamano(file, 10)) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Archivo muy grande',
+                    detail: `${file.name}: El archivo debe ser menor a 10MB`
+                });
+                errores++;
+                return;
+            }
+
+            // Subir archivo al servidor
+            this.archivosService.subirArchivo(file, this.selectedContrato!.id!).subscribe({
+                next: (response: ArchivoResponse) => {
+                    console.log('✅ Archivo subido:', response);
+                    archivosSubidos++;
+                    
+                    // Si es el último archivo, mostrar resumen
+                    if (archivosSubidos + errores === this.uploadedFiles.length) {
+                        this.mostrarResumenSubida(archivosSubidos, errores);
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error al subir archivo:', error);
+                    errores++;
+                    
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error al subir archivo',
+                        detail: `${file.name}: ${error.error?.error || error.message || 'Error desconocido'}`
+                    });
+                    
+                    // Si es el último archivo, mostrar resumen
+                    if (archivosSubidos + errores === this.uploadedFiles.length) {
+                        this.mostrarResumenSubida(archivosSubidos, errores);
+                    }
+                }
+            });
         });
-        
-        this.displayFileDialog = false;
-        this.uploadedFiles = [];
+    }
+
+    private mostrarResumenSubida(exitosos: number, errores: number): void {
+        if (exitosos > 0 && errores === 0) {
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `${exitosos} archivo(s) subido(s) correctamente`
+            });
+            this.displayFileDialog = false;
+            this.uploadedFiles = [];
+            
+            // 🆕 Recargar la lista de contratos para actualizar el contador de archivos
+            this.loadContratos();
+            
+        } else if (exitosos > 0 && errores > 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Parcialmente completado',
+                detail: `${exitosos} archivo(s) subido(s), ${errores} error(es)`
+            });
+        } else if (errores > 0) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: `No se pudo subir ningún archivo (${errores} error(es))`
+            });
+        }
     }
     
     downloadFile(archivo: any): void {
-        // TODO: Implementar descarga de archivos
-        console.log('Descargando archivo:', archivo);
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Descarga',
-            detail: `Descargando ${archivo.nombre}...`
+        console.log('📥 Descargando archivo:', archivo);
+        
+        this.archivosService.descargarArchivo(archivo.nombre).subscribe({
+            next: (blob: Blob) => {
+                // Crear URL temporal para el blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Crear elemento <a> temporal para descargar
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = archivo.nombreOriginal || archivo.nombre;
+                link.click();
+                
+                // Limpiar URL temporal
+                window.URL.revokeObjectURL(url);
+                
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Descarga completada',
+                    detail: `${archivo.nombreOriginal || archivo.nombre} descargado correctamente`
+                });
+            },
+            error: (error) => {
+                console.error('❌ Error al descargar archivo:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error de descarga',
+                    detail: `No se pudo descargar ${archivo.nombreOriginal || archivo.nombre}`
+                });
+            }
         });
     }
     

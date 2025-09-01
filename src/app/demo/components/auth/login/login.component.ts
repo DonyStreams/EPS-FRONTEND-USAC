@@ -28,6 +28,8 @@ export class LoginComponent implements OnInit {
     // 🆕 Propiedades para testing FTP
     testingFTP = false;
     testingUpload = false;
+    testingImagenes = false;
+    testingImageUpload = false;
     private apiUrl = 'http://localhost:8081/MantenimientosBackend/api';
 
     constructor(
@@ -190,5 +192,96 @@ Sistema: Mantenimientos INACIF`;
                 this.testingUpload = false;
             }
         });
+    }
+
+    // 🆕 MÉTODOS DE TESTING IMÁGENES LOCAL
+    testImageSystem() {
+        console.log('🔵 [Image Test] Iniciando test de sistema de imágenes...');
+        this.testingImagenes = true;
+        
+        this.http.get(`${this.apiUrl}/imagenes/test`, { responseType: 'text' })
+            .subscribe({
+                next: (response) => {
+                    console.log('🟢 [Image Test] Sistema OK:', response);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: '✅ Sistema Imágenes OK',
+                        detail: 'Sistema de almacenamiento local funcionando',
+                        life: 5000
+                    });
+                    this.testingImagenes = false;
+                },
+                error: (error) => {
+                    console.error('🔴 [Image Test] Error:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: '❌ Sistema Imágenes Falló',
+                        detail: `Error: ${error.error || error.message}`,
+                        life: 8000
+                    });
+                    this.testingImagenes = false;
+                }
+            });
+    }
+    
+    testImageUpload() {
+        console.log('🔵 [Image Test] Iniciando test de upload imagen...');
+        this.testingImageUpload = true;
+        
+        // Crear una imagen de prueba (1x1 pixel PNG)
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+        
+        // Crear un gradiente simple como imagen de prueba
+        const gradient = ctx!.createLinearGradient(0, 0, 100, 100);
+        gradient.addColorStop(0, '#ff0000');
+        gradient.addColorStop(1, '#0000ff');
+        ctx!.fillStyle = gradient;
+        ctx!.fillRect(0, 0, 100, 100);
+        
+        // Agregar texto
+        ctx!.fillStyle = 'white';
+        ctx!.font = '12px Arial';
+        ctx!.fillText('TEST', 35, 55);
+        
+        // Convertir a blob
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const fileName = `test_image_${Date.now()}.png`;
+                
+                // Preparar headers
+                const headers = {
+                    'X-Filename': fileName
+                };
+                
+                this.http.post(`${this.apiUrl}/imagenes/upload`, blob, { 
+                    headers: headers,
+                    responseType: 'text'
+                }).subscribe({
+                    next: (response) => {
+                        console.log('🟢 [Image Test] Upload exitoso:', response);
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: '✅ Imagen Upload OK',
+                            detail: `Imagen ${fileName} subida correctamente`,
+                            life: 5000
+                        });
+                        this.testingImageUpload = false;
+                    },
+                    error: (error) => {
+                        console.error('🔴 [Image Test] Error de upload:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: '❌ Imagen Upload Falló',
+                            detail: `Error: ${error.error || error.message}`,
+                            life: 8000
+                        });
+                        this.testingImageUpload = false;
+                    }
+                });
+            }
+        }, 'image/png');
     }
 }

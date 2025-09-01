@@ -51,6 +51,25 @@
                                             (click)="testFTPUpload()"></button>
                                 </div>
                             </div>
+
+                            <!-- 🆕 NUEVOS BOTONES IMÁGENES LOCAL -->
+                            <div class="mt-3 p-2 surface-300 border-round">
+                                <div class="text-center mb-2">
+                                    <strong>📸 Testing Imágenes Local</strong>
+                                </div>
+                                <div class="flex flex-column gap-2">
+                                    <button pButton pRipple label="Probar Sistema Imágenes" 
+                                            icon="pi pi-image" 
+                                            class="p-button-sm p-button-info" 
+                                            [loading]="testingImagenes"
+                                            (click)="testImageSystem()"></button>
+                                    <button pButton pRipple label="Subir Imagen Test" 
+                                            icon="pi pi-camera" 
+                                            class="p-button-sm p-button-secondary" 
+                                            [loading]="testingImageUpload"
+                                            (click)="testImageUpload()"></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
