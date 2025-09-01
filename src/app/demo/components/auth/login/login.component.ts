@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { LayoutService } from 'src/app/layout/service/app.layout.service';
 import { KeycloakService } from 'src/app/service/keycloak.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
     selector: 'app-login',
     templateUrl: './login.component.html',
+    providers: [MessageService],
     styles: [`
         :host ::ng-deep .pi-eye,
         :host ::ng-deep .pi-eye-slash {
@@ -21,11 +24,18 @@ export class LoginComponent implements OnInit {
     password!: string;
     email!: string;
     loading = false;
+    
+    // 🆕 Propiedades para testing FTP
+    testingFTP = false;
+    testingUpload = false;
+    private apiUrl = 'http://localhost:8081/MantenimientosBackend/api';
 
     constructor(
         public layoutService: LayoutService,
         private keycloakService: KeycloakService,
-        private router: Router
+        private router: Router,
+        private http: HttpClient,
+        private messageService: MessageService
     ) { }
 
     ngOnInit() {
@@ -106,5 +116,79 @@ export class LoginComponent implements OnInit {
     testProtectedRoute() {
         console.log('[Testing] Probando acceso a ruta protegida...');
         this.router.navigate(['/administracion/equipos']);
+    }
+    
+    // 🆕 MÉTODOS DE TESTING FTP
+    testFTPConnection() {
+        console.log('🔵 [FTP Test] Iniciando test de conexión FTP...');
+        this.testingFTP = true;
+        
+        this.http.get(`${this.apiUrl}/ftp/test`, { responseType: 'text' })
+            .subscribe({
+                next: (response) => {
+                    console.log('🟢 [FTP Test] Conexión exitosa:', response);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: '✅ FTP Conexión OK',
+                        detail: response,
+                        life: 5000
+                    });
+                    this.testingFTP = false;
+                },
+                error: (error) => {
+                    console.error('🔴 [FTP Test] Error de conexión:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: '❌ FTP Conexión Falló',
+                        detail: `Error: ${error.error || error.message}`,
+                        life: 8000
+                    });
+                    this.testingFTP = false;
+                }
+            });
+    }
+    
+    testFTPUpload() {
+        console.log('🔵 [FTP Test] Iniciando test de upload FTP...');
+        this.testingUpload = true;
+        
+        // Crear un archivo de prueba simple
+        const testContent = `Archivo de prueba FTP
+Fecha: ${new Date().toISOString()}
+Sistema: Mantenimientos INACIF`;
+        
+        const blob = new Blob([testContent], { type: 'text/plain' });
+        const fileName = `test_${Date.now()}.txt`;
+        
+        // Preparar headers
+        const headers = {
+            'X-Filename': fileName
+        };
+        
+        this.http.post(`${this.apiUrl}/ftp/upload`, blob, { 
+            headers: headers,
+            responseType: 'text'
+        }).subscribe({
+            next: (response) => {
+                console.log('🟢 [FTP Test] Upload exitoso:', response);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: '✅ FTP Upload OK',
+                    detail: `Archivo ${fileName} subido correctamente`,
+                    life: 5000
+                });
+                this.testingUpload = false;
+            },
+            error: (error) => {
+                console.error('🔴 [FTP Test] Error de upload:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: '❌ FTP Upload Falló',
+                    detail: `Error: ${error.error || error.message}`,
+                    life: 8000
+                });
+                this.testingUpload = false;
+            }
+        });
     }
 }

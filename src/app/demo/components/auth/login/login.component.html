@@ -32,6 +32,25 @@
                                     icon="pi pi-shield" 
                                     class="p-button-sm p-button-warning" 
                                     (click)="testProtectedRoute()"></button>
+                            
+                            <!-- 🆕 NUEVOS BOTONES FTP -->
+                            <div class="mt-3 p-2 surface-200 border-round">
+                                <div class="text-center mb-2">
+                                    <strong>🔧 Testing FTP</strong>
+                                </div>
+                                <div class="flex flex-column gap-2">
+                                    <button pButton pRipple label="Probar Conexión FTP" 
+                                            icon="pi pi-server" 
+                                            class="p-button-sm p-button-success" 
+                                            [loading]="testingFTP"
+                                            (click)="testFTPConnection()"></button>
+                                    <button pButton pRipple label="Probar Upload FTP" 
+                                            icon="pi pi-upload" 
+                                            class="p-button-sm p-button-help" 
+                                            [loading]="testingUpload"
+                                            (click)="testFTPUpload()"></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -39,3 +58,6 @@
         </div>
     </div>
 </div>
+
+<!-- 🆕 Toast para mostrar mensajes -->
+<p-toast position="top-right"></p-toast>
