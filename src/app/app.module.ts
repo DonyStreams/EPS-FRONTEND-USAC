@@ -20,6 +20,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { HasRoleDirective } from './directives/has-role.directive';
 import { ButtonModule } from 'primeng/button';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { AccesoDenegadoComponent } from './components/auth/acceso-denegado/acceso-denegado.component';
 
 // Función para inicializar Keycloak
 export function initializeKeycloak(keycloak: KeycloakService) {
@@ -27,7 +28,7 @@ export function initializeKeycloak(keycloak: KeycloakService) {
 }
 
 @NgModule({
-    declarations: [AppComponent, NotfoundComponent, HasRoleDirective],
+    declarations: [AppComponent, NotfoundComponent, HasRoleDirective, AccesoDenegadoComponent],
     imports: [AppRoutingModule, AppLayoutModule, HttpClientModule, ButtonModule],
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },

@@ -297,23 +297,42 @@ export class UsuariosComponent implements OnInit {
             return;
         }
 
-        // Mostrar información básica de Keycloak
-        const keycloakInfo = `Usuario: ${this.keycloakService.getUsername()}\nEmail: ${this.keycloakService.getUserEmail()}\nToken válido: ${!this.keycloakService.isTokenExpired()}`;
-        console.log('Información de Keycloak:', keycloakInfo);
-
+        console.log('🔍 Obteniendo información del usuario actual...');
+        
         this.usuarioService.getCurrentUser().subscribe({
             next: (user) => {
-                const syncStatus = user.id ? 'Sí' : 'No';
+                console.log('✅ Usuario obtenido:', user);
+                
+                // Crear información detallada
+                const userInfo = {
+                    nombre: user.nombreCompleto || this.keycloakService.getUsername(),
+                    email: user.correo || this.keycloakService.getUserEmail(),
+                    estado: user.activo ? '✅ Activo' : '❌ Inactivo',
+                    sincronizado: user.id ? '✅ Sí' : '⚠️ No',
+                    keycloakId: user.keycloakId
+                };
+                
+                // Mostrar en un toast más informativo
                 this.messageService.add({
-                    severity: 'info',
-                    summary: 'Usuario actual',
-                    detail: `${user.nombreCompleto || this.keycloakService.getUsername()} - Sincronizado: ${syncStatus}`
+                    severity: user.activo ? 'success' : 'warn',
+                    summary: '👤 Mi Información',
+                    detail: `${userInfo.nombre} | ${userInfo.estado} | Sync: ${userInfo.sincronizado}`,
+                    life: 5000
                 });
+                
+                // También mostrar en consola para admins
+                console.table(userInfo);
             },
             error: (error) => {
-                console.error('Error al obtener usuario actual:', error);
+                console.error('❌ Error al obtener usuario actual:', error);
                 
-                if (error.status === 401) {
+                if (error.status === 403 && error.error?.codigo === 'USUARIO_DESACTIVADO') {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: '🚫 Usuario Desactivado',
+                        detail: `Su cuenta (${error.error.usuario}) ha sido desactivada por el administrador.`
+                    });
+                } else if (error.status === 401) {
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Error de autenticación',
