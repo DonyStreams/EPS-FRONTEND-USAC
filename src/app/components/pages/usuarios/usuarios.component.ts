@@ -1,145 +1,333 @@
 import { Component, OnInit } from '@angular/core';
-import { Usuarios } from 'src/app/api/usuarios';
-import { Product } from 'src/app/demo/api/product';
-import { MessageService } from 'primeng/api';
-import { Table } from 'primeng/table';
-import { ProductService } from 'src/app/demo/service/product.service';
-import { UsuarioService } from 'src/app/service/usuario.service';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { UsuarioMantenimientoService, UsuarioMantenimiento, EstadisticasUsuarios } from '../../../service/usuario-mantenimiento.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
+    selector: 'app-usuarios',
     templateUrl: './usuarios.component.html',
-    providers: [MessageService]
+    providers: [ConfirmationService, MessageService]
 })
-export class CrudComponent implements OnInit {
+export class UsuariosComponent implements OnInit {
+    usuarios: UsuarioMantenimiento[] = [];
+    loading = false;
+    searchValue = '';
 
-    productDialog: boolean = false;
+    // Estadísticas para dashboard
+    stats: EstadisticasUsuarios = { total: 0, activos: 0, inactivos: 0 };
 
-    deleteProductDialog: boolean = false;
-
-    deleteProductsDialog: boolean = false;
-
-    products: Product[] = [];
-
-    product: Product = {};
-
-    usuarios: Usuarios[] = [];
-
-    selectedProducts: Product[] = [];
-
-    submitted: boolean = false;
-
-    cols: any[] = [];
-
-    statuses: any[] = [];
-
-    rowsPerPageOptions = [5, 10, 20];
-
-    constructor(private usuariosService: UsuarioService,private productService: ProductService, private messageService: MessageService) { }
-
-    ngOnInit() {
-        this.usuariosService.getUsuarios().then(data => this.usuarios = data);
-
-        this.cols = [
-            { field: 'product', header: 'Product' },
-            { field: 'price', header: 'Price' },
-            { field: 'category', header: 'Category' },
-            { field: 'rating', header: 'Reviews' },
-            { field: 'inventoryStatus', header: 'Status' }
-        ];
-
-        this.statuses = [
-            { label: 'Administrador', value: 'Administrador' },
-            { label: 'Tecnico', value: 'Tecnico' },            
-            { label: 'Participante', value: 'Participante' }
-        ];
+    constructor(
+        private usuarioService: UsuarioMantenimientoService,
+        private confirmationService: ConfirmationService,
+        private messageService: MessageService,
+        private keycloakService: KeycloakService
+    ) {
+        // Constructor simplificado - sin formularios
     }
 
-    openNew() {
-        this.product = {};
-        this.submitted = false;
-        this.productDialog = true;
+    ngOnInit(): void {
+        this.loadUsuarios();
+        this.loadStats();
+        this.checkCurrentUser(); // Verificar auto-sincronización al cargar
     }
 
-    deleteSelectedProducts() {
-        this.deleteProductsDialog = true;
+    loadUsuarios(): void {
+        this.loading = true;
+        console.log('🔄 Cargando usuarios desde el backend...');
+        
+        this.usuarioService.getAll().subscribe({
+            next: (data) => {
+                console.log('✅ Usuarios cargados:', data);
+                console.log('📊 Total usuarios recibidos:', data.length);
+                this.usuarios = data;
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar usuarios:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar usuarios: ' + (error.message || 'Error desconocido')
+                });
+                this.loading = false;
+                this.usuarios = []; // Asegurar que esté vacío en caso de error
+            }
+        });
     }
 
-    editProduct(product: Product) {
-        this.product = { ...product };
-        this.productDialog = true;
+    loadStats(): void {
+        this.usuarioService.getStats().subscribe({
+            next: (data) => {
+                this.stats = data;
+            },
+            error: (error) => {
+                console.error('Error al cargar estadísticas:', error);
+            }
+        });
     }
 
-    deleteProduct(product: Product) {
-        this.deleteProductDialog = true;
-        this.product = { ...product };
+    showCreateDialog(): void {
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Información',
+            detail: 'Los usuarios se gestionan desde Keycloak. Use la función de sincronización.'
+        });
     }
 
-    confirmDeleteSelected() {
-        this.deleteProductsDialog = false;
-        this.products = this.products.filter(val => !this.selectedProducts.includes(val));
-        this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
-        this.selectedProducts = [];
+    toggleEstado(usuario: UsuarioMantenimiento): void {
+        this.confirmationService.confirm({
+            message: `¿Está seguro de ${usuario.activo ? 'desactivar' : 'activar'} este usuario?`,
+            header: 'Confirmar cambio de estado',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.usuarioService.toggleEstado(usuario.id!).subscribe({
+                    next: (response) => {
+                        console.log('✅ Respuesta del servidor:', response);
+                        const accion = usuario.activo ? 'desactivado' : 'activado';
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: `Usuario ${accion} correctamente`
+                        });
+                        this.loadUsuarios();
+                        this.loadStats();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error al cambiar estado:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al cambiar estado del usuario: ' + (error.error?.error || error.message)
+                        });
+                    }
+                });
+            }
+        });
     }
 
-    confirmDelete() {
-        this.deleteProductDialog = false;
-        this.products = this.products.filter(val => val.id !== this.product.id);
-        this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
-        this.product = {};
-    }
+    /**
+     * 🛡️ NOTA DE SEGURIDAD: 
+     * No se permite eliminación física de usuarios para preservar:
+     * - Integridad referencial con mantenimientos y tickets
+     * - Trazabilidad y auditoría del sistema
+     * - Historial de actividades
+     * 
+     * Los usuarios solo pueden ser activados/desactivados.
+     * Para eliminación completa, gestionar desde Keycloak directamente.
+     */
 
-    hideDialog() {
-        this.productDialog = false;
-        this.submitted = false;
-    }
-
-    saveProduct() {
-        this.submitted = true;
-
-        if (this.product.name?.trim()) {
-            if (this.product.id) {
-                // @ts-ignore
-                this.product.inventoryStatus = this.product.inventoryStatus.value ? this.product.inventoryStatus.value : this.product.inventoryStatus;
-                this.products[this.findIndexById(this.product.id)] = this.product;
-                this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
+    formatDate(dateString: any): string {
+        if (!dateString) return '-';
+        
+        try {
+            let date: Date;
+            
+            if (typeof dateString === 'number') {
+                // Timestamp de Keycloak
+                date = new Date(dateString);
+            } else if (typeof dateString === 'string') {
+                const cleanDateString = dateString.replace(/\[UTC\]$/, '');
+                date = new Date(cleanDateString);
+            } else if (dateString instanceof Date) {
+                date = dateString;
             } else {
-                this.product.id = this.createId();
-                this.product.code = this.createId();
-                this.product.image = 'product-placeholder.svg';
-                // @ts-ignore
-                this.product.inventoryStatus = this.product.inventoryStatus ? this.product.inventoryStatus.value : 'INSTOCK';
-                this.products.push(this.product);
-                this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
+                return '-';
             }
-
-            this.products = [...this.products];
-            this.productDialog = false;
-            this.product = {};
-        }
-    }
-
-    findIndexById(id: string): number {
-        let index = -1;
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].id === id) {
-                index = i;
-                break;
+            
+            if (isNaN(date.getTime())) {
+                console.warn('Fecha inválida:', dateString);
+                return '-';
             }
+            
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        } catch (error) {
+            console.error('Error formateando fecha:', dateString, error);
+            return '-';
         }
-
-        return index;
+    }
+    refreshData(): void {
+        this.loadUsuarios();
+        this.loadStats();
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Actualizado',
+            detail: 'Datos actualizados desde el servidor'
+        });
     }
 
-    createId(): string {
-        let id = '';
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
+    /**
+     * Abre la consola de administración de Keycloak en una nueva pestaña
+     */
+    openKeycloakConsole(): void {
+        const keycloakUrl = 'http://172.16.1.192:8080/auth/admin/master/console/#/realms/MantenimientosINACIF/users';
+        window.open(keycloakUrl, '_blank');
+        
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Keycloak',
+            detail: 'Abriendo consola de administración en nueva pestaña'
+        });
     }
 
-    onGlobalFilter(table: Table, event: Event) {
-        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    // ===== MÉTODOS DE AUTO-SINCRONIZACIÓN =====
+
+    /**
+     * Verifica si el usuario actual está sincronizado
+     */
+    checkCurrentUser(): void {
+        // Primero verificar si el usuario está autenticado
+        if (!this.keycloakService.isLoggedIn()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No autenticado',
+                detail: 'Debe iniciar sesión para acceder a las funciones del sistema'
+            });
+            return;
+        }
+
+        // Verificar si el token es válido
+        if (this.keycloakService.isTokenExpired()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sesión expirada',
+                detail: 'Su sesión ha expirado. Por favor, recargue la página.'
+            });
+            return;
+        }
+
+        console.log('Usuario autenticado:', this.keycloakService.getUsername());
+        console.log('Token válido:', !this.keycloakService.isTokenExpired());
+
+        this.usuarioService.getCurrentUser().subscribe({
+            next: (user) => {
+                console.log('Usuario actual obtenido:', user);
+                if (!user.id) {
+                    // Usuario no sincronizado - mostrar opción de auto-sync
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Usuario no sincronizado',
+                        detail: 'Haga clic en "Auto-sincronizar" para activar todas las funciones'
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('Error al verificar usuario actual:', error);
+                if (error.status === 401) {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error de autenticación',
+                        detail: 'Token JWT inválido o expirado. Recargue la página.'
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Auto-sincroniza al usuario actual desde Keycloak
+     */
+    autoSyncCurrentUser(): void {
+        // Verificar autenticación antes de intentar sincronizar
+        if (!this.keycloakService.isLoggedIn()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'No autenticado',
+                detail: 'Debe iniciar sesión primero'
+            });
+            return;
+        }
+
+        if (this.keycloakService.isTokenExpired()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Sesión expirada',
+                detail: 'Su sesión ha expirado. Recargue la página.'
+            });
+            return;
+        }
+
+        this.loading = true;
+        this.usuarioService.autoSyncCurrentUser().subscribe({
+            next: (usuario) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Auto-sincronización exitosa',
+                    detail: `Usuario ${usuario.nombreCompleto} sincronizado automáticamente`
+                });
+                this.loadUsuarios();
+                this.loadStats();
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('Error en auto-sincronización:', error);
+                let errorMessage = 'Error al auto-sincronizar usuario';
+                
+                if (error.status === 401) {
+                    errorMessage = 'Token JWT inválido. Recargue la página.';
+                } else if (error.status === 403) {
+                    errorMessage = 'No tiene permisos para esta operación';
+                }
+                
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMessage
+                });
+                this.loading = false;
+            }
+        });
+    }
+
+    /**
+     * Obtiene información del usuario actual
+     */
+    getCurrentUserInfo(): void {
+        if (!this.keycloakService.isLoggedIn()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No autenticado',
+                detail: 'Debe iniciar sesión para ver información del usuario'
+            });
+            return;
+        }
+
+        // Mostrar información básica de Keycloak
+        const keycloakInfo = `Usuario: ${this.keycloakService.getUsername()}\nEmail: ${this.keycloakService.getUserEmail()}\nToken válido: ${!this.keycloakService.isTokenExpired()}`;
+        console.log('Información de Keycloak:', keycloakInfo);
+
+        this.usuarioService.getCurrentUser().subscribe({
+            next: (user) => {
+                const syncStatus = user.id ? 'Sí' : 'No';
+                this.messageService.add({
+                    severity: 'info',
+                    summary: 'Usuario actual',
+                    detail: `${user.nombreCompleto || this.keycloakService.getUsername()} - Sincronizado: ${syncStatus}`
+                });
+            },
+            error: (error) => {
+                console.error('Error al obtener usuario actual:', error);
+                
+                if (error.status === 401) {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error de autenticación',
+                        detail: 'Token JWT inválido. Recargue la página.'
+                    });
+                } else {
+                    // Mostrar al menos la información de Keycloak
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Usuario de Keycloak',
+                        detail: `${this.keycloakService.getUsername()} - No sincronizado en BD local`
+                    });
+                }
+            }
+        });
     }
 }

@@ -1,209 +1,138 @@
-<div class="grid">
-    <div class="col-12">        
-        <div class="card px-6 py-6">
-            <h3>Gestión de Usuarios</h3>
-            <p-toast></p-toast>
-            <p-toolbar styleClass="mb-4">
-                <ng-template pTemplate="left">
-                    <div class="my-2">
-                        <button pButton pRipple label="Nuevo" icon="pi pi-plus" class="p-button-success mr-2" (click)="openNew()"></button>                        
-                    </div>
-                </ng-template>                
-            </p-toolbar>
-
-            <p-table #dt [value]="usuarios" [columns]="cols" responsiveLayout="scroll" [rows]="10" [globalFilterFields]="['name','country.name','representative.name','status']" [paginator]="true" [rowsPerPageOptions]="[10,20,30]" [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios" [(selection)]="selectedProducts" selectionMode="multiple" [rowHover]="true" dataKey="id">
-                <ng-template pTemplate="caption">
-                    <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                        <h5 class="m-0">Usuarios</h5>
-                        <span class="block mt-2 md:mt-0 p-input-icon-left">
-                            <i class="pi pi-search"></i>
-                            <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..."  class="w-full sm:w-auto"/>
-                        </span>
-                    </div>
-                </ng-template>
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th style="width: 3rem">
-                            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-                        </th>
-                        <th pSortableColumn="code">Usuario <p-sortIcon field="code"></p-sortIcon></th>
-                        <th pSortableColumn="name">Nombre <p-sortIcon field="name"></p-sortIcon></th>                        
-                        <th pSortableColumn="price">Apellido <p-sortIcon field="price"></p-sortIcon></th>
-                        <th pSortableColumn="category">Email <p-sortIcon field="category"></p-sortIcon></th>
-                        <th pSortableColumn="rating">Rol <p-sortIcon field="rating"></p-sortIcon></th>
-                        <th pSortableColumn="inventoryStatus">Estado <p-sortIcon field="inventoryStatus"></p-sortIcon></th>
-                        <th></th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-usuario>
-                    <tr>
-                        <td>
-                            <p-tableCheckbox [value]="product"></p-tableCheckbox>
-                        </td>
-                        <td style="width:14%; min-width:10rem;"><span class="p-column-title">Code</span>
-                            {{usuario.username}}
-                        </td>
-                        <td style="width:14%; min-width:10rem;">
-                            <span class="p-column-title">Name</span>
-                            {{usuario.nombre}}
-                        </td>                        
-                        <td style="width:14%; min-width:8rem;">
-                            <span class="p-column-title">Price</span>
-                            {{usuario.apellido}}
-                        </td>
-                        <td style="width:14%; min-width:10rem;">
-                            <span class="p-column-title">Category</span>
-                            {{usuario.email}}
-                        </td>
-                        <td style="width:14%; min-width:10rem;">
-                            <span class="p-column-title">Rol</span>
-                            {{usuario.rol}}
-                        </td>
-                        <td style="width:14%; min-width:10rem;">
-                            <span class="p-column-title">Category</span>
-                            {{usuario.estado}}
-                        </td>
-                        <td>
-                            <div class="flex">
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editProduct(product)"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteProduct(product)"></button>
-                            </div>
-                        </td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </div>
-
-        <p-dialog [(visible)]="productDialog" [style]="{width: '450px'}" header="Detalles" [modal]="true" class="p-fluid">
-            <ng-template pTemplate="content">
-                <img [src]="'assets/demo/images/product/' + product.image" [alt]="product.image" width="150" class="mt-0 mx-auto mb-5 block shadow-2" *ngIf="product.image">
-                <div class="field">
-                    <label for="name">Nombre</label>
-                    <input type="text" pInputText id="name" [(ngModel)]="product.name" required autofocus [ngClass]="{'ng-invalid ng-dirty' : submitted && !product.name}"/>
-                    <small class="ng-dirty ng-invalid" *ngIf="submitted && !product.name">Nombre is required.</small>
-                </div>
-                <div class="field">
-                    <label for="name">Apellido</label>
-                    <input type="text" pInputText id="name" [(ngModel)]="product.name" required autofocus [ngClass]="{'ng-invalid ng-dirty' : submitted && !product.name}"/>
-                    <small class="ng-dirty ng-invalid" *ngIf="submitted && !product.name">Apellido is required.</small>
-                </div>
-                <div class="formgrid grid">
-                    <div class="field col">
-                        <label for="price">Email</label>
-                        <p-inputNumber id="price" [(ngModel)]="product.price" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-                    </div>
-                    <div class="field col">
-                        <label for="quantity">Estado</label>
-                        <p-inputNumber id="quantity" [(ngModel)]="product.quantity"></p-inputNumber>
-                    </div>
-                </div>
-                <div class="formgrid grid">
-                    <div class="field col">
-                        <label for="status">Departamento</label>
-                        <p-dropdown [(ngModel)]="product.inventoryStatus" inputId="inventoryStatus" optionValue="label" [options]="statuses" placeholder="Seleccionar">
-                         <ng-template pTemplate="selectedItem">
-                              <span *ngIf="product && product.inventoryStatus" [class]="'product-badge status-' + product.inventoryStatus.toString().toLowerCase()">{{product.inventoryStatus}}</span>
-                          </ng-template>
-                         <ng-template let-option pTemplate="item">
-                                <span [class]="'product-badge status-' + option.value">{{option.label}}</span>
-                         </ng-template>
-                        </p-dropdown>
-                    </div>
-                    <div class="field col">
-                        <label for="status">Unidad</label>
-                        <p-dropdown [(ngModel)]="product.inventoryStatus" inputId="inventoryStatus" optionValue="label" [options]="statuses" placeholder="Seleccionar">
-                         <ng-template pTemplate="selectedItem">
-                              <span *ngIf="product && product.inventoryStatus" [class]="'product-badge status-' + product.inventoryStatus.toString().toLowerCase()">{{product.inventoryStatus}}</span>
-                          </ng-template>
-                         <ng-template let-option pTemplate="item">
-                                <span [class]="'product-badge status-' + option.value">{{option.label}}</span>
-                         </ng-template>
-                        </p-dropdown>
-                    </div>
-                    <div class="field col">
-                        <label for="status">Seccion</label>
-                        <p-dropdown [(ngModel)]="product.inventoryStatus" inputId="inventoryStatus" optionValue="label" [options]="statuses" placeholder="Seleccionar">
-                         <ng-template pTemplate="selectedItem">
-                              <span *ngIf="product && product.inventoryStatus" [class]="'product-badge status-' + product.inventoryStatus.toString().toLowerCase()">{{product.inventoryStatus}}</span>
-                          </ng-template>
-                         <ng-template let-option pTemplate="item">
-                                <span [class]="'product-badge status-' + option.value">{{option.label}}</span>
-                         </ng-template>
-                        </p-dropdown>
-                    </div>
-                    <div class="field col">
-                        <label for="status">Rol</label>
-                        <p-dropdown [(ngModel)]="product.inventoryStatus" inputId="inventoryStatus" optionValue="label" [options]="statuses" placeholder="Seleccionar">
-                            <ng-template pTemplate="selectedItem">
-                                <span *ngIf="product && product.inventoryStatus" [class]="'product-badge status-' + product.inventoryStatus.toString().toLowerCase()">{{product.inventoryStatus}}</span>
-                            </ng-template>
-                            <ng-template let-option pTemplate="item">
-                                <span [class]="'product-badge status-' + option.value">{{option.label}}</span>
-                            </ng-template>
-                        </p-dropdown>
-                    </div>
-                    <div class="field col">
-                        <label for="status">Empresa</label>
-                        <p-dropdown [(ngModel)]="product.inventoryStatus" inputId="inventoryStatus" optionValue="label" [options]="statuses" placeholder="Seleccionar">
-                            <ng-template pTemplate="selectedItem">
-                                <span *ngIf="product && product.inventoryStatus" [class]="'product-badge status-' + product.inventoryStatus.toString().toLowerCase()">{{product.inventoryStatus}}</span>
-                            </ng-template>
-                            <ng-template let-option pTemplate="item">
-                                <span [class]="'product-badge status-' + option.value">{{option.label}}</span>
-                            </ng-template>
-                        </p-dropdown>
-                    </div>
-                </div>
-
-
-
-               
-
-                <div class="field">
-                    <label class="mb-3">Permisos</label>
-                    <div class="formgrid grid">
-                        <div class="field-radiobutton col-6">
-                            <p-radioButton id="category1" name="category" value="Accessories" [(ngModel)]="product.category"></p-radioButton>
-                            <label for="category1">Modulo Usuarios</label>
-                        </div>
-                        <div class="field-radiobutton col-6">
-                            <p-radioButton id="category2" name="category" value="Clothing" [(ngModel)]="product.category"></p-radioButton>
-                            <label for="category2">Modulo Participantes</label>
-                        </div>
-                        <div class="field-radiobutton col-6">
-                            <p-radioButton id="category3" name="category" value="Electronics" [(ngModel)]="product.category"></p-radioButton>
-                            <label for="category3">Modulo Mantenimiento</label>
-                        </div>                        
-                    </div>
-                </div>                
-            </ng-template>
-
-            <ng-template pTemplate="footer">
-                <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
-                <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="saveProduct()"></button>
-            </ng-template>
-        </p-dialog>
-
-        <p-dialog [(visible)]="deleteProductDialog" header="Confirmar" [modal]="true" [style]="{width:'450px'}">
-            <div class="flex align-items-center justify-content-center">
-                <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-                <span *ngIf="product">Esta seguro que desea eliminar <b>{{product.name}}</b>?</span>
-            </div>
-            <ng-template pTemplate="footer">
-                <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteProductDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Si, eliminar" (click)="confirmDelete()"></button>
-            </ng-template>
-        </p-dialog>
-
-        <p-dialog [(visible)]="deleteProductsDialog" header="Confirm" [modal]="true" [style]="{width:'450px'}">
-            <div class="flex align-items-center justify-content-center">
-                <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-                <span>Are you sure you want to delete selected products?</span>
-            </div>
-            <ng-template pTemplate="footer">
-                <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteProductsDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Yes" (click)="confirmDeleteSelected()"></button>
-            </ng-template>
-        </p-dialog>
+<div class="card">
+    <h5>Gestión de Usuarios del Sistema</h5>
+    
+    <!-- Información importante -->
+    <div class="mb-3">
+        <p-message severity="info" text="Los usuarios se sincronizan automáticamente desde Keycloak al hacer login. Aquí puede ver la lista de usuarios sincronizados."></p-message>
     </div>
+    
+    <!-- Estadísticas -->
+    <div class="grid mb-3">
+        <div class="col-12 md:col-4">
+            <div class="card bg-blue-100 border-left-3 border-blue-500">
+                <div class="flex justify-content-between">
+                    <div>
+                        <span class="text-blue-600 font-medium">Total</span>
+                        <div class="text-2xl font-bold text-blue-900">{{ stats.total }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-blue-500 border-circle" style="width:3rem;height:3rem">
+                        <i class="pi pi-users text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card bg-green-100 border-left-3 border-green-500">
+                <div class="flex justify-content-between">
+                    <div>
+                        <span class="text-green-600 font-medium">Activos</span>
+                        <div class="text-2xl font-bold text-green-900">{{ stats.activos }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-green-500 border-circle" style="width:3rem;height:3rem">
+                        <i class="pi pi-check-circle text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card bg-red-100 border-left-3 border-red-500">
+                <div class="flex justify-content-between">
+                    <div>
+                        <span class="text-red-600 font-medium">Inactivos</span>
+                        <div class="text-2xl font-bold text-red-900">{{ stats.inactivos }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-red-500 border-circle" style="width:3rem;height:3rem">
+                        <i class="pi pi-times-circle text-white text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <button pButton pRipple label="Mi Info" icon="pi pi-user" class="p-button-secondary mr-2" (click)="getCurrentUserInfo()"
+                    pTooltip="Ver información de tu usuario actual"></button>
+            <button pButton pRipple label="Actualizar" icon="pi pi-refresh" class="p-button-help" (click)="refreshData()"></button>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <button pButton pRipple label="Gestión Completa en Keycloak" icon="pi pi-external-link" class="p-button-outlined" 
+                    (click)="openKeycloakConsole()"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="usuarios" [loading]="loading" styleClass="p-datatable-gridlines" [paginator]="true" [rows]="10" 
+             responsiveLayout="scroll" [globalFilterFields]="['nombreCompleto','correo','keycloakId']" #dt>
+        
+        <ng-template pTemplate="caption">
+            <div class="flex">
+                <span class="p-input-icon-left ml-auto">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                           placeholder="Buscar por nombre, correo o ID..." />
+                </span>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
+                <th pSortableColumn="nombreCompleto">Nombre Completo <p-sortIcon field="nombreCompleto"></p-sortIcon></th>
+                <th pSortableColumn="correo">Correo <p-sortIcon field="correo"></p-sortIcon></th>
+                <th pSortableColumn="keycloakId">Keycloak ID <p-sortIcon field="keycloakId"></p-sortIcon></th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="body" let-usuario>
+            <tr>
+                <td>
+                    <span class="p-column-title">ID</span>
+                    <span class="font-bold">{{ usuario.id }}</span>
+                </td>
+                <td>
+                    <span class="p-column-title">Nombre</span>
+                    {{ usuario.nombreCompleto }}
+                </td>
+                <td>
+                    <span class="p-column-title">Correo</span>
+                    <a [href]="'mailto:' + usuario.correo" class="text-blue-600">{{ usuario.correo }}</a>
+                </td>
+                <td>
+                    <span class="p-column-title">Keycloak ID</span>
+                    <span class="text-sm text-gray-600 font-mono">{{ usuario.keycloakId }}</span>
+                </td>
+                <td>
+                    <span class="p-column-title">Estado</span>
+                    <p-tag [value]="usuario.activo ? 'Activo' : 'Inactivo'" 
+                           [severity]="usuario.activo ? 'success' : 'danger'"></p-tag>
+                </td>
+                <td>
+                    <div class="flex justify-content-center">
+                        <button pButton pRipple 
+                                [icon]="usuario.activo ? 'pi pi-ban' : 'pi pi-check'" 
+                                [class]="usuario.activo ? 'p-button-rounded p-button-warning' : 'p-button-rounded p-button-success'" 
+                                (click)="toggleEstado(usuario)" 
+                                [pTooltip]="usuario.activo ? 'Desactivar acceso al sistema' : 'Activar acceso al sistema'"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6">
+                    <div class="text-center p-4">
+                        <i class="pi pi-users" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-gray-600 mt-2">No hay usuarios sincronizados</p>
+                        <p class="text-sm text-gray-500">Los usuarios se sincronizarán automáticamente al hacer login en el sistema</p>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
 </div>
+
+<p-confirmDialog></p-confirmDialog>
+<p-toast></p-toast>

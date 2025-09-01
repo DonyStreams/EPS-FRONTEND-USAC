@@ -8,20 +8,11 @@ export interface Area {
     codigoArea?: string;
     nombre: string;
     tipoArea: string;
-    estado: boolean;
+    estado?: boolean;
     fechaCreacion?: Date;
     fechaModificacion?: Date;
     usuarioCreacion?: number;
     usuarioModificacion?: number;
-    
-    // Propiedades para el formulario (snake_case si es necesario)
-    id_area?: number;
-    codigo_area?: string;
-    tipo_area?: string;
-    fecha_creacion?: Date;
-    fecha_modificacion?: Date;
-    usuario_creacion?: number;
-    usuario_modificacion?: number;
 }
 
 @Injectable({
@@ -44,11 +35,11 @@ export class AreasService {
         return this.http.get<Area>(`${this.apiUrl}/${id}`);
     }
 
-    create(area: Partial<Area>): Observable<Area> {
+    create(area: Area): Observable<Area> {
         return this.http.post<Area>(this.apiUrl, area);
     }
 
-    update(id: number, area: Partial<Area>): Observable<Area> {
+    update(id: number, area: Area): Observable<Area> {
         return this.http.put<Area>(`${this.apiUrl}/${id}`, area);
     }
 

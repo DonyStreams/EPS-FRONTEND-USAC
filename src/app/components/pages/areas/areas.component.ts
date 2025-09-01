@@ -1,191 +1,262 @@
 import { Component, OnInit } from '@angular/core';
-import { MessageService } from 'primeng/api';
-import { Table } from 'primeng/table';
-import { AreasService, Area } from 'src/app/service/areas.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { AreasService, Area } from '../../../service/areas.service';
 
 @Component({
-  templateUrl: './areas.component.html',
-  providers: [MessageService]
+    selector: 'app-areas',
+    templateUrl: './areas.component.html',
+    providers: [ConfirmationService, MessageService]
 })
 export class AreasComponent implements OnInit {
+    areas: Area[] = [];
+    areaForm: FormGroup;
+    displayDialog = false;
+    isEditing = false;
+    selectedArea: Area | null = null;
+    loading = false;
+    searchValue = '';
 
-  areas: Area[] = [];
-  area: Area = { nombre: '', tipoArea: 'OPERATIVA', estado: true };
-  selectedAreas: Area[] = [];
-  areaDialog: boolean = false;
-  deleteAreaDialog: boolean = false;
-  deleteAreasDialog: boolean = false;
-  submitted: boolean = false;
-  cols: any[] = [];
+    // Estadísticas para dashboard
+    totalAreas = 0;
+    areasActivas = 0;
+    areasInactivas = 0;
 
-  constructor(
-    private areasService: AreasService,
-    private messageService: MessageService
-  ) { }
-
-  ngOnInit() {
-    this.loadAreas();
-    
-    this.cols = [
-      { field: 'idArea', header: 'ID' },
-      { field: 'codigoArea', header: 'Código' },
-      { field: 'nombre', header: 'Nombre' },
-      { field: 'tipoArea', header: 'Tipo' },
-      { field: 'estado', header: 'Estado' }
+    // Opciones para tipo de área
+    tiposArea = [
+        { label: 'Operativa', value: 'OPERATIVA' },
+        { label: 'Administrativa', value: 'ADMINISTRATIVA' },
+        { label: 'Técnica', value: 'TECNICA' },
+        { label: 'Laboratorio', value: 'LABORATORIO' },
+        { label: 'Almacén', value: 'ALMACEN' }
     ];
-  }
 
-  loadAreas() {
-    this.areasService.getAll().subscribe({
-      next: (data) => {
-        this.areas = data;
-        console.log('Areas cargadas:', data);
-      },
-      error: (error) => {
-        console.error('Error al cargar areas:', error);
-        this.messageService.add({ 
-          severity: 'error', 
-          summary: 'Error', 
-          detail: 'No se pudieron cargar las areas' 
+    constructor(
+        private areasService: AreasService,
+        private fb: FormBuilder,
+        private confirmationService: ConfirmationService,
+        private messageService: MessageService
+    ) {
+        this.areaForm = this.fb.group({
+            codigoArea: ['', [
+                Validators.required, 
+                Validators.maxLength(20),
+                Validators.pattern(/^[A-Z0-9_-]+$/) // Solo letras mayúsculas, números, guiones y guiones bajos
+            ]],
+            nombre: ['', [
+                Validators.required, 
+                Validators.maxLength(100),
+                Validators.minLength(3)
+            ]],
+            tipoArea: ['OPERATIVA', [Validators.required]],
+            estado: [true]
         });
-      }
-    });
-  }
-
-  openNew() {
-    this.area = { nombre: '', tipoArea: 'OPERATIVA', estado: true };
-    this.submitted = false;
-    this.areaDialog = true;
-  }
-
-  deleteSelectedAreas() {
-    this.deleteAreasDialog = true;
-  }
-
-  editArea(area: Area) {
-    this.area = { ...area };
-    this.areaDialog = true;
-  }
-
-  deleteArea(area: Area) {
-    this.deleteAreaDialog = true;
-    this.area = { ...area };
-  }
-
-  confirmDeleteSelected() {
-    this.deleteAreasDialog = false;
-    const deletePromises = this.selectedAreas
-      .filter(area => area.idArea)
-      .map(area => this.areasService.delete(area.idArea!).toPromise());
-
-    Promise.all(deletePromises).then(() => {
-      this.areas = this.areas.filter(val => !this.selectedAreas.includes(val));
-      this.selectedAreas = [];
-      this.messageService.add({ 
-        severity: 'success', 
-        summary: 'Exitoso', 
-        detail: 'Areas eliminadas', 
-        life: 3000 
-      });
-    }).catch(error => {
-      console.error('Error al eliminar areas:', error);
-      this.messageService.add({ 
-        severity: 'error', 
-        summary: 'Error', 
-        detail: 'No se pudieron eliminar algunas areas' 
-      });
-    });
-  }
-
-  confirmDelete() {
-    this.deleteAreaDialog = false;
-    if (this.area.idArea) {
-      this.areasService.delete(this.area.idArea).subscribe({
-        next: () => {
-          this.areas = this.areas.filter(val => val.idArea !== this.area.idArea);
-          this.area = { nombre: '', tipoArea: 'OPERATIVA', estado: true };
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Exitoso', 
-            detail: 'Area eliminada', 
-            life: 3000 
-          });
-        },
-        error: (error) => {
-          console.error('Error al eliminar area:', error);
-          this.messageService.add({ 
-            severity: 'error', 
-            summary: 'Error', 
-            detail: 'No se pudo eliminar el area' 
-          });
-        }
-      });
     }
-  }
 
-  hideDialog() {
-    this.areaDialog = false;
-    this.submitted = false;
-  }
+    ngOnInit(): void {
+        this.loadAreas();
+    }
 
-  saveArea() {
-    this.submitted = true;
-
-    if (this.area.nombre?.trim()) {
-      if (this.area.idArea) {
-        // Actualizar area existente
-        this.areasService.update(this.area.idArea, this.area).subscribe({
-          next: (updatedArea) => {
-            const index = this.areas.findIndex(a => a.idArea === this.area.idArea);
-            if (index > -1) {
-              this.areas[index] = updatedArea;
+    loadAreas(): void {
+        this.loading = true;
+        this.areasService.getAll().subscribe({
+            next: (data) => {
+                this.areas = data;
+                this.calculateStatistics();
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('Error al cargar áreas:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar áreas'
+                });
+                this.loading = false;
             }
-            this.messageService.add({ 
-              severity: 'success', 
-              summary: 'Exitoso', 
-              detail: 'Area actualizada', 
-              life: 3000 
-            });
-            this.areaDialog = false;
-            this.area = { nombre: '', tipoArea: 'OPERATIVA', estado: true };
-          },
-          error: (error) => {
-            console.error('Error al actualizar area:', error);
-            this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Error', 
-              detail: 'No se pudo actualizar el area' 
-            });
-          }
         });
-      } else {
-        // Crear nueva area
-        this.areasService.create(this.area).subscribe({
-          next: (newArea) => {
-            this.areas.push(newArea);
-            this.messageService.add({ 
-              severity: 'success', 
-              summary: 'Exitoso', 
-              detail: 'Area creada', 
-              life: 3000 
-            });
-            this.areaDialog = false;
-            this.area = { nombre: '', tipoArea: 'OPERATIVA', estado: true };
-          },
-          error: (error) => {
-            console.error('Error al crear area:', error);
-            this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Error', 
-              detail: 'No se pudo crear el area' 
-            });
-          }
-        });
-      }
     }
-  }
 
-  onGlobalFilter(table: Table, event: Event) {
-    table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
-  }
+    calculateStatistics(): void {
+        this.totalAreas = this.areas.length;
+        this.areasActivas = this.areas.filter(a => a.estado).length;
+        this.areasInactivas = this.areas.filter(a => !a.estado).length;
+    }
+
+    showCreateDialog(): void {
+        this.isEditing = false;
+        this.selectedArea = null;
+        this.areaForm.reset({ tipoArea: 'OPERATIVA', estado: true });
+        this.displayDialog = true;
+    }
+
+    editArea(area: Area): void {
+        this.isEditing = true;
+        this.selectedArea = area;
+        this.areaForm.patchValue({
+            codigoArea: area.codigoArea,
+            nombre: area.nombre,
+            tipoArea: area.tipoArea,
+            estado: area.estado
+        });
+        this.displayDialog = true;
+    }
+
+    // Método para convertir código a mayúsculas automáticamente
+    onCodigoInput(event: any): void {
+        const value = event.target.value.toUpperCase();
+        this.areaForm.get('codigoArea')?.setValue(value);
+    }
+
+    // Validación de código único
+    isCodigoUnico(codigo: string): boolean {
+        if (this.isEditing && this.selectedArea?.codigoArea === codigo) {
+            return true; // Es el mismo código del registro actual
+        }
+        return !this.areas.some(a => a.codigoArea === codigo);
+    }
+
+    saveArea(): void {
+        if (this.areaForm.valid) {
+            const formData = this.areaForm.value;
+            
+            // Validar código único
+            if (!this.isCodigoUnico(formData.codigoArea)) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'Ya existe un área con este código'
+                });
+                return;
+            }
+            
+            if (this.isEditing && this.selectedArea) {
+                this.areasService.update(this.selectedArea.idArea!, formData).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Área actualizada correctamente'
+                        });
+                        this.displayDialog = false;
+                        this.loadAreas();
+                    },
+                    error: (error) => {
+                        console.error('Error al actualizar área:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al actualizar área'
+                        });
+                    }
+                });
+            } else {
+                this.areasService.create(formData).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Área creada correctamente'
+                        });
+                        this.displayDialog = false;
+                        this.loadAreas();
+                    },
+                    error: (error) => {
+                        console.error('Error al crear área:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al crear área'
+                        });
+                    }
+                });
+            }
+        } else {
+            this.markFormGroupTouched();
+        }
+    }
+
+    private markFormGroupTouched(): void {
+        Object.keys(this.areaForm.controls).forEach(key => {
+            const control = this.areaForm.get(key);
+            control?.markAsTouched();
+        });
+    }
+
+    deleteArea(area: Area): void {
+        this.confirmationService.confirm({
+            message: '¿Está seguro de eliminar esta área?',
+            header: 'Confirmar eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.areasService.delete(area.idArea!).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Área eliminada correctamente'
+                        });
+                        this.loadAreas();
+                    },
+                    error: (error) => {
+                        console.error('Error al eliminar área:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al eliminar área'
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    hideDialog(): void {
+        this.displayDialog = false;
+    }
+
+    formatDate(dateString: any): string {
+        if (!dateString) return '-';
+        
+        try {
+            let date: Date;
+            
+            if (typeof dateString === 'string') {
+                const cleanDateString = dateString.replace(/\[UTC\]$/, '');
+                date = new Date(cleanDateString);
+            } else if (dateString instanceof Date) {
+                date = dateString;
+            } else {
+                return '-';
+            }
+            
+            if (isNaN(date.getTime())) {
+                console.warn('Fecha inválida:', dateString);
+                return '-';
+            }
+            
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        } catch (error) {
+            console.error('Error formateando fecha:', dateString, error);
+            return '-';
+        }
+    }
+
+    // Método para obtener información de errores del formulario
+    getFieldError(fieldName: string): string {
+        const field = this.areaForm.get(fieldName);
+        if (field?.errors && field.touched) {
+            if (field.errors['required']) return `${fieldName} es requerido`;
+            if (field.errors['maxlength']) return `${fieldName} excede la longitud máxima`;
+            if (field.errors['minlength']) return `${fieldName} debe tener al menos 3 caracteres`;
+            if (field.errors['pattern']) return `${fieldName} debe contener solo letras mayúsculas, números, guiones y guiones bajos`;
+        }
+        return '';
+    }
 }

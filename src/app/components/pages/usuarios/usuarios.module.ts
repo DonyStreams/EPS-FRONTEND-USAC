@@ -1,41 +1,39 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { CrudRoutingModule } from './usuarios-routing.module';
-import { CrudComponent } from './usuarios.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { UsuariosRoutingModule } from './usuarios-routing.module';
+import { UsuariosComponent } from './usuarios.component';
+
+// PrimeNG Modules
 import { TableModule } from 'primeng/table';
-import { FileUploadModule } from 'primeng/fileupload';
 import { ButtonModule } from 'primeng/button';
-import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
-import { RatingModule } from 'primeng/rating';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputTextareaModule } from 'primeng/inputtextarea';
-import { DropdownModule } from 'primeng/dropdown';
-import { RadioButtonModule } from 'primeng/radiobutton';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { CheckboxModule } from 'primeng/checkbox';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageModule } from 'primeng/message';
 
 @NgModule({
     imports: [
         CommonModule,
-        CrudRoutingModule,
+        ReactiveFormsModule,
+        UsuariosRoutingModule,
         TableModule,
-        FileUploadModule,
-        FormsModule,
         ButtonModule,
-        RippleModule,
         ToastModule,
         ToolbarModule,
-        RatingModule,
+        DialogModule,
         InputTextModule,
-        InputTextareaModule,
-        DropdownModule,
-        RadioButtonModule,
-        InputNumberModule,
-        DialogModule
+        CheckboxModule,
+        ConfirmDialogModule,
+        TagModule,
+        TooltipModule,
+        MessageModule
     ],
-    declarations: [CrudComponent]
+    declarations: [UsuariosComponent]
 })
-export class CrudModule { }
+export class UsuariosModule { }

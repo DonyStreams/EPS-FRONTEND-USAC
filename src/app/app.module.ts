@@ -14,7 +14,6 @@ import { IconService } from './demo/service/icon.service';
 import { NodeService } from './demo/service/node.service';
 import { PhotoService } from './demo/service/photo.service';
 
-import { UsuarioService } from './service/usuario.service';
 import { ParticipanteService } from './service/participantes.service';
 import { KeycloakService } from './service/keycloak.service';
 import { HttpClientModule } from '@angular/common/http';
@@ -33,7 +32,7 @@ export function initializeKeycloak(keycloak: KeycloakService) {
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },
         CountryService, CustomerService, EventService, IconService, NodeService,
-        PhotoService, ProductService, UsuarioService, ParticipanteService,
+        PhotoService, ProductService, ParticipanteService,
         MessageService, ConfirmationService,
         {
             provide: HTTP_INTERCEPTORS,
