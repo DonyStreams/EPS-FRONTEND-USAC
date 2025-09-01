@@ -20,13 +20,16 @@ import { CardModule } from 'primeng/card';
 import { PanelModule } from 'primeng/panel';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TooltipModule } from 'primeng/tooltip';
 
 // Componentes
 import { ContratosComponent } from './contratos.component';
+import { GestionArchivosComponent } from './gestion-archivos.component';
 
 @NgModule({
     declarations: [
-        ContratosComponent
+        ContratosComponent,
+        GestionArchivosComponent
     ],
     imports: [
         CommonModule,
@@ -48,8 +51,11 @@ import { ContratosComponent } from './contratos.component';
         PanelModule,
         ConfirmDialogModule,
         CheckboxModule,
+        TooltipModule,
         RouterModule.forChild([
-            { path: '', component: ContratosComponent }
+            { path: '', component: ContratosComponent },
+            { path: 'archivos', component: GestionArchivosComponent },
+            { path: 'archivos/:id', component: GestionArchivosComponent }
         ])
     ]
 })

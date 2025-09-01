@@ -133,4 +133,29 @@ export class ArchivosService {
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
         return file.size <= maxSizeBytes;
     }
+
+    /**
+     * Obtiene la lista de archivos de un contrato específico
+     */
+    getListaArchivosPorContrato(contratoId: number): Observable<any> {
+        console.log('📋 Obteniendo lista de archivos para contrato:', contratoId);
+        
+        return this.http.get<any>(`${this.apiUrl}/contrato/${contratoId}/list`);
+    }
+
+    /**
+     * Obtiene el conteo de archivos de un contrato específico
+     */
+    getConteoArchivosPorContrato(contratoId: number): Observable<any> {
+        console.log('📊 Obteniendo conteo de archivos para contrato:', contratoId);
+        
+        return this.http.get<any>(`${this.apiUrl}/contrato/${contratoId}/count`);
+    }
+
+    /**
+     * Obtiene la URL de descarga de un archivo
+     */
+    getUrlDescarga(nombreArchivo: string): string {
+        return `${this.apiUrl}/download/${nombreArchivo}`;
+    }
 }

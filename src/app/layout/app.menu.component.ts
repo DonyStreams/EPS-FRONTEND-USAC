@@ -52,7 +52,7 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-file',
                 items: [
                     { label: 'Contratos', icon: 'pi pi-fw pi-file', routerLink: ['/administracion/contratos'] },
-                    { label: 'Subir Contrato', icon: 'pi pi-fw pi-upload', routerLink: ['/administracion/contratos/nuevo'] }
+                    { label: 'Gestión de Archivos', icon: 'pi pi-fw pi-folder', routerLink: ['/administracion/contratos/archivos'] }
                 ]
             },
             {

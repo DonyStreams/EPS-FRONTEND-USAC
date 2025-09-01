@@ -1,0 +1,190 @@
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <!-- Cabecera con navegación -->
+            <div class="flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="m-0">📁 Gestión de Archivos de Contratos</h4>
+                    <p class="text-gray-600 mt-2 mb-0">Administre los documentos asociados a cada contrato</p>
+                </div>
+                <button pButton pRipple label="Volver a Contratos" icon="pi pi-arrow-left" 
+                        class="p-button-outlined" (click)="volverAContratos()"></button>
+            </div>
+
+            <!-- Selector de contrato -->
+            <div class="card bg-blue-50 mb-4">
+                <h6 class="mb-3">🔍 Seleccionar Contrato</h6>
+                <div class="field">
+                    <label for="contratoSelect" class="block text-900 font-medium mb-2">Contrato:</label>
+                    <p-dropdown id="contratoSelect" 
+                                [(ngModel)]="selectedContrato" 
+                                [options]="contratos" 
+                                optionLabel="descripcion"
+                                placeholder="Seleccione un contrato..."
+                                [style]="{'width': '100%'}"
+                                (onChange)="onContratoChange()">
+                        <ng-template pTemplate="selectedItem">
+                            <div *ngIf="selectedContrato" class="flex align-items-center gap-2">
+                                <i class="pi pi-file-o"></i>
+                                <span>{{selectedContrato.descripcion}} - {{selectedContrato.proveedor}}</span>
+                            </div>
+                        </ng-template>
+                        <ng-template let-contrato pTemplate="item">
+                            <div class="flex align-items-center gap-2 p-2">
+                                <i class="pi pi-file-o"></i>
+                                <div>
+                                    <div class="font-medium">{{contrato.descripcion}}</div>
+                                    <div class="text-sm text-gray-500">{{contrato.proveedor}} • {{contrato.totalArchivos || 0}} archivos</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+            </div>
+
+            <!-- Sección de subida de archivos (solo si hay contrato seleccionado) -->
+            <div *ngIf="selectedContrato" class="card bg-green-50 mb-4">
+                <h6 class="mb-3">📤 Subir Nuevos Archivos</h6>
+                <p class="text-sm text-gray-600 mb-3">Solo se permiten archivos PDF, DOC y DOCX (máximo 10MB cada uno)</p>
+                
+                <p-fileUpload name="files" [multiple]="true" accept=".pdf,.doc,.docx"
+                              [maxFileSize]="maxFileSize" 
+                              (onSelect)="onFileSelect($event)"
+                              [showUploadButton]="false" 
+                              [showCancelButton]="true"
+                              [auto]="false"
+                              mode="basic"
+                              chooseLabel="Seleccionar Archivos">
+                </p-fileUpload>
+                
+                <!-- Lista de archivos seleccionados -->
+                <div *ngIf="uploadedFiles.length > 0" class="mt-3">
+                    <h6 class="mb-2">Archivos seleccionados:</h6>
+                    <div *ngFor="let file of uploadedFiles; let i = index" class="mb-2 p-2 border-1 border-gray-200 border-round">
+                        <div class="flex align-items-center justify-content-between">
+                            <div class="flex align-items-center gap-2">
+                                <i [class]="archivosService.getIconoArchivo(file.name)" class="text-xl"></i>
+                                <div>
+                                    <div class="font-medium">{{file.name}}</div>
+                                    <div class="text-sm text-gray-500">{{archivosService.formatearTamano(file.size)}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botón de subida -->
+                    <div class="text-center mt-3">
+                        <button pButton pRipple label="Subir Archivos" icon="pi pi-upload" 
+                                class="p-button-success" (click)="uploadFiles()"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de archivos del contrato -->
+            <div *ngIf="selectedContrato" class="card">
+                <div class="flex justify-content-between align-items-center mb-3">
+                    <h6 class="m-0">📋 Archivos del Contrato</h6>
+                    <div class="flex gap-2">
+                        <!-- Filtros -->
+                        <p-dropdown [(ngModel)]="filtroTipo" 
+                                    [options]="tiposArchivo" 
+                                    optionLabel="label" 
+                                    optionValue="value"
+                                    placeholder="Tipo de archivo"
+                                    [style]="{'width': '150px'}"></p-dropdown>
+                        
+                        <span class="p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input type="text" pInputText 
+                                   [(ngModel)]="filtroBusqueda"
+                                   placeholder="Buscar archivos..."
+                                   class="w-full">
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Tabla de archivos -->
+                <p-table [value]="archivosFiltrados" 
+                         [loading]="loading"
+                         [paginator]="true" 
+                         [rows]="10"
+                         [showCurrentPageReport]="true"
+                         currentPageReportTemplate="Mostrando {first} - {last} de {totalRecords} archivos"
+                         responsiveLayout="stack"
+                         [breakpoint]="'960px'">
+                    
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th style="width: 3rem">Tipo</th>
+                            <th>Nombre del Archivo</th>
+                            <th style="width: 8rem">Tamaño</th>
+                            <th style="width: 10rem">Fecha de Subida</th>
+                            <th style="width: 8rem">Acciones</th>
+                        </tr>
+                    </ng-template>
+                    
+                    <ng-template pTemplate="body" let-archivo>
+                        <tr>
+                            <td>
+                                <i [class]="archivo.iconoCss" class="text-2xl"></i>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="font-medium">{{archivo.nombreOriginal}}</div>
+                                    <div class="text-sm text-gray-500">{{archivo.tipoMime}}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="font-medium">{{archivo.tamanoFormateado}}</span>
+                            </td>
+                            <td>
+                                <span class="text-sm">{{formatDateTime(archivo.fechaSubida)}}</span>
+                            </td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <!-- Botón de descarga -->
+                                    <button pButton pRipple type="button" 
+                                            icon="pi pi-download" 
+                                            class="p-button-rounded p-button-text p-button-success p-button-sm"
+                                            (click)="descargarArchivo(archivo)"
+                                            pTooltip="Descargar archivo"></button>
+                                    
+                                    <!-- Botón de eliminación -->
+                                    <button pButton pRipple type="button" 
+                                            icon="pi pi-trash" 
+                                            class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                            (click)="confirmarEliminarArchivo(archivo)"
+                                            pTooltip="Eliminar archivo"></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="5" class="text-center p-4">
+                                <div class="text-gray-500">
+                                    <i class="pi pi-file-o text-4xl mb-3"></i>
+                                    <p class="m-0">No hay archivos para este contrato</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+
+            <!-- Estado cuando no hay contrato seleccionado -->
+            <div *ngIf="!selectedContrato" class="text-center p-6">
+                <i class="pi pi-file-o text-6xl text-gray-400 mb-3"></i>
+                <h5 class="text-gray-600">Seleccione un contrato para ver sus archivos</h5>
+                <p class="text-gray-500">Use el selector de arriba para elegir un contrato y gestionar sus documentos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast para mensajes -->
+<p-toast></p-toast>
+
+<!-- Diálogo de confirmación -->
+<p-confirmDialog></p-confirmDialog>
