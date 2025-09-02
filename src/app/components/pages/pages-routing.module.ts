@@ -15,8 +15,8 @@ import { RouterModule } from '@angular/router';
         { path: 'tipos-mantenimiento', loadChildren: () => import('./tipos-mantenimiento/tipos-mantenimiento.module').then(m => m.TiposMantenimientoModule) },
         { path: 'proveedores', loadChildren: () => import('./proveedores/proveedores.module').then(m => m.ProveedoresModule) },
         
-        // Tickets - TEMPORALMENTE COMENTADO MIENTRAS SE ARREGLA EL MÓDULO
-        // { path: 'tickets', loadChildren: () => import('./tickets/tickets.module').then(m => m.TicketsModule) },
+        // Tickets
+        { path: 'tickets', loadChildren: () => import('./tickets/tickets.module').then(m => m.TicketsModule) },
         
         // Contratos
         { path: 'contratos', loadChildren: () => import('./contratos/contratos.module').then(m => m.ContratosModule) },

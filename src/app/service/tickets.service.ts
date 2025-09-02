@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Ticket {
@@ -66,6 +67,15 @@ export interface ComentarioTicket {
     };
 }
 
+// Interface para comentarios que vienen del backend (estructura plana)
+export interface ComentarioTicketResponse {
+    id: number;
+    comentario: string;
+    fechaCreacion: string;
+    usuario: string;       // nombre_completo del usuario
+    tipoComentario: string; // nombre del tipo de comentario
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -75,7 +85,10 @@ export class TicketsService {
     constructor(private http: HttpClient) { }
 
     getAll(): Observable<Ticket[]> {
-        return this.http.get<Ticket[]>(this.apiUrl);
+        return this.http.get<{tickets: Ticket[], total: number, success: boolean}>(this.apiUrl)
+            .pipe(
+                map(response => response.tickets || [])
+            );
     }
 
     getAbiertos(): Observable<Ticket[]> {
@@ -90,16 +103,16 @@ export class TicketsService {
         return this.http.get<Ticket[]>(`${this.apiUrl}/equipo/${equipoId}`);
     }
 
-    create(ticket: Partial<Ticket>): Observable<Ticket> {
-        return this.http.post<Ticket>(this.apiUrl, ticket);
+    create(ticket: Partial<Ticket>): Observable<{message: string, success: boolean}> {
+        return this.http.post<{message: string, success: boolean}>(this.apiUrl, ticket);
     }
 
     update(id: number, ticket: Partial<Ticket>): Observable<Ticket> {
         return this.http.put<Ticket>(`${this.apiUrl}/${id}`, ticket);
     }
 
-    delete(id: number): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    delete(id: number): Observable<{message: string, success: boolean}> {
+        return this.http.delete<{message: string, success: boolean}>(`${this.apiUrl}/${id}`);
     }
 
     asignar(id: number, usuarioId: number): Observable<Ticket> {
@@ -111,11 +124,14 @@ export class TicketsService {
     }
 
     // Servicios para comentarios
-    getComentarios(ticketId: number): Observable<ComentarioTicket[]> {
-        return this.http.get<ComentarioTicket[]>(`${this.apiUrl}/${ticketId}/comentarios`);
+    getComentarios(ticketId: number): Observable<ComentarioTicketResponse[]> {
+        return this.http.get<{comentarios: ComentarioTicketResponse[], total: number, success: boolean}>(`${this.apiUrl}/${ticketId}/comentarios`)
+            .pipe(
+                map(response => response.comentarios || [])
+            );
     }
 
-    addComentario(ticketId: number, comentario: Partial<ComentarioTicket>): Observable<ComentarioTicket> {
-        return this.http.post<ComentarioTicket>(`${this.apiUrl}/${ticketId}/comentarios`, comentario);
+    addComentario(ticketId: number, data: {comentario: string, tipoComentario?: string, nuevoEstado?: string}): Observable<{message: string, success: boolean}> {
+        return this.http.post<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/comentarios`, data);
     }
 }

@@ -1,0 +1,396 @@
+/* Estilos para el componente de tickets */
+
+.ticket-priority {
+    &.high {
+        color: #e74c3c;
+    }
+    
+    &.medium {
+        color: #f39c12;
+    }
+    
+    &.low {
+        color: #27ae60;
+    }
+    
+    &.critical {
+        color: #8e44ad;
+    }
+}
+
+.ticket-status {
+    &.open {
+        color: #e74c3c;
+    }
+    
+    &.assigned {
+        color: #f39c12;
+    }
+    
+    &.in-progress {
+        color: #3498db;
+    }
+    
+    &.resolved {
+        color: #27ae60;
+    }
+    
+    &.closed {
+        color: #95a5a6;
+    }
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+// Estilos específicos para el textarea de comentarios
+textarea#comentarioTexto {
+    padding: 12px !important;
+    line-height: 1.5 !important;
+    resize: vertical !important;
+    min-height: 100px !important;
+    
+    &::placeholder {
+        color: #9ca3af !important;
+        font-style: italic;
+    }
+    
+    &:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    }
+}
+
+.comments-section {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.comment-item {
+    background-color: #f8f9fa;
+    
+    .comment-content {
+        margin-top: 0.5rem;
+        line-height: 1.5;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .ticket-table {
+        .p-datatable-tbody > tr > td {
+            padding: 0.5rem;
+        }
+        
+        .flex.gap-1 {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+}
+
+/* Loading state */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Custom button styles */
+.p-button.p-button-rounded {
+    border-radius: 50%;
+    padding: 0.5rem;
+    
+    &.p-button-info {
+        background-color: #3498db;
+        border-color: #3498db;
+        
+        &:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+    }
+}
+
+/* Toolbar custom styles */
+.p-toolbar.bg-primary-50 {
+    background-color: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Badge custom styles */
+.p-badge.ml-2 {
+    margin-left: 0.5rem;
+}
+
+/* ===================================== */
+/* ESTILOS PARA MODAL DE COMENTARIOS MEJORADO */
+/* ===================================== */
+
+.comentarios-container {
+    .ticket-header {
+        .surface-100 {
+            transition: all 0.3s ease;
+            
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+            }
+        }
+    }
+
+    .comentarios-scroll {
+        /* Scrollbar personalizado */
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+            
+            &:hover {
+                background: #a8a8a8;
+            }
+        }
+    }
+
+    .comentario-card {
+        transition: all 0.3s ease;
+        
+        &:hover {
+            transform: translateX(4px);
+            
+            .surface-50 {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+            }
+        }
+
+        .surface-50 {
+            position: relative;
+            
+            &::before {
+                content: '';
+                position: absolute;
+                left: -3px;
+                top: 0;
+                height: 100%;
+                width: 3px;
+                background: var(--primary-color);
+                border-radius: 0 2px 2px 0;
+                transition: all 0.3s ease;
+            }
+        }
+
+        .bg-primary-reverse {
+            background-color: rgba(var(--primary-color-rgb), 0.1);
+        }
+
+        .comment-content p {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+    }
+
+    .surface-card {
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+
+        &:hover {
+            border-color: rgba(var(--primary-color-rgb), 0.2);
+        }
+    }
+
+    /* Animaciones para los tags */
+    .p-tag {
+        transition: all 0.2s ease;
+        
+        &:hover {
+            transform: scale(1.05);
+        }
+    }
+
+    /* Estilo para formulario */
+    .formgrid {
+        .field {
+            margin-bottom: 1.5rem;
+            
+            label {
+                display: flex;
+                align-items: center;
+                font-weight: 600;
+                color: var(--text-color);
+                margin-bottom: 0.5rem;
+                
+                i {
+                    color: var(--primary-color);
+                }
+            }
+
+            .p-dropdown, .p-inputtextarea {
+                transition: all 0.2s ease;
+                
+                &:focus, &:focus-within {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 15px rgba(var(--primary-color-rgb), 0.2);
+                }
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 100px;
+                font-family: inherit;
+            }
+
+            small {
+                display: block;
+                margin-top: 0.25rem;
+                font-size: 0.75rem;
+                color: var(--text-color-secondary);
+            }
+        }
+
+        .p-button {
+            transition: all 0.2s ease;
+            
+            &:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            }
+
+            &.flex-1 {
+                flex: 1;
+            }
+        }
+    }
+
+    /* Info box styles */
+    .surface-100 {
+        &:has(.pi-info-circle) {
+            border-left: 4px solid var(--blue-500);
+            
+            .text-blue-700 {
+                color: var(--blue-700);
+            }
+            
+            .text-blue-500 {
+                color: var(--blue-500);
+            }
+        }
+    }
+
+    /* Header del modal personalizado */
+    ::ng-deep .p-dialog .p-dialog-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+        
+        .p-dialog-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .p-dialog-header-icons button {
+            color: white;
+            
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+    }
+
+    /* Footer del modal */
+    ::ng-deep .p-dialog .p-dialog-footer {
+        background-color: var(--surface-50);
+        border-top: 1px solid var(--surface-border);
+        border-radius: 0 0 8px 8px;
+    }
+
+    /* Animación de entrada para comentarios */
+    .comentario-card {
+        animation: slideInFromLeft 0.3s ease-out;
+    }
+
+    @keyframes slideInFromLeft {
+        0% {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Estado vacío mejorado */
+    .text-center.py-6 {
+        .surface-100 {
+            animation: float 3s ease-in-out infinite;
+        }
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* Responsive para el modal */
+    @media (max-width: 1024px) {
+        .grid > .col-12.lg\\:col-7,
+        .grid > .col-12.lg\\:col-5 {
+            grid-column: 1 / -1;
+        }
+        
+        .ticket-header .flex {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .ticket-header {
+            .flex.align-items-center {
+                flex-direction: column;
+                text-align: center;
+                
+                .bg-primary {
+                    margin-bottom: 1rem;
+                }
+            }
+        }
+
+        .formgrid .field {
+            margin-bottom: 1rem;
+        }
+
+        .flex.gap-2 {
+            flex-direction: column;
+            
+            .p-button {
+                width: 100%;
+            }
+        }
+    }
+}

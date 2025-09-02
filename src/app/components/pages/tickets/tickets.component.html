@@ -1,18 +1,45 @@
 <div class="grid">
     <div class="col-12">
-        <div class="card px-6 py-6">
-            <p-toast></p-toast>
-            <p-toolbar styleClass="mb-4">
-                <ng-template pTemplate="left">
-                    <div class="my-2">
-                        <button pButton pRipple label="Nuevo Ticket" icon="pi pi-plus" class="p-button-success mr-2" (click)="openNew()"></button>
-                        <button pButton pRipple label="Eliminar" icon="pi pi-trash" class="p-button-danger" (click)="deleteSelectedTickets()" [disabled]="!selectedTickets || !selectedTickets.length"></button>
+        <div class="card">
+            <!-- Cabecera -->
+            <p-toolbar styleClass="mb-4 gap-2 bg-primary-50 border-primary-200">
+                <ng-template pTemplate="start">
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-ticket text-2xl text-primary"></i>
+                        <span class="text-xl font-semibold text-primary">Gestión de Tickets</span>
+                        <p-badge 
+                            [value]="(tickets?.length || 0).toString()" 
+                            severity="info" 
+                            class="ml-2">
+                        </p-badge>
                     </div>
                 </ng-template>
 
-                <ng-template pTemplate="right">
-                    <p-fileUpload mode="basic" accept=".csv" [maxFileSize]="1000000" label="Importar" chooseLabel="Importar" class="mr-2 inline-block"></p-fileUpload>
-                    <button pButton pRipple label="Exportar" icon="pi pi-upload" class="p-button-help" (click)="dt.exportCSV()"></button>
+                <ng-template pTemplate="end">
+                    <div class="flex gap-2">
+                        <p-button 
+                            icon="pi pi-refresh" 
+                            severity="secondary" 
+                            [outlined]="true"
+                            pTooltip="Actualizar" 
+                            (onClick)="actualizarDatos()">
+                        </p-button>
+                        
+                        <p-button 
+                            [icon]="mostrarTicketsAbiertos ? 'pi pi-list' : 'pi pi-exclamation-circle'" 
+                            [severity]="mostrarTicketsAbiertos ? 'success' : 'warning'"
+                            [outlined]="true"
+                            [pTooltip]="mostrarTicketsAbiertos ? 'Ver todos los tickets' : 'Ver solo tickets abiertos'"
+                            (onClick)="alternarTicketsAbiertos()">
+                        </p-button>
+
+                        <p-button 
+                            label="Nuevo Ticket" 
+                            icon="pi pi-plus" 
+                            severity="success"
+                            (onClick)="abrirNuevoTicket()">
+                        </p-button>
+                    </div>
                 </ng-template>
             </p-toolbar>
 
@@ -80,8 +107,9 @@
                         </td>
                         <td>
                             <div class="flex">
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" (click)="editTicket(ticket)"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteTicket(ticket)"></button>
+                                <button pButton pRipple icon="pi pi-comments" class="p-button-rounded p-button-success mr-2" (click)="verComentarios(ticket)" pTooltip="Ver comentarios"></button>
+                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-warning mr-2" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
+                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="confirmarEliminar(ticket)" pTooltip="Eliminar"></button>
                             </div>
                         </td>
                     </tr>
@@ -89,34 +117,145 @@
             </p-table>
         </div>
 
-        <p-dialog [(visible)]="ticketDialog" [style]="{width: '450px'}" header="Detalles del Ticket" [modal]="true" class="p-fluid">
+        <p-dialog [(visible)]="dialogNuevoTicket" [style]="{width: '450px'}" header="Nuevo Ticket" [modal]="true" class="p-fluid">
             <ng-template pTemplate="content">
                 <div class="field">
                     <label for="descripcion">Descripción</label>
-                    <textarea pInputTextarea id="descripcion" [(ngModel)]="ticket.descripcion" required rows="4" autofocus [ngClass]="{'ng-invalid ng-dirty' : submitted && !ticket.descripcion}"></textarea>
-                    <small class="ng-dirty ng-invalid" *ngIf="submitted && !ticket.descripcion">La descripción es requerida.</small>
+                    <textarea pInputTextarea id="descripcion" [(ngModel)]="nuevoTicket.descripcion" required rows="4" autofocus></textarea>
                 </div>
                 <div class="field">
-                    <label for="estado">Estado</label>
-                    <p-dropdown id="estado" [(ngModel)]="ticket.estado" [options]="estados" optionLabel="label" optionValue="value" placeholder="Seleccionar estado"></p-dropdown>
+                    <label for="estado">
+                        <i class="pi pi-info-circle mr-1 text-blue-500"></i>
+                        Estado Inicial
+                    </label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-flag"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            pInputText 
+                            value="Abierto" 
+                            readonly 
+                            class="p-inputtext-sm surface-100 text-900"
+                            style="font-weight: 500;">
+                    </div>
+                    <small class="text-500">Todos los tickets nuevos inician con estado "Abierto"</small>
                 </div>
                 <div class="field">
                     <label for="prioridad">Prioridad</label>
-                    <p-dropdown id="prioridad" [(ngModel)]="ticket.prioridad" [options]="prioridades" optionLabel="label" optionValue="value" placeholder="Seleccionar prioridad"></p-dropdown>
+                    <p-dropdown id="prioridad" [(ngModel)]="nuevoTicket.prioridad" [options]="prioridades" placeholder="Seleccionar prioridad"></p-dropdown>
                 </div>
                 <div class="field">
-                    <label for="equipoId">ID Equipo</label>
-                    <input type="number" pInputText id="equipoId" [(ngModel)]="ticket.equipoId" required />
+                    <label for="equipo">Equipo</label>
+                    <p-dropdown 
+                        id="equipo"
+                        [(ngModel)]="nuevoTicket.equipoId" 
+                        [options]="equipos" 
+                        optionLabel="nombre"
+                        optionValue="idEquipo"
+                        placeholder="Seleccionar equipo"
+                        [filter]="true"
+                        filterBy="nombre,codigoInacif"
+                        [showClear]="true"
+                        required>
+                        <ng-template pTemplate="selectedItem" let-selectedEquipo>
+                            <div class="flex align-items-center" *ngIf="selectedEquipo">
+                                <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-equipo>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{equipo.nombre}}</div>
+                                    <div class="text-sm text-gray-500">Código: {{equipo.codigoInacif}}</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
                 </div>
                 <div class="field">
-                    <label for="usuarioCreadorId">ID Usuario Creador</label>
-                    <input type="number" pInputText id="usuarioCreadorId" [(ngModel)]="ticket.usuarioCreadorId" required />
+                    <label for="usuarioCreador">Usuario Creador</label>
+                    <p-dropdown 
+                        id="usuarioCreador"
+                        [(ngModel)]="nuevoTicket.usuarioCreadorId" 
+                        [options]="usuarios" 
+                        optionLabel="nombreCompleto"
+                        optionValue="id"
+                        placeholder="Seleccionar usuario"
+                        [filter]="true"
+                        filterBy="nombreCompleto,correo"
+                        [showClear]="true"
+                        required>
+                        <ng-template pTemplate="selectedItem" let-selectedUsuario>
+                            <div class="flex align-items-center" *ngIf="selectedUsuario">
+                                <div>{{selectedUsuario.nombreCompleto}}</div>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-usuario>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{usuario.nombreCompleto}}</div>
+                                    <div class="text-sm text-gray-500">{{usuario.correo}}</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
                 </div>
             </ng-template>
 
             <ng-template pTemplate="footer">
-                <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
-                <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="saveTicket()"></button>
+                <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogNuevoTicket = false"></button>
+                <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="guardarNuevoTicket()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <!-- Modal Editar Ticket -->
+        <p-dialog [(visible)]="dialogEditarTicket" [style]="{width: '450px'}" header="Editar Ticket" [modal]="true" class="p-fluid">
+            <ng-template pTemplate="content">
+                <div class="field">
+                    <label for="editDescripcion">Descripción</label>
+                    <textarea pInputTextarea id="editDescripcion" [(ngModel)]="ticketEditando.descripcion" required rows="4"></textarea>
+                </div>
+                <div class="field">
+                    <label for="editEstado">Estado</label>
+                    <p-dropdown id="editEstado" [(ngModel)]="ticketEditando.estado" [options]="estadosEdicion" placeholder="Seleccionar estado"></p-dropdown>
+                </div>
+                <div class="field">
+                    <label for="editPrioridad">Prioridad</label>
+                    <p-dropdown id="editPrioridad" [(ngModel)]="ticketEditando.prioridad" [options]="prioridades" placeholder="Seleccionar prioridad"></p-dropdown>
+                </div>
+                <div class="field">
+                    <label for="editEquipo">Equipo</label>
+                    <p-dropdown 
+                        id="editEquipo"
+                        [(ngModel)]="equipoSeleccionado" 
+                        [options]="equipos" 
+                        optionLabel="nombre"
+                        placeholder="Seleccionar equipo"
+                        [filter]="true"
+                        filterBy="nombre,codigoInacif"
+                        [showClear]="true">
+                        <ng-template pTemplate="selectedItem" let-selectedEquipo>
+                            <div class="flex align-items-center" *ngIf="selectedEquipo">
+                                <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-equipo>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{equipo.nombre}}</div>
+                                    <div class="text-sm text-gray-500">Código: {{equipo.codigoInacif}}</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="footer">
+                <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="cancelarEdicion()"></button>
+                <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="guardarEdicionTicket()"></button>
             </ng-template>
         </p-dialog>
 
@@ -127,7 +266,7 @@
             </div>
             <ng-template pTemplate="footer">
                 <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteTicketDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="confirmDelete()"></button>
+                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="eliminarTicketConfirmado()"></button>
             </ng-template>
         </p-dialog>
 
@@ -138,8 +277,258 @@
             </div>
             <ng-template pTemplate="footer">
                 <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteTicketsDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="confirmDeleteSelected()"></button>
+                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="eliminarTicketsSeleccionados()"></button>
+            </ng-template>
+        </p-dialog>
+
+        <!-- Diálogo de Comentarios - VERSIÓN MEJORADA -->
+        <p-dialog [(visible)]="dialogComentarios" [style]="{width: '85vw', height: '85vh'}" header="💬 Gestión de Comentarios y Estado" [modal]="true" [maximizable]="true" [draggable]="true" [resizable]="true">
+            <ng-template pTemplate="content">
+                <div class="comentarios-container">
+                    <!-- HEADER DEL TICKET -->
+                    <div class="ticket-header mb-4">
+                        <div class="surface-100 border-round-lg p-4 shadow-1">
+                            <div class="flex justify-content-between align-items-center">
+                                <div class="flex align-items-center">
+                                    <div class="bg-primary border-circle w-3rem h-3rem flex align-items-center justify-content-center mr-3">
+                                        <i class="pi pi-ticket text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="m-0 text-primary">Ticket #{{ticketSeleccionado?.id}}</h5>
+                                        <p class="text-600 mt-1 mb-0">{{ticketSeleccionado?.descripcion}}</p>
+                                        <small class="text-500">
+                                            <i class="pi pi-calendar mr-1"></i>
+                                            {{ticketSeleccionado?.fechaCreacion | date:'medium'}}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="flex flex-column align-items-end gap-2">
+                                    <p-tag [value]="ticketSeleccionado?.estado" [severity]="getSeverity(ticketSeleccionado?.estado || '')" [rounded]="true" class="text-sm"></p-tag>
+                                    <p-tag [value]="ticketSeleccionado?.prioridad" [severity]="getPrioridadSeverity(ticketSeleccionado?.prioridad || '')" [rounded]="true" class="text-sm"></p-tag>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <!-- PANEL DE COMENTARIOS EXISTENTES -->
+                        <div class="col-12 lg:col-7">
+                            <div class="surface-card border-round-lg shadow-1 h-full">
+                                <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                                    <div class="flex align-items-center">
+                                        <i class="pi pi-comments text-primary mr-2"></i>
+                                        <h6 class="m-0">Historial de Comentarios</h6>
+                                        <p-badge [value]="comentarios.length" severity="info" class="ml-2"></p-badge>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-3">
+                                    <div class="comentarios-scroll" style="max-height: 450px; overflow-y: auto; padding-right: 8px;">
+                                        <!-- ESTADO VACÍO -->
+                                        <div *ngIf="comentarios.length === 0" class="text-center py-6">
+                                            <div class="surface-100 border-circle w-6rem h-6rem flex align-items-center justify-content-center mx-auto mb-3">
+                                                <i class="pi pi-comment text-4xl text-400"></i>
+                                            </div>
+                                            <h6 class="text-600">No hay comentarios</h6>
+                                            <p class="text-500 text-sm m-0">Sé el primero en agregar un comentario a este ticket</p>
+                                        </div>
+
+                                        <!-- COMENTARIOS -->
+                                        <div *ngFor="let comentario of comentarios; let i = index" class="comentario-card mb-3">
+                                            <div class="surface-50 border-round-lg p-3 border-left-3 border-primary shadow-1 hover:shadow-2 transition-all transition-duration-200">
+                                                <!-- Header del comentario -->
+                                                <div class="flex justify-content-between align-items-start mb-3">
+                                                    <div class="flex align-items-center">
+                                                        <div class="bg-primary-reverse border-circle w-2rem h-2rem flex align-items-center justify-content-center mr-2">
+                                                            <i class="pi pi-user text-primary text-sm"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="font-bold text-primary text-sm">{{comentario.usuario}}</div>
+                                                            <small class="text-500">
+                                                                <i class="pi pi-clock mr-1"></i>
+                                                                {{comentario.fechaCreacion | date:'short'}}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <p-tag 
+                                                        [value]="comentario.tipoComentario" 
+                                                        [severity]="getTipoComentarioSeverity(comentario.tipoComentario)"
+                                                        [rounded]="true" 
+                                                        class="text-xs">
+                                                    </p-tag>
+                                                </div>
+                                                
+                                                <!-- Contenido del comentario -->
+                                                <div class="comment-content">
+                                                    <p class="line-height-3 text-700 m-0">{{comentario.comentario}}</p>
+                                                    
+                                                    <!-- MOSTRAR CAMBIO DE ESTADO SI EXISTE -->
+                                                    <div *ngIf="comentario.estadoAnterior && comentario.estadoNuevo" class="mt-3 p-2 surface-200 border-round">
+                                                        <div class="flex align-items-center text-sm">
+                                                            <i class="pi pi-arrow-right text-orange-500 mr-2"></i>
+                                                            <span class="text-600">Estado cambió de</span>
+                                                            <p-tag [value]="comentario.estadoAnterior" [severity]="getSeverity(comentario.estadoAnterior)" [rounded]="true" class="mx-2 text-xs"></p-tag>
+                                                            <span class="text-600">a</span>
+                                                            <p-tag [value]="comentario.estadoNuevo" [severity]="getSeverity(comentario.estadoNuevo)" [rounded]="true" class="mx-2 text-xs"></p-tag>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PANEL DE AGREGAR COMENTARIO -->
+                        <div class="col-12 lg:col-5">
+                            <div class="surface-card border-round-lg shadow-1 h-full">
+                                <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                                    <div class="flex align-items-center">
+                                        <i class="pi pi-plus-circle text-green-500 mr-2"></i>
+                                        <h6 class="m-0">Nuevo Comentario</h6>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-4">
+                                    <form class="formgrid grid">
+                                        <!-- CAMBIO DE ESTADO -->
+                                        <div class="field col-12">
+                                            <label for="nuevoEstado" class="block text-900 font-medium mb-2">
+                                                <i class="pi pi-refresh mr-1"></i>
+                                                Cambiar Estado (Opcional)
+                                            </label>
+                                            <p-dropdown 
+                                                id="nuevoEstado"
+                                                name="nuevoEstado"
+                                                [(ngModel)]="nuevoEstadoSeleccionado" 
+                                                [options]="estadosEdicion" 
+                                                placeholder="Mantener estado actual"
+                                                [showClear]="true"
+                                                styleClass="w-full"
+                                                [filter]="true">
+                                                <ng-template pTemplate="selectedItem" let-option>
+                                                    <div class="flex align-items-center" *ngIf="option">
+                                                        <p-tag [value]="option" [severity]="getSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
+                                                        <span>{{option}}</span>
+                                                    </div>
+                                                </ng-template>
+                                                <ng-template pTemplate="item" let-option>
+                                                    <div class="flex align-items-center">
+                                                        <p-tag [value]="option" [severity]="getSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
+                                                        <span>{{option}}</span>
+                                                    </div>
+                                                </ng-template>
+                                            </p-dropdown>
+                                        </div>
+
+                                        <!-- TIPO DE COMENTARIO -->
+                                        <div class="field col-12">
+                                            <label for="tipoComentario" class="block text-900 font-medium mb-2">
+                                                <i class="pi pi-tag mr-1"></i>
+                                                Tipo de Comentario *
+                                            </label>
+                                            <p-dropdown 
+                                                id="tipoComentario"
+                                                name="tipoComentario"
+                                                [(ngModel)]="tipoComentarioSeleccionado" 
+                                                [options]="tiposComentario" 
+                                                placeholder="Seleccionar tipo"
+                                                styleClass="w-full"
+                                                required>
+                                                <ng-template pTemplate="selectedItem" let-option>
+                                                    <div class="flex align-items-center" *ngIf="option">
+                                                        <p-tag [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
+                                                        <span>{{option}}</span>
+                                                    </div>
+                                                </ng-template>
+                                                <ng-template pTemplate="item" let-option>
+                                                    <div class="flex align-items-center">
+                                                        <p-tag [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
+                                                        <span>{{option}}</span>
+                                                    </div>
+                                                </ng-template>
+                                            </p-dropdown>
+                                        </div>
+
+                                        <!-- TEXTO DEL COMENTARIO -->
+                                        <div class="field col-12">
+                                            <label for="comentarioTexto" class="block text-900 font-medium mb-2">
+                                                <i class="pi pi-pencil mr-1"></i>
+                                                Comentario *
+                                            </label>
+                                            <textarea 
+                                                pInputTextarea 
+                                                id="comentarioTexto" 
+                                                name="comentarioTexto"
+                                                [(ngModel)]="nuevoComentario" 
+                                                rows="5" 
+                                                placeholder="Escribe tu comentario aquí..."
+                                                class="w-full"
+                                                [autoResize]="true"
+                                                required></textarea>
+                                            <small class="text-500">
+                                                {{(nuevoComentario || '').length}} caracteres
+                                            </small>
+                                        </div>
+
+                                        <!-- BOTONES DE ACCIÓN -->
+                                        <div class="field col-12">
+                                            <div class="flex justify-content-end">
+                                                <button 
+                                                    pButton 
+                                                    pRipple 
+                                                    label="Agregar Comentario" 
+                                                    icon="pi pi-send" 
+                                                    class="p-button-primary"
+                                                    (click)="agregarComentario()"
+                                                    [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)">
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- INFORMACIÓN DE AYUDA -->
+                                        <div class="field col-12">
+                                            <div class="surface-100 border-round p-3">
+                                                <div class="flex align-items-start">
+                                                    <i class="pi pi-info-circle text-blue-500 mr-2 mt-1"></i>
+                                                    <div>
+                                                        <h6 class="m-0 mb-2 text-blue-700">Información</h6>
+                                                        <ul class="text-sm text-600 m-0 pl-3">
+                                                            <li>El comentario se guardará con la fecha y hora actual</li>
+                                                            <li>Si cambias el estado, se registrará en el historial</li>
+                                                            <li>Los campos marcados con * son obligatorios</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="footer">
+                <div class="flex justify-content-end">
+                    <button 
+                        pButton 
+                        pRipple 
+                        label="Cerrar" 
+                        icon="pi pi-times" 
+                        class="p-button-text p-button-lg"
+                        (click)="cerrarModalComentarios()">
+                    </button>
+                </div>
             </ng-template>
         </p-dialog>
     </div>
 </div>
+
+<!-- Toast Messages -->
+<p-toast></p-toast>
+
+<!-- Confirm Dialog -->
+<p-confirmDialog></p-confirmDialog>

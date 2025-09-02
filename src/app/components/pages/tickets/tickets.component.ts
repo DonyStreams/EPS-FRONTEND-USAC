@@ -1,0 +1,745 @@
+import { Component, OnInit } from '@angular/core';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { TicketsService, Ticket, ComentarioTicketResponse } from '../../../service/tickets.service';
+import { EquiposService } from '../../../service/equipos.service';
+import { UsuariosService, Usuario } from '../../../service/usuarios.service';
+import { Equipo } from '../../../api/equipos';
+
+@Component({
+    selector: 'app-tickets',
+    templateUrl: './tickets.component.html',
+    styleUrls: ['./tickets.component.scss']
+})
+export class TicketsComponent implements OnInit {
+
+    // Datos principales
+    tickets: Ticket[] = [];
+    ticketSeleccionado: Ticket | null = null;
+    selectedTickets: Ticket[] = [];
+    loading: boolean = false;
+
+    // Configuración de tabla
+    cols: any[] = [];
+
+    // Filtros y búsqueda
+    globalFilter: string = '';
+    filtroEstado: string = '';
+    filtroPrioridad: string = '';
+    
+    // Opciones para dropdowns
+    estados: string[] = ['Abierto', 'Asignado', 'En Proceso', 'Resuelto', 'Cerrado'];
+    estadosEdicion: string[] = ['Abierto', 'Asignado', 'En Proceso', 'Resuelto', 'Cerrado', 'Inactivo'];
+    prioridades: string[] = ['Baja', 'Media', 'Alta', 'Crítica'];
+    
+    // Modal nuevo ticket
+    dialogNuevoTicket: boolean = false;
+    nuevoTicket: Partial<Ticket> = this.inicializarTicket();
+    
+    // Modal editar ticket
+    dialogEditarTicket: boolean = false;
+    ticketEditando: Partial<Ticket> = {};
+    equipoSeleccionado: Equipo | null = null;
+    
+    // Modal ver detalles
+    dialogDetalles: boolean = false;
+    dialogComentarios: boolean = false;
+    comentarios: ComentarioTicketResponse[] = [];
+    
+    // Modal eliminar
+    deleteTicketDialog: boolean = false;
+    deleteTicketsDialog: boolean = false;
+    ticket: Ticket | null = null;
+    
+    // Listas para dropdowns
+    equipos: Equipo[] = [];
+    usuarios: Usuario[] = [];
+    
+    // Funcionalidad de comentarios y estados
+    nuevoComentario: string = '';
+    tipoComentarioSeleccionado: string = 'Seguimiento';
+    nuevoEstadoSeleccionado: string = '';
+    tiposComentario: string[] = ['Técnico', 'Seguimiento', 'Alerta', 'Resolución', 'General'];
+    
+    // Controles de la vista
+    mostrarTicketsAbiertos: boolean = false;
+
+    constructor(
+        private ticketsService: TicketsService,
+        private equiposService: EquiposService,
+        private usuariosService: UsuariosService,
+        private messageService: MessageService,
+        private confirmationService: ConfirmationService
+    ) {}
+
+    ngOnInit() {
+        this.inicializarColumnas();
+        this.cargarDatos();
+        this.cargarEquipos();
+        this.cargarUsuarios();
+    }
+
+    /**
+     * Inicializa las columnas de la tabla
+     */
+    inicializarColumnas(): void {
+        this.cols = [
+            { field: 'id', header: 'ID' },
+            { field: 'descripcion', header: 'Descripción' },
+            { field: 'prioridad', header: 'Prioridad' },
+            { field: 'estado', header: 'Estado' },
+            { field: 'equipoNombre', header: 'Equipo' },
+            { field: 'usuarioCreador', header: 'Creador' },
+            { field: 'fechaCreacion', header: 'Fecha Creación' }
+        ];
+    }
+
+    /**
+     * Carga los datos iniciales
+     */
+    cargarDatos(): void {
+        this.loading = true;
+        
+        this.ticketsService.getAll().subscribe({
+            next: (tickets: Ticket[]) => {
+                this.tickets = tickets || [];
+                console.log('✅ Tickets cargados:', this.tickets.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar tickets:', error);
+                this.tickets = []; // Asegurarse de que tickets sea siempre un array
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al conectar con el servidor'
+                });
+            },
+            complete: () => {
+                this.loading = false;
+            }
+        });
+    }
+
+    /**
+     * Carga la lista de equipos para el dropdown
+     */
+    cargarEquipos(): void {
+        this.equiposService.getEquipos({}).subscribe({
+            next: (equipos: Equipo[]) => {
+                this.equipos = equipos || [];
+                console.log('✅ Equipos cargados:', this.equipos.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar equipos:', error);
+                this.equipos = [];
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar equipos'
+                });
+            }
+        });
+    }
+
+    /**
+     * Carga la lista de usuarios para el dropdown
+     */
+    cargarUsuarios(): void {
+        this.usuariosService.getActivos().subscribe({
+            next: (usuarios: Usuario[]) => {
+                this.usuarios = usuarios || [];
+                console.log('✅ Usuarios cargados:', this.usuarios.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar usuarios:', error);
+                this.usuarios = [];
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar usuarios'
+                });
+            }
+        });
+    }
+
+    /**
+     * Abre el diálogo para crear nuevo ticket
+     */
+    abrirNuevoTicket(): void {
+        this.nuevoTicket = this.inicializarTicket();
+        this.dialogNuevoTicket = true;
+    }
+
+    /**
+     * Guarda un nuevo ticket
+     */
+    guardarNuevoTicket(): void {
+        if (!this.validarTicket(this.nuevoTicket)) {
+            return;
+        }
+
+        this.ticketsService.create(this.nuevoTicket).subscribe({
+            next: (response: {message: string, success: boolean}) => {
+                if (response.success) {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: response.message || 'Ticket creado correctamente'
+                    });
+                    this.dialogNuevoTicket = false;
+                    this.cargarDatos(); // Recargar la lista para mostrar el nuevo ticket
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: response.message || 'Error al crear el ticket'
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('❌ Error al crear ticket:', error);
+                let errorMessage = 'Error al crear el ticket';
+                if (error.error && error.error.error) {
+                    errorMessage = error.error.error;
+                }
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMessage
+                });
+            }
+        });
+    }
+
+    /**
+     * Abre el diálogo de detalles del ticket
+     */
+    verDetalles(ticket: Ticket): void {
+        this.ticketSeleccionado = { ...ticket };
+        this.dialogDetalles = true;
+        this.cargarComentarios(ticket.id!);
+    }
+
+    /**
+     * Abre el diálogo de comentarios para un ticket
+     */
+    verComentarios(ticket: Ticket): void {
+        this.ticketSeleccionado = { ...ticket };
+        this.dialogComentarios = true;
+        this.cargarComentarios(ticket.id!);
+    }
+
+    /**
+     * Carga los comentarios de un ticket
+     */
+    cargarComentarios(ticketId: number): void {
+        this.ticketsService.getComentarios(ticketId).subscribe({
+            next: (comentarios: ComentarioTicketResponse[]) => {
+                this.comentarios = comentarios || [];
+                console.log('� Comentarios cargados:', this.comentarios.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar comentarios:', error);
+            }
+        });
+    }
+
+    /**
+     * Confirma la eliminación de un ticket
+     */
+    confirmarEliminar(ticket: Ticket): void {
+        this.confirmationService.confirm({
+            message: `¿Está seguro de eliminar el ticket "${ticket.descripcion}"?`,
+            header: 'Confirmar eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.eliminarTicket(ticket);
+            }
+        });
+    }
+
+    /**
+     * Elimina un ticket
+     */
+    eliminarTicket(ticket: Ticket): void {
+        if (!ticket.id) return;
+
+        this.ticketsService.delete(ticket.id).subscribe({
+            next: (response: {message: string, success: boolean}) => {
+                if (response.success) {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: response.message || 'Ticket desactivado correctamente'
+                    });
+                    this.cargarDatos(); // Recargar la lista
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: response.message || 'Error al desactivar el ticket'
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('❌ Error al eliminar ticket:', error);
+                let errorMessage = 'Error al desactivar el ticket';
+                if (error.error && error.error.error) {
+                    errorMessage = error.error.error;
+                }
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMessage
+                });
+            }
+        });
+    }
+
+    /**
+     * Asigna un ticket
+     */
+    asignarTicket(ticket: Ticket, usuarioId: number): void {
+        if (!ticket.id) return;
+
+        this.ticketsService.asignar(ticket.id, usuarioId).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Ticket asignado correctamente'
+                });
+                this.cargarDatos();
+            },
+            error: (error) => {
+                console.error('❌ Error al asignar ticket:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al asignar el ticket'
+                });
+            }
+        });
+    }
+
+    /**
+     * Cierra un ticket
+     */
+    cerrarTicket(ticket: Ticket): void {
+        if (!ticket.id) return;
+
+        this.confirmationService.confirm({
+            message: `¿Está seguro de cerrar el ticket "${ticket.descripcion}"?`,
+            header: 'Confirmar cierre',
+            icon: 'pi pi-check-circle',
+            accept: () => {
+                this.ticketsService.cerrar(ticket.id!).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Ticket cerrado correctamente'
+                        });
+                        this.cargarDatos();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error al cerrar ticket:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al cerrar el ticket'
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Obtiene el color para una prioridad
+     */
+    getColorPrioridad(prioridad: string): string {
+        switch (prioridad) {
+            case 'Crítica': return 'danger';
+            case 'Alta': return 'warning';
+            case 'Media': return 'info';
+            case 'Baja': return 'success';
+            default: return 'secondary';
+        }
+    }
+
+    /**
+     * Obtiene el severity para PrimeNG Tag - Estado
+     */
+    getSeverity(estado: string): string {
+        return this.getColorEstado(estado);
+    }
+
+    /**
+     * Obtiene el severity para PrimeNG Tag - Prioridad
+     */
+    getPrioridadSeverity(prioridad: string): string {
+        return this.getColorPrioridad(prioridad);
+    }
+
+    /**
+     * Obtiene el severity para PrimeNG Tag - Tipo de Comentario
+     */
+    getTipoComentarioSeverity(tipo: string): string {
+        switch (tipo?.toLowerCase()) {
+            case 'técnico': return 'info';
+            case 'seguimiento': return 'success';
+            case 'alerta': return 'warning';
+            case 'resolución': return 'success';
+            case 'general': return 'secondary';
+            default: return 'info';
+        }
+    }
+
+    /**
+     * Obtiene el color para un estado
+     */
+    getColorEstado(estado: string): string {
+        switch (estado) {
+            case 'Abierto': return 'danger';
+            case 'Asignado': return 'warning';
+            case 'En Proceso': return 'info';
+            case 'Resuelto': return 'success';
+            case 'Cerrado': return 'secondary';
+            default: return 'primary';
+        }
+    }
+
+    /**
+     * Obtiene el icono para una prioridad
+     */
+    getIconoPrioridad(prioridad: string): string {
+        switch (prioridad) {
+            case 'Crítica': return 'pi-exclamation-triangle';
+            case 'Alta': return 'pi-arrow-up';
+            case 'Media': return 'pi-minus';
+            case 'Baja': return 'pi-arrow-down';
+            default: return 'pi-circle';
+        }
+    }
+
+    /**
+     * Obtiene el icono para un estado
+     */
+    getIconoEstado(estado: string): string {
+        switch (estado) {
+            case 'Abierto': return 'pi-circle';
+            case 'Asignado': return 'pi-user';
+            case 'En Proceso': return 'pi-cog';
+            case 'Resuelto': return 'pi-check';
+            case 'Cerrado': return 'pi-times';
+            default: return 'pi-circle-fill';
+        }
+    }
+
+    /**
+     * Inicializa un ticket nuevo
+     */
+    private inicializarTicket(): Partial<Ticket> {
+        return {
+            descripcion: '',
+            prioridad: 'Media',
+            estado: 'Abierto',
+            equipoId: 1, // Temporal - necesitará selector de equipos
+            usuarioCreadorId: 1 // Temporal - vendrá del usuario logueado
+        };
+    }
+
+    /**
+     * Valida los datos del ticket
+     */
+    private validarTicket(ticket: Partial<Ticket>): boolean {
+        if (!ticket.descripcion?.trim()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validación',
+                detail: 'La descripción es obligatoria'
+            });
+            return false;
+        }
+
+        if (!ticket.prioridad) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validación',
+                detail: 'La prioridad es obligatoria'
+            });
+            return false;
+        }
+
+        if (!ticket.equipoId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validación',
+                detail: 'Debe seleccionar un equipo'
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Aplica el filtro global
+     */
+    aplicarFiltroGlobal(event: any, dt: any): void {
+        dt.filterGlobal(event.target.value, 'contains');
+    }
+
+    /**
+     * Limpia todos los filtros
+     */
+    limpiarFiltros(): void {
+        this.globalFilter = '';
+        this.filtroEstado = '';
+        this.filtroPrioridad = '';
+    }
+
+    /**
+     * Alterna la vista de tickets abiertos
+     */
+    alternarTicketsAbiertos(): void {
+        this.mostrarTicketsAbiertos = !this.mostrarTicketsAbiertos;
+        this.cargarDatos();
+    }
+
+    /**
+     * Actualiza los datos
+     */
+    actualizarDatos(): void {
+        this.cargarDatos();
+    }
+
+    /**
+     * Abre el diálogo de confirmación para eliminar un ticket
+     */
+    confirmarEliminarTicket(ticket: Ticket): void {
+        this.ticket = ticket;
+        this.deleteTicketDialog = true;
+    }
+
+    /**
+     * Abre el diálogo de confirmación para eliminar múltiples tickets
+     */
+    confirmarEliminarTickets(): void {
+        this.deleteTicketsDialog = true;
+    }
+
+    /**
+     * Elimina el ticket seleccionado (sobrecarga sin parámetros)
+     */
+    eliminarTicketConfirmado(): void {
+        if (this.ticket && this.ticket.id) {
+            this.eliminarTicket(this.ticket);
+            this.deleteTicketDialog = false;
+            this.ticket = null;
+        }
+    }
+
+    /**
+     * Elimina los tickets seleccionados
+     */
+    eliminarTicketsSeleccionados(): void {
+        // Implementar lógica para eliminar múltiples tickets
+        this.deleteTicketsDialog = false;
+        this.selectedTickets = [];
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Info',
+            detail: 'Funcionalidad en desarrollo'
+        });
+    }
+
+    /**
+     * Cierra el modal de comentarios y limpia los campos
+     */
+    cerrarModalComentarios(): void {
+        this.dialogComentarios = false;
+        this.nuevoComentario = '';
+        this.nuevoEstadoSeleccionado = '';
+        this.tipoComentarioSeleccionado = 'Seguimiento';
+    }
+
+    /**
+     * Abre el modal de edición de ticket
+     */
+    editarTicket(ticket: Ticket): void {
+        console.log('🔧 Editando ticket:', ticket);
+        console.log('📦 Equipos disponibles:', this.equipos.length);
+        
+        // Si no hay equipos cargados, cargarlos primero
+        if (this.equipos.length === 0) {
+            console.log('⏳ Cargando equipos antes de editar...');
+            this.cargarEquipos();
+            // Esperar un poco para que se carguen los equipos
+            setTimeout(() => {
+                this.abrirModalEdicion(ticket);
+            }, 500);
+        } else {
+            this.abrirModalEdicion(ticket);
+        }
+    }
+
+    /**
+     * Abre el modal de edición con los datos del ticket
+     */
+    private abrirModalEdicion(ticket: Ticket): void {
+        this.ticketEditando = { ...ticket };
+        
+        console.log('📦 Equipos disponibles al abrir modal:', this.equipos);
+        console.log('📋 Todas las propiedades del ticket:', Object.keys(ticket));
+        console.log('🆔 Buscando equipo con ID:', ticket.equipoId);
+        console.log('🔍 También verificando equipo_id:', (ticket as any).equipo_id);
+        console.log('🔍 También verificando equipoNombre:', (ticket as any).equipoNombre);
+        
+        // Intentar múltiples campos posibles para el equipo ID
+        const equipoId = ticket.equipoId || (ticket as any).equipo_id;
+        const equipoNombre = (ticket as any).equipoNombre;
+        
+        if (equipoId) {
+            // Buscar por ID
+            this.equipoSeleccionado = this.equipos.find(equipo => {
+                console.log('🔍 Comparando ID:', equipo.idEquipo, 'con', equipoId);
+                return equipo.idEquipo === equipoId;
+            }) || null;
+            console.log('🎯 Equipo encontrado por ID:', this.equipoSeleccionado);
+        } else if (equipoNombre) {
+            // Buscar por nombre
+            this.equipoSeleccionado = this.equipos.find(equipo => {
+                console.log('🔍 Comparando nombre:', equipo.nombre, 'con', equipoNombre);
+                return equipo.nombre === equipoNombre;
+            }) || null;
+            console.log('🎯 Equipo encontrado por nombre:', this.equipoSeleccionado);
+        } else {
+            this.equipoSeleccionado = null;
+            console.log('❌ No se encontró ID ni nombre de equipo en el ticket');
+        }
+        
+        console.log('✏️ Ticket para editar:', this.ticketEditando);
+        
+        this.dialogEditarTicket = true;
+    }
+
+    /**
+     * Cancela la edición y cierra el modal
+     */
+    cancelarEdicion(): void {
+        this.dialogEditarTicket = false;
+        this.ticketEditando = {};
+        this.equipoSeleccionado = null;
+    }
+
+    /**
+     * Guarda los cambios del ticket editado
+     */
+    guardarEdicionTicket(): void {
+        if (!this.ticketEditando.id) {
+            return;
+        }
+
+        // Sincronizar el equipoId con el equipo seleccionado
+        if (this.equipoSeleccionado) {
+            this.ticketEditando.equipoId = this.equipoSeleccionado.idEquipo;
+        }
+
+        console.log('💾 Guardando edición de ticket:', this.ticketEditando);
+        console.log('🎯 Equipo seleccionado:', this.equipoSeleccionado);
+
+        this.ticketsService.update(this.ticketEditando.id, this.ticketEditando as Ticket).subscribe({
+            next: (ticketActualizado) => {
+                console.log('✅ Ticket actualizado:', ticketActualizado);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Ticket actualizado correctamente'
+                });
+                this.dialogEditarTicket = false;
+                this.cargarDatos(); // Recargar la lista
+            },
+            error: (error) => {
+                console.error('❌ Error al actualizar ticket:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al actualizar el ticket'
+                });
+            }
+        });
+    }
+
+    /**
+     * Agrega un nuevo comentario (y opcionalmente cambia el estado)
+     */
+    agregarComentario(): void {
+        console.log('🔍 Debug - nuevoComentario:', this.nuevoComentario);
+        console.log('🔍 Debug - nuevoComentario.length:', this.nuevoComentario?.length);
+        console.log('🔍 Debug - nuevoComentario.trim():', this.nuevoComentario?.trim());
+        
+        if (!this.nuevoComentario.trim()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'El comentario no puede estar vacío'
+            });
+            return;
+        }
+
+        if (!this.ticketSeleccionado?.id) {
+            return;
+        }
+
+        const data = {
+            comentario: this.nuevoComentario,
+            tipoComentario: this.tipoComentarioSeleccionado || 'Seguimiento',
+            nuevoEstado: this.nuevoEstadoSeleccionado || undefined
+        };
+
+        console.log('💬 Agregando comentario:', data);
+        console.log('🔍 DEBUG - nuevoEstadoSeleccionado:', this.nuevoEstadoSeleccionado);
+        console.log('🔍 DEBUG - tipoComentarioSeleccionado:', this.tipoComentarioSeleccionado);
+        console.log('🔍 DEBUG - nuevoComentario:', this.nuevoComentario);
+
+        this.ticketsService.addComentario(this.ticketSeleccionado.id, data).subscribe({
+            next: (response) => {
+                console.log('✅ Comentario agregado:', response);
+                
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: response.message || 'Comentario agregado correctamente'
+                });
+
+                // Limpiar formulario
+                this.nuevoComentario = '';
+                this.nuevoEstadoSeleccionado = '';
+
+                // Recargar comentarios
+                this.cargarComentarios(this.ticketSeleccionado.id);
+                
+                // Recargar lista de tickets para reflejar cambios de estado
+                this.cargarDatos();
+            },
+            error: (error) => {
+                console.error('❌ Error al agregar comentario:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al agregar el comentario'
+                });
+            }
+        });
+    }
+
+    /**
+     * Cancela la adición de comentario
+     */
+    cancelarComentario(): void {
+        this.nuevoComentario = '';
+        this.nuevoEstadoSeleccionado = '';
+        this.tipoComentarioSeleccionado = 'Seguimiento';
+    }
+}
