@@ -1,340 +1,614 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ProgramacionesService, ProgramacionMantenimiento } from '../../../service/programaciones.service';
-import { AlertasService, AlertaMantenimiento } from '../../../service/alertas.service';
-import { EquiposService } from '../../../service/equipos.service';
-import { Equipo } from '../../../api/equipos';
-import { TiposMantenimientoService, TipoMantenimiento } from '../../../service/tipos-mantenimiento.service';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { Table } from 'primeng/table';
+import { HttpClient } from '@angular/common/http';
+import { ProgramacionesService } from '../../../service/programaciones.service';
+
+// Interfaces
+export interface ProgramacionMantenimiento {
+    idProgramacion?: number;
+    equipoId: number;
+    tipoMantenimientoId: number;
+    contratoId: number;
+    frecuenciaDias: number;
+    fechaUltimoMantenimiento?: Date;
+    fechaProximoMantenimiento?: Date;
+    diasAlertaPrevia: number;
+    activa: boolean;
+    observaciones?: string;
+
+    // Objetos anidados para mostrar información relacionada
+    equipo?: {
+        idEquipo?: number;
+        nombre?: string;
+        codigoInacif?: string;
+        ubicacion?: string;
+    };
+    
+    tipoMantenimiento?: {
+        idTipo?: number;
+        nombre?: string;
+    };
+    
+    contrato?: {
+        idContrato?: number;
+        descripcion?: string;
+        descripcionCompleta?: string;
+        fechaInicio?: Date;
+        fechaFin?: Date;
+        proveedor?: {
+            nombre?: string;
+        };
+    };
+}
+
+export interface Equipo {
+    idEquipo: number;
+    nombre: string;
+    codigoInacif: string;
+    ubicacion?: string;
+}
+
+export interface TipoMantenimiento {
+    idTipo: number;
+    nombre: string;
+}
+
+export interface Contrato {
+    idContrato: number;
+    descripcion: string;
+    descripcionCompleta?: string;
+    fechaInicio: Date;
+    fechaFin: Date;
+    estado: string;
+    proveedor?: {
+        nombre?: string;
+    };
+}
 
 @Component({
     selector: 'app-programaciones',
     templateUrl: './programaciones.component.html',
-    providers: [ConfirmationService, MessageService]
+    styleUrls: ['./programaciones.component.scss']
 })
 export class ProgramacionesComponent implements OnInit {
+
+    // URLs del backend
+    private readonly API_URL = 'http://localhost:8081/MantenimientosBackend/api';
+
+    // Datos principales
     programaciones: ProgramacionMantenimiento[] = [];
-    alertas: AlertaMantenimiento[] = [];
-    programacionForm: FormGroup;
+    selectedProgramacion: ProgramacionMantenimiento | null = null;
+    loading: boolean = false;
+
+    // Estadísticas
+    stats = {
+        total: 0,
+        activas: 0,
+        proximas: 0,
+        vencidas: 0
+    };
+
+    // Modal crear/editar
+    displayDialog: boolean = false;
+    displayDetailDialog: boolean = false;
+    isEditing: boolean = false;
+    programacion: ProgramacionMantenimiento = this.initializeProgramacion();
+
+    // Listas para dropdowns
     equipos: Equipo[] = [];
     tiposMantenimiento: TipoMantenimiento[] = [];
-    
-    displayDialog = false;
-    isEditing = false;
-    selectedProgramacion: ProgramacionMantenimiento | null = null;
-    loading = true;  // Cambiar a true inicialmente
-    
-    // Estadísticas del dashboard
-    totalProgramaciones = 0;
-    totalAlertas = 0;
-    totalVencidas = 0;
-    
-    maxDate = new Date();
-    
+    contratosDisponibles: Contrato[] = [];
+
     constructor(
-        private fb: FormBuilder,
-        private programacionesService: ProgramacionesService,
-        private alertasService: AlertasService,
-        private equiposService: EquiposService,
-        private tiposService: TiposMantenimientoService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        private router: Router,
-        private route: ActivatedRoute
-    ) {
-        this.programacionForm = this.fb.group({
-            id_equipo: ['', Validators.required],
-            id_tipo_mantenimiento: ['', Validators.required],
-            frecuencia_dias: ['', [Validators.required, Validators.min(1)]],
-            fecha_ultimo_mantenimiento: [''],
-            dias_alerta_previa: [7, [Validators.required, Validators.min(0)]],
-            observaciones: [''],
-            activa: [true]
-        });
-    }
+        private http: HttpClient,
+        private programacionesService: ProgramacionesService,
+        private cdr: ChangeDetectorRef
+    ) {}
 
     ngOnInit() {
-        this.loadData();
+        this.loadProgramaciones();
+        this.loadEquipos();
+        this.loadTiposMantenimiento();
     }
 
-    loadData() {
+    /**
+     * Inicializa una programación vacía
+     */
+    initializeProgramacion(): ProgramacionMantenimiento {
+        return {
+            equipoId: 0,
+            tipoMantenimientoId: 0,
+            contratoId: 0,
+            frecuenciaDias: 30,
+            diasAlertaPrevia: 7,
+            activa: true,
+            fechaProximoMantenimiento: new Date()
+        };
+    }
+
+    /**
+     * Carga todas las programaciones
+     */
+    loadProgramaciones(): void {
         this.loading = true;
         
-        console.log('[Programaciones] Iniciando carga de datos...');
-        
-        let callsCompleted = 0;
-        const totalCalls = 4;
-        
-        const checkAllCompleted = () => {
-            callsCompleted++;
-            if (callsCompleted >= totalCalls) {
-                this.loading = false;
-                console.log('[Programaciones] Todas las llamadas completadas. Arrays finales:');
-                console.log('- Programaciones:', this.programaciones.length, this.programaciones);
-                console.log('- Alertas:', this.alertas.length, this.alertas);
-                console.log('- Equipos:', this.equipos.length);
-                console.log('- Tipos:', this.tiposMantenimiento.length);
-            }
-        };
-        
-        // Cargar programaciones
-        this.programacionesService.getAll().subscribe({
+        // TODO: Implementar llamada al backend
+        // this.http.get<ProgramacionMantenimiento[]>(`${this.API_URL}/programaciones`).subscribe({
+        //     next: (data) => {
+        //         this.programaciones = data;
+        //         this.calculateStats();
+        //         this.loading = false;
+        //     },
+        //     error: (error) => {
+        //         console.error('Error cargando programaciones:', error);
+        //         this.messageService.add({
+        //             severity: 'error',
+        //             summary: 'Error',
+        //             detail: 'Error al cargar programaciones'
+        //         });
+        //         this.loading = false;
+        //     }
+        // });
+
+        // Datos de ejemplo mientras implementamos el backend
+        setTimeout(() => {
+            this.programaciones = [
+                {
+                    idProgramacion: 1,
+                    equipoId: 1,
+                    tipoMantenimientoId: 1,
+                    contratoId: 1,
+                    frecuenciaDias: 30,
+                    fechaUltimoMantenimiento: new Date('2025-08-01'),
+                    fechaProximoMantenimiento: new Date('2025-09-01'),
+                    diasAlertaPrevia: 7,
+                    activa: true,
+                    observaciones: 'Mantenimiento preventivo mensual',
+                    equipo: {
+                        idEquipo: 1,
+                        nombre: 'Microscopio Óptico',
+                        codigoInacif: 'MIC-001',
+                        ubicacion: 'Laboratorio A'
+                    },
+                    tipoMantenimiento: {
+                        idTipo: 1,
+                        nombre: 'Preventivo'
+                    },
+                    contrato: {
+                        idContrato: 1,
+                        descripcion: 'Mantenimiento equipos ópticos',
+                        descripcionCompleta: 'Mantenimiento equipos ópticos - TecnoCorp S.A.',
+                        fechaInicio: new Date('2025-01-01'),
+                        fechaFin: new Date('2025-12-31'),
+                        proveedor: {
+                            nombre: 'TecnoCorp S.A.'
+                        }
+                    }
+                }
+            ];
+            this.calculateStats();
+            this.loading = false;
+        }, 1000);
+    }
+
+    /**
+     * Carga la lista de equipos
+     */
+    loadEquipos(): void {
+        this.http.get<Equipo[]>(`${this.API_URL}/equipos`).subscribe({
             next: (data) => {
-                console.log('[Programaciones] Datos recibidos:', data);
-                console.log('[Programaciones] Estructura del primer registro:', data[0]);
-                console.log('[Programaciones] Propiedades disponibles:', Object.keys(data[0] || {}));
-                this.programaciones = data;
-                this.totalProgramaciones = data.length;
-                checkAllCompleted();
+                this.equipos = data;
             },
             error: (error) => {
-                console.error('[Programaciones] Error al cargar programaciones:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Error al cargar programaciones: ' + (error.error?.message || error.message)
-                });
-                checkAllCompleted();
-            }
-        });
-
-        // Cargar alertas
-        this.alertasService.getDashboard().subscribe({
-            next: (dashboard) => {
-                console.log('[Alertas] Dashboard recibido:', dashboard);
-                console.log('[Alertas] Estructura de alertas:', dashboard.alertas[0]);
-                console.log('[Alertas] Propiedades de alertas:', Object.keys(dashboard.alertas[0] || {}));
-                this.totalVencidas = dashboard.total_vencidas;
-                this.totalAlertas = dashboard.total_alertas;
-                this.alertas = [...dashboard.vencidas, ...dashboard.alertas];
-                checkAllCompleted();
-            },
-            error: (error) => {
-                console.error('[Alertas] Error al cargar alertas:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Error al cargar alertas: ' + (error.error?.message || error.message)
-                });
-                checkAllCompleted();
-            }
-        });
-
-        // Cargar equipos
-        this.equiposService.getEquipos({}).subscribe({
-            next: (equipos) => {
-                console.log('[Equipos] Equipos recibidos:', equipos);
-                this.equipos = equipos;
-                checkAllCompleted();
-            },
-            error: (error) => {
-                console.error('[Equipos] Error al cargar equipos:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Error al cargar equipos'
-                });
-                checkAllCompleted();
-            }
-        });
-
-        // Cargar tipos de mantenimiento
-        this.tiposService.getActivos().subscribe({
-            next: (tipos) => {
-                console.log('[Tipos] Tipos recibidos:', tipos);
-                this.tiposMantenimiento = tipos;
-                checkAllCompleted();
-            },
-            error: (error) => {
-                console.error('[Tipos] Error al cargar tipos:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Error al cargar tipos de mantenimiento'
-                });
-                checkAllCompleted();
+                console.error('Error cargando equipos:', error);
+                // Datos de fallback
+                this.equipos = [
+                    { idEquipo: 1, nombre: 'Microscopio Óptico', codigoInacif: 'MIC-001', ubicacion: 'Laboratorio A' },
+                    { idEquipo: 2, nombre: 'Balanza Analítica', codigoInacif: 'BAL-002', ubicacion: 'Laboratorio B' }
+                ];
             }
         });
     }
 
-    showCreateDialog() {
+    /**
+     * Carga los tipos de mantenimiento
+     */
+    loadTiposMantenimiento(): void {
+        this.http.get<TipoMantenimiento[]>(`${this.API_URL}/tipos-mantenimiento`).subscribe({
+            next: (data) => {
+                this.tiposMantenimiento = data;
+            },
+            error: (error) => {
+                console.error('Error cargando tipos de mantenimiento:', error);
+                // Datos de fallback
+                this.tiposMantenimiento = [
+                    { idTipo: 1, nombre: 'Preventivo' },
+                    { idTipo: 2, nombre: 'Correctivo' },
+                    { idTipo: 3, nombre: 'Calibración' }
+                ];
+            }
+        });
+    }
+
+    /**
+     * Carga todos los contratos disponibles (al inicio)
+     */
+    loadAllContratos(): void {
+        console.log('🔍 Cargando todos los contratos vigentes...');
+        
+        this.http.get<Contrato[]>(`${this.API_URL}/contratos/vigentes`).subscribe({
+            next: (data) => {
+                console.log('✅ Contratos vigentes cargados:', data);
+                console.log('📊 Cantidad de contratos:', data.length);
+                console.log('🔍 Primer contrato:', data[0]);
+                
+                this.contratosDisponibles = data;
+                
+                console.log('📝 contratosDisponibles asignado:', this.contratosDisponibles);
+                console.log('📊 Cantidad en contratosDisponibles:', this.contratosDisponibles.length);
+                
+                // 🚨 FORZAR DETECCIÓN DE CAMBIOS
+                this.cdr.detectChanges();
+                
+                // Forzar detección de cambios
+                setTimeout(() => {
+                    console.log('🔄 Después de timeout - contratosDisponibles:', this.contratosDisponibles);
+                }, 100);
+            },
+            error: (error) => {
+                console.error('❌ Error cargando contratos vigentes:', error);
+            }
+        });
+    }
+
+    /**
+     * Carga contratos disponibles para el equipo y tipo seleccionados
+     */
+    loadContratosDisponibles(): void {
+        if (!this.programacion.equipoId || !this.programacion.tipoMantenimientoId) {
+            this.contratosDisponibles = [];
+            return;
+        }
+
+        console.log('🔍 Buscando contratos para equipoId:', this.programacion.equipoId, 'tipoId:', this.programacion.tipoMantenimientoId);
+
+        // Usar el servicio de programaciones que ya corregimos
+        this.programacionesService.getContratosDisponibles(
+            this.programacion.equipoId, 
+            this.programacion.tipoMantenimientoId
+        ).subscribe({
+            next: (data) => {
+                this.contratosDisponibles = data.map(contrato => ({
+                    ...contrato,
+                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`
+                }));
+                console.log('✅ Contratos vigentes obtenidos:', this.contratosDisponibles);
+            },
+            error: (error) => {
+                console.error('❌ Error cargando contratos vigentes:', error);
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'Error al cargar contratos vigentes. Puede que no haya contratos disponibles.'
+                });
+                this.contratosDisponibles = [];
+            }
+        });
+    }
+
+    /**
+     * Calcula las estadísticas del dashboard
+     */
+    calculateStats(): void {
+        const today = new Date();
+        const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+        this.stats = {
+            total: this.programaciones.length,
+            activas: this.programaciones.filter(p => p.activa).length,
+            proximas: this.programaciones.filter(p => 
+                p.activa && 
+                p.fechaProximoMantenimiento && 
+                p.fechaProximoMantenimiento <= sevenDaysFromNow &&
+                p.fechaProximoMantenimiento >= today
+            ).length,
+            vencidas: this.programaciones.filter(p => 
+                p.activa && 
+                p.fechaProximoMantenimiento && 
+                p.fechaProximoMantenimiento < today
+            ).length
+        };
+    }
+
+    /**
+     * Abre el diálogo para crear nueva programación
+     */
+    openNew(): void {
+        this.programacion = this.initializeProgramacion();
         this.isEditing = false;
-        this.selectedProgramacion = null;
-        this.programacionForm.reset();
-        this.programacionForm.patchValue({
-            activa: true,
-            dias_alerta_previa: 7
-        });
         this.displayDialog = true;
+        
+        // 🚨 CARGAR CONTRATOS CUANDO SE ABRE EL DIÁLOGO
+        console.log('🔄 Cargando contratos al abrir diálogo...');
+        this.loadAllContratos();
     }
 
-    editProgramacion(id: number) {
-        this.programacionesService.getById(id).subscribe({
-            next: (programacion) => {
-                this.isEditing = true;
-                this.selectedProgramacion = programacion;
-                this.programacionForm.patchValue({
-                    id_equipo: programacion.equipo?.idEquipo,
-                    id_tipo_mantenimiento: programacion.tipoMantenimiento?.idTipo,
-                    frecuencia_dias: programacion.frecuenciaDias,
-                    fecha_ultimo_mantenimiento: programacion.fechaUltimoMantenimiento,
-                    dias_alerta_previa: programacion.diasAlertaPrevia,
-                    observaciones: programacion.observaciones,
-                    activa: programacion.activa
+    /**
+     * Abre el diálogo para editar programación
+     */
+    editProgramacion(programacion: ProgramacionMantenimiento): void {
+        this.programacion = { ...programacion };
+        this.isEditing = true;
+        this.displayDialog = true;
+        this.loadContratosDisponibles();
+    }
+
+    /**
+     * Muestra el detalle de una programación
+     */
+    verDetalle(programacion: ProgramacionMantenimiento): void {
+        this.selectedProgramacion = programacion;
+        this.displayDetailDialog = true;
+    }
+
+    /**
+     * Oculta el diálogo
+     */
+    hideDialog(): void {
+        this.displayDialog = false;
+        this.programacion = this.initializeProgramacion();
+        this.contratosDisponibles = [];
+    }
+
+    /**
+     * Guarda la programación
+     */
+    saveProgramacion(): void {
+        if (!this.isFormValid()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Por favor complete todos los campos requeridos'
+            });
+            return;
+        }
+
+        // 🔍 LOG PARA VERIFICAR QUE EL CONTRATO ID SE ESTÉ ENVIANDO
+        console.log('💾 Guardando programación:', this.programacion);
+        console.log('🆔 Contrato ID seleccionado:', this.programacion.contratoId);
+        console.log('📋 Datos completos a enviar:', JSON.stringify(this.programacion, null, 2));
+
+        const url = this.isEditing ? 
+            `${this.API_URL}/programaciones/${this.programacion.idProgramacion}` : 
+            `${this.API_URL}/programaciones`;
+        
+        const method = this.isEditing ? 'PUT' : 'POST';
+        
+        this.http.request(method, url, { body: this.programacion }).subscribe({
+            next: (response) => {
+                console.log('✅ Programación guardada exitosamente:', response);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.isEditing ? 'Programación actualizada' : 'Programación creada'
                 });
-                this.displayDialog = true;
+                this.hideDialog();
+                this.loadProgramaciones();
             },
             error: (error) => {
+                console.error('❌ Error guardando programación:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Error al cargar programación'
+                    detail: 'Error al guardar la programación'
                 });
             }
         });
     }
 
-    saveProgramacion() {
-        if (this.programacionForm.valid) {
-            const formData = this.programacionForm.value;
-            
-            if (this.isEditing && this.selectedProgramacion) {
-                this.programacionesService.update(this.selectedProgramacion.idProgramacion!, formData).subscribe({
-                    next: () => {
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Programación actualizada correctamente'
-                        });
-                        this.hideDialog();
-                        this.loadData();
-                    },
-                    error: (error) => {
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error al actualizar programación'
-                        });
-                    }
-                });
-            } else {
-                this.programacionesService.create(formData).subscribe({
-                    next: () => {
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Programación creada correctamente'
-                        });
-                        this.hideDialog();
-                        this.loadData();
-                    },
-                    error: (error) => {
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error al crear programación'
-                        });
-                    }
-                });
-            }
+    /**
+     * Valida si el formulario es válido
+     */
+    isFormValid(): boolean {
+        return !!(
+            this.programacion.equipoId &&
+            this.programacion.tipoMantenimientoId &&
+            this.programacion.contratoId &&
+            this.programacion.frecuenciaDias &&
+            this.programacion.diasAlertaPrevia
+        );
+    }
+
+    /**
+     * Se ejecuta cuando cambia el equipo seleccionado
+     */
+    onEquipoChange(): void {
+        this.programacion.contratoId = 0;
+        this.loadContratosDisponibles();
+    }
+
+    /**
+     * Se ejecuta cuando cambia el tipo de mantenimiento
+     */
+    onTipoChange(): void {
+        this.programacion.contratoId = 0;
+        this.loadContratosDisponibles();
+    }
+
+    /**
+     * Calcula la próxima fecha de mantenimiento
+     */
+    calcularProximaFecha(): void {
+        if (this.programacion.fechaUltimoMantenimiento && this.programacion.frecuenciaDias) {
+            const fecha = new Date(this.programacion.fechaUltimoMantenimiento);
+            fecha.setDate(fecha.getDate() + this.programacion.frecuenciaDias);
+            this.programacion.fechaProximoMantenimiento = fecha;
         }
     }
 
-    deleteProgramacion(programacion: ProgramacionMantenimiento) {
+    /**
+     * Alternar estado activa/inactiva
+     */
+    toggleActiva(programacion: ProgramacionMantenimiento): void {
         this.confirmationService.confirm({
-            message: '¿Está seguro de que desea eliminar esta programación?',
-            header: 'Confirmar eliminación',
+            message: `¿Está seguro de ${programacion.activa ? 'pausar' : 'activar'} esta programación?`,
+            header: 'Confirmar',
             icon: 'pi pi-exclamation-triangle',
             accept: () => {
-                this.programacionesService.delete(programacion.idProgramacion!).subscribe({
-                    next: () => {
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Programación eliminada correctamente'
-                        });
-                        this.loadData();
-                    },
-                    error: (error) => {
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error al eliminar programación'
-                        });
-                    }
+                programacion.activa = !programacion.activa;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: `Programación ${programacion.activa ? 'activada' : 'pausada'}`
+                });
+                this.calculateStats();
+            }
+        });
+    }
+
+    /**
+     * Crear mantenimiento desde programación
+     */
+    crearMantenimiento(programacion: ProgramacionMantenimiento): void {
+        this.confirmationService.confirm({
+            message: `¿Crear mantenimiento para ${programacion.equipo?.nombre}?`,
+            header: 'Confirmar Creación',
+            icon: 'pi pi-question',
+            accept: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Mantenimiento creado exitosamente'
                 });
             }
         });
     }
 
-    calcularProximaFecha(programacion: ProgramacionMantenimiento) {
-        // Lógica para calcular la próxima fecha basada en la frecuencia
-        if (programacion.fechaUltimoMantenimiento && programacion.frecuenciaDias) {
-            const ultimaFecha = new Date(programacion.fechaUltimoMantenimiento);
-            const proximaFecha = new Date(ultimaFecha);
-            proximaFecha.setDate(ultimaFecha.getDate() + programacion.frecuenciaDias);
-            
-            // Actualizar la programación con la nueva fecha
-            const updatedProgramacion = {
-                ...programacion,
-                fechaProximoMantenimiento: proximaFecha
-            };
-            
-            this.programacionesService.update(programacion.idProgramacion!, updatedProgramacion).subscribe({
-                next: () => {
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Éxito',
-                        detail: 'Fecha próxima calculada correctamente'
-                    });
-                    this.loadData();
-                },
-                error: (error) => {
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Error al calcular fecha próxima'
-                    });
-                }
+    /**
+     * Exportar a CSV
+     */
+    exportCSV(): void {
+        try {
+            if (!this.programaciones || this.programaciones.length === 0) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'No hay programaciones para exportar'
+                });
+                return;
+            }
+
+            const csvData = this.programaciones.map(prog => ({
+                'ID': prog.idProgramacion,
+                'Equipo': prog.equipo?.nombre || '',
+                'Código Equipo': prog.equipo?.codigoInacif || '',
+                'Tipo Mantenimiento': prog.tipoMantenimiento?.nombre || '',
+                'Contrato': prog.contrato?.descripcion || '',
+                'Proveedor': prog.contrato?.proveedor?.nombre || '',
+                'Frecuencia (días)': prog.frecuenciaDias,
+                'Último Mantenimiento': prog.fechaUltimoMantenimiento ? new Date(prog.fechaUltimoMantenimiento).toLocaleDateString('es-ES') : '',
+                'Próximo Mantenimiento': prog.fechaProximoMantenimiento ? new Date(prog.fechaProximoMantenimiento).toLocaleDateString('es-ES') : '',
+                'Días Alerta': prog.diasAlertaPrevia,
+                'Estado': prog.activa ? 'Activa' : 'Inactiva',
+                'Observaciones': prog.observaciones || ''
+            }));
+
+            const headers = Object.keys(csvData[0] || {});
+            const csvContent = [
+                headers.join(','),
+                ...csvData.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+            ].join('\n');
+
+            const fechaHoy = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+            const nombreArchivo = `programaciones_${fechaHoy}.csv`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', nombreArchivo);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `Programaciones exportadas como ${nombreArchivo}`
+            });
+        } catch (error) {
+            console.error('Error al exportar CSV:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Error al exportar los datos'
             });
         }
     }
 
-    hideDialog() {
-        this.displayDialog = false;
-        this.isEditing = false;
-        this.selectedProgramacion = null;
-        this.programacionForm.reset();
+    /**
+     * Filtro global de la tabla
+     */
+    onGlobalFilter(table: Table, event: Event): void {
+        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
 
-    getSeverity(estado: string): string {
-        switch (estado) {
-            case 'NORMAL':
+    /**
+     * Obtiene la severidad para los tags de tipo de mantenimiento
+     */
+    getTipoSeverity(tipo: string): string {
+        switch (tipo?.toLowerCase()) {
+            case 'preventivo':
                 return 'success';
-            case 'ALERTA':
+            case 'correctivo':
                 return 'warning';
-            case 'VENCIDO':
-                return 'danger';
-            default:
+            case 'calibración':
                 return 'info';
+            default:
+                return 'secondary';
         }
     }
 
-    getAbsoluteValue(value: number | undefined): number {
-        return Math.abs(value || 0);
+    /**
+     * Obtiene la clase CSS para las fechas
+     */
+    getDateClass(fecha: Date | undefined): string {
+        if (!fecha) return '';
+        
+        const today = new Date();
+        const fechaObj = new Date(fecha);
+        
+        if (fechaObj < today) {
+            return 'text-red-600 font-bold';
+        } else if (this.isProxima(fecha)) {
+            return 'text-orange-600 font-medium';
+        } else {
+            return 'text-green-600';
+        }
     }
 
-    // Función helper para convertir fechas
-    formatDate(dateString: string | Date | null | undefined): Date | null {
-        if (!dateString) return null;
-        
-        if (dateString instanceof Date) return dateString;
-        
-        // Convertir string a Date, removiendo el [UTC] si existe
-        const cleanDateString = dateString.toString().replace(/\[UTC\]$/, '');
-        const date = new Date(cleanDateString);
-        
-        return isNaN(date.getTime()) ? null : date;
+    /**
+     * Verifica si una fecha está vencida
+     */
+    isVencida(fecha: Date | undefined): boolean {
+        if (!fecha) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return new Date(fecha) < today;
+    }
+
+    /**
+     * Verifica si una fecha está próxima (dentro de 7 días)
+     */
+    isProxima(fecha: Date | undefined): boolean {
+        if (!fecha) return false;
+        const today = new Date();
+        const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+        const fechaObj = new Date(fecha);
+        return fechaObj >= today && fechaObj <= sevenDaysFromNow;
     }
 }

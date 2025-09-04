@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
 
 // PrimeNG
 import { TableModule } from 'primeng/table';
@@ -21,14 +22,20 @@ import { TagModule } from 'primeng/tag';
 
 import { ProgramacionesRoutingModule } from './programaciones-routing.module';
 import { ProgramacionesComponent } from './programaciones.component';
+import { ProgramacionesService } from '../../../service/programaciones.service';
 
 @NgModule({
     declarations: [
         ProgramacionesComponent
     ],
+    providers: [
+        ProgramacionesService
+    ],
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        FormsModule,
+        HttpClientModule,
         ProgramacionesRoutingModule,
         
         // PrimeNG

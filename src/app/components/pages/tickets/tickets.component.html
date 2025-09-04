@@ -1,45 +1,114 @@
 <div class="grid">
     <div class="col-12">
         <div class="card">
-            <!-- Cabecera -->
-            <p-toolbar styleClass="mb-4 gap-2 bg-primary-50 border-primary-200">
-                <ng-template pTemplate="start">
-                    <div class="flex align-items-center gap-2">
-                        <i class="pi pi-ticket text-2xl text-primary"></i>
-                        <span class="text-xl font-semibold text-primary">Gestión de Tickets</span>
-                        <p-badge 
-                            [value]="(tickets?.length || 0).toString()" 
-                            severity="info" 
-                            class="ml-2">
-                        </p-badge>
+            <!-- Título y descripción -->
+            <h5>Gestión de Tickets de Soporte</h5>
+            <p class="text-600 line-height-3 m-0 mb-3">Administre tickets de fallas, mantenimientos correctivos y seguimiento de equipos del laboratorio.</p>
+            
+            <!-- Estadísticas modernas -->
+            <div class="grid mb-3">
+                <div class="col-12 md:col-3">
+                    <div class="card bg-blue-100 border-left-3 border-blue-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-blue-600 font-medium">Total Tickets</span>
+                                <div class="text-2xl font-bold text-blue-900">{{statsTickets.total}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-blue-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-ticket text-white text-xl"></i>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-orange-100 border-left-3 border-orange-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-orange-600 font-medium">Abiertos</span>
+                                <div class="text-2xl font-bold text-orange-900">{{statsTickets.abiertos}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-orange-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-folder-open text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-cyan-100 border-left-3 border-cyan-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-cyan-600 font-medium">Asignados</span>
+                                <div class="text-2xl font-bold text-cyan-900">{{statsTickets.asignados}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-cyan-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-user text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-purple-100 border-left-3 border-purple-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-purple-600 font-medium">En Proceso</span>
+                                <div class="text-2xl font-bold text-purple-900">{{statsTickets.enProceso}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-purple-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-cog text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-green-100 border-left-3 border-green-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-green-600 font-medium">Resueltos</span>
+                                <div class="text-2xl font-bold text-green-900">{{statsTickets.resueltos}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-green-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-check-circle text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-gray-100 border-left-3 border-gray-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-gray-600 font-medium">Cerrados</span>
+                                <div class="text-2xl font-bold text-gray-900">{{statsTickets.cerrados}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-gray-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-lock text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="card bg-red-100 border-left-3 border-red-500">
+                        <div class="flex justify-content-between">
+                            <div>
+                                <span class="text-red-600 font-medium">Prioridad Alta</span>
+                                <div class="text-2xl font-bold text-red-900">{{statsTickets.prioridadAlta}}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-red-500 border-circle" style="width:3rem;height:3rem">
+                                <i class="pi pi-exclamation-triangle text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra de herramientas -->
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <button pButton pRipple label="Nuevo Ticket" icon="pi pi-plus" 
+                            class="p-button-success mr-2" (click)="abrirNuevoTicket()"></button>
                 </ng-template>
-
-                <ng-template pTemplate="end">
-                    <div class="flex gap-2">
-                        <p-button 
-                            icon="pi pi-refresh" 
-                            severity="secondary" 
-                            [outlined]="true"
-                            pTooltip="Actualizar" 
-                            (onClick)="actualizarDatos()">
-                        </p-button>
-                        
-                        <p-button 
-                            [icon]="mostrarTicketsAbiertos ? 'pi pi-list' : 'pi pi-exclamation-circle'" 
-                            [severity]="mostrarTicketsAbiertos ? 'success' : 'warning'"
-                            [outlined]="true"
-                            [pTooltip]="mostrarTicketsAbiertos ? 'Ver todos los tickets' : 'Ver solo tickets abiertos'"
-                            (onClick)="alternarTicketsAbiertos()">
-                        </p-button>
-
-                        <p-button 
-                            label="Nuevo Ticket" 
-                            icon="pi pi-plus" 
-                            severity="success"
-                            (onClick)="abrirNuevoTicket()">
-                        </p-button>
-                    </div>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Exportar CSV" icon="pi pi-download" 
+                            class="p-button-help" (click)="exportCSV()"></button>
                 </ng-template>
             </p-toolbar>
 
@@ -108,8 +177,7 @@
                         <td>
                             <div class="flex">
                                 <button pButton pRipple icon="pi pi-comments" class="p-button-rounded p-button-success mr-2" (click)="verComentarios(ticket)" pTooltip="Ver comentarios"></button>
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-warning mr-2" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger" (click)="confirmarEliminar(ticket)" pTooltip="Eliminar"></button>
+                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-warning" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
                             </div>
                         </td>
                     </tr>
@@ -149,6 +217,7 @@
                 <div class="field">
                     <label for="equipo">Equipo</label>
                     <p-dropdown 
+                        appendTo="body"
                         id="equipo"
                         [(ngModel)]="nuevoTicket.equipoId" 
                         [options]="equipos" 

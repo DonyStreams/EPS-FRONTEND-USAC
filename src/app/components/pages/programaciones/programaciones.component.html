@@ -1,42 +1,69 @@
 <div class="grid">
-    <!-- Tarjetas de estadísticas -->
-    <div class="col-12 md:col-4">
+    <!-- Título y descripción -->
+    <div class="col-12">
         <div class="card">
-            <div class="flex justify-content-between align-items-center">
+            <h5>Programaciones de Mantenimiento</h5>
+            <p class="text-600 line-height-3 m-0 mb-3">Gestione las programaciones automáticas de mantenimientos
+                preventivos, correctivos y calibraciones.</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="col-12 md:col-3">
+        <div class="card bg-blue-100 border-left-3 border-blue-500">
+            <div class="flex justify-content-between">
                 <div>
-                    <span class="block text-500 font-medium mb-3">Total Programaciones</span>
-                    <div class="text-900 font-medium text-xl">{{ totalProgramaciones }}</div>
+                    <span class="text-blue-600 font-medium">Total Programaciones</span>
+                    <div class="text-2xl font-bold text-blue-900">{{stats.total}}</div>
                 </div>
-                <div class="flex align-items-center justify-content-center bg-blue-100 border-round" style="width:2.5rem;height:2.5rem">
-                    <i class="pi pi-clock text-blue-500 text-xl"></i>
+                <div class="flex align-items-center justify-content-center bg-blue-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-calendar text-white text-xl"></i>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-12 md:col-4">
-        <div class="card">
-            <div class="flex justify-content-between align-items-center">
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-green-100 border-left-3 border-green-500">
+            <div class="flex justify-content-between">
                 <div>
-                    <span class="block text-500 font-medium mb-3">Alertas</span>
-                    <div class="text-900 font-medium text-xl">{{ totalAlertas }}</div>
+                    <span class="text-green-600 font-medium">Activas</span>
+                    <div class="text-2xl font-bold text-green-900">{{stats.activas}}</div>
                 </div>
-                <div class="flex align-items-center justify-content-center bg-orange-100 border-round" style="width:2.5rem;height:2.5rem">
-                    <i class="pi pi-exclamation-triangle text-orange-500 text-xl"></i>
+                <div class="flex align-items-center justify-content-center bg-green-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-check-circle text-white text-xl"></i>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-12 md:col-4">
-        <div class="card">
-            <div class="flex justify-content-between align-items-center">
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-orange-100 border-left-3 border-orange-500">
+            <div class="flex justify-content-between">
                 <div>
-                    <span class="block text-500 font-medium mb-3">Vencidas</span>
-                    <div class="text-900 font-medium text-xl">{{ totalVencidas }}</div>
+                    <span class="text-orange-600 font-medium">Próximas (7 días)</span>
+                    <div class="text-2xl font-bold text-orange-900">{{stats.proximas}}</div>
                 </div>
-                <div class="flex align-items-center justify-content-center bg-red-100 border-round" style="width:2.5rem;height:2.5rem">
-                    <i class="pi pi-times-circle text-red-500 text-xl"></i>
+                <div class="flex align-items-center justify-content-center bg-orange-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-clock text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-red-100 border-left-3 border-red-500">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-red-600 font-medium">Vencidas</span>
+                    <div class="text-2xl font-bold text-red-900">{{stats.vencidas}}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-red-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-exclamation-triangle text-white text-xl"></i>
                 </div>
             </div>
         </div>
@@ -45,74 +72,107 @@
     <!-- Tabla de programaciones -->
     <div class="col-12">
         <div class="card">
-            <h5>Programaciones de Mantenimiento</h5>
-            
+            <!-- Barra de herramientas -->
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
-                    <button pButton pRipple label="Nueva Programación" icon="pi pi-plus" class="p-button-success mr-2" (click)="showCreateDialog()"></button>
+                    <button pButton pRipple label="Nueva Programación" icon="pi pi-plus" class="p-button-success mr-2"
+                        (click)="openNew()"></button>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Exportar CSV" icon="pi pi-download" class="p-button-help"
+                        (click)="exportCSV()"></button>
                 </ng-template>
             </p-toolbar>
 
-            <p-table [value]="programaciones" [loading]="loading" styleClass="p-datatable-gridlines" [paginator]="true" [rows]="10" 
-                     responsiveLayout="scroll" [globalFilterFields]="['equipo.nombre','tipoMantenimiento.nombre','equipo.codigoInacif']">
+            <p-table #dt [value]="programaciones" [loading]="loading" [paginator]="true" [rows]="10"
+                [rowsPerPageOptions]="[10,20,30]" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} programaciones"
+                [globalFilterFields]="['equipo.nombre','tipoMantenimiento.nombre','contrato.descripcion']"
+                [rowHover]="true" dataKey="idProgramacion">
+
+                <ng-template pTemplate="caption">
+                    <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
+                        <h5 class="m-0">Gestión de Programaciones</h5>
+                        <span class="block mt-2 md:mt-0 p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..."
+                                class="w-full sm:w-auto" />
+                        </span>
+                    </div>
+                </ng-template>
+
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Equipo</th>
-                        <th>Código INACIF</th>
-                        <th>Tipo Mantenimiento</th>
-                        <th>Frecuencia (días)</th>
-                        <th>Último Mantenimiento</th>
-                        <th>Próximo Mantenimiento</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th pSortableColumn="equipo.nombre">Equipo <p-sortIcon field="equipo.nombre"></p-sortIcon></th>
+                        <th pSortableColumn="tipoMantenimiento.nombre">Tipo <p-sortIcon
+                                field="tipoMantenimiento.nombre"></p-sortIcon></th>
+                        <th pSortableColumn="contrato.descripcion">Contrato <p-sortIcon
+                                field="contrato.descripcion"></p-sortIcon></th>
+                        <th pSortableColumn="frecuenciaDias">Frecuencia <p-sortIcon field="frecuenciaDias"></p-sortIcon>
+                        </th>
+                        <th pSortableColumn="fechaProximoMantenimiento">Próximo <p-sortIcon
+                                field="fechaProximoMantenimiento"></p-sortIcon></th>
+                        <th pSortableColumn="activa">Estado <p-sortIcon field="activa"></p-sortIcon></th>
+                        <th></th>
                     </tr>
                 </ng-template>
+
                 <ng-template pTemplate="body" let-programacion>
                     <tr>
                         <td>
-                            <span class="p-column-title">Equipo</span>
-                            {{ programacion.equipo?.nombre }}
-                            <small class="block text-500">{{ programacion.equipo?.ubicacion }}</small>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{programacion.equipo?.nombre}}</div>
+                                    <div class="text-sm text-gray-500">{{programacion.equipo?.codigoInacif}}</div>
+                                </div>
+                            </div>
                         </td>
                         <td>
-                            <span class="p-column-title">Código</span>
-                            {{ programacion.equipo?.codigoInacif }}
+                            <p-tag [value]="programacion.tipoMantenimiento?.nombre"
+                                [severity]="getTipoSeverity(programacion.tipoMantenimiento?.nombre)"
+                                [rounded]="true"></p-tag>
                         </td>
                         <td>
-                            <span class="p-column-title">Tipo</span>
-                            {{ programacion.tipoMantenimiento?.nombre }}
+                            <div>
+                                <div class="font-medium">{{programacion.contrato?.descripcion}}</div>
+                                <div class="text-sm text-gray-500">{{programacion.contrato?.proveedor?.nombre}}</div>
+                            </div>
                         </td>
                         <td>
-                            <span class="p-column-title">Frecuencia</span>
-                            {{ programacion.frecuenciaDias }} días
+                            <span class="font-medium">{{programacion.frecuenciaDias}}</span> días
                         </td>
                         <td>
-                            <span class="p-column-title">Último</span>
-                            {{ formatDate(programacion.fechaUltimoMantenimiento) | date:'dd/MM/yyyy' || 'No registrado' }}
+                            <div class="flex align-items-center">
+                                <span [class]="getDateClass(programacion.fechaProximoMantenimiento)">
+                                    {{programacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}
+                                </span>
+                                <p-tag *ngIf="isVencida(programacion.fechaProximoMantenimiento)" value="VENCIDA"
+                                    severity="danger" class="ml-2"></p-tag>
+                                <p-tag
+                                    *ngIf="isProxima(programacion.fechaProximoMantenimiento) && !isVencida(programacion.fechaProximoMantenimiento)"
+                                    value="PRÓXIMA" severity="warning" class="ml-2"></p-tag>
+                            </div>
                         </td>
                         <td>
-                            <span class="p-column-title">Próximo</span>
-                            {{ formatDate(programacion.fechaProximoMantenimiento) | date:'dd/MM/yyyy' || 'No calculado' }}
-                            <small class="block" [class]="'text-' + getSeverity(programacion.estadoAlerta || 'NORMAL')">
-                                {{ programacion.diasRestantes >= 0 ? programacion.diasRestantes + ' días' : getAbsoluteValue(programacion.diasRestantes) + ' días atrasado' }}
-                            </small>
-                        </td>
-                        <td>
-                            <span class="p-column-title">Estado</span>
-                            <p-tag [value]="programacion.estadoAlerta || 'NORMAL'" 
-                                   [severity]="getSeverity(programacion.estadoAlerta || 'NORMAL')"></p-tag>
+                            <p-tag [value]="programacion.activa ? 'Activa' : 'Inactiva'"
+                                [severity]="programacion.activa ? 'success' : 'secondary'" [rounded]="true"></p-tag>
                         </td>
                         <td>
                             <div class="flex">
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" 
-                                        (click)="editProgramacion(programacion.idProgramacion!)" 
-                                        pTooltip="Editar"></button>
-                                <button pButton pRipple icon="pi pi-calendar" class="p-button-rounded p-button-info mr-2" 
-                                        (click)="calcularProximaFecha(programacion)"
-                                        pTooltip="Calcular próxima fecha"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" 
-                                        (click)="deleteProgramacion(programacion)"
-                                        pTooltip="Eliminar"></button>
+                                <button pButton pRipple icon="pi pi-eye"
+                                    class="p-button-rounded p-button-text p-button-info mr-2"
+                                    (click)="verDetalle(programacion)" pTooltip="Ver detalle"></button>
+                                <button pButton pRipple icon="pi pi-pencil"
+                                    class="p-button-rounded p-button-text p-button-warning mr-2"
+                                    (click)="editProgramacion(programacion)" pTooltip="Editar"></button>
+                                <button pButton pRipple icon="pi pi-calendar-plus"
+                                    class="p-button-rounded p-button-text p-button-success mr-2"
+                                    (click)="crearMantenimiento(programacion)" pTooltip="Crear mantenimiento"
+                                    [disabled]="!programacion.activa"></button>
+                                <button pButton pRipple [icon]="programacion.activa ? 'pi pi-pause' : 'pi pi-play'"
+                                    [class]="programacion.activa ? 'p-button-rounded p-button-text p-button-secondary' : 'p-button-rounded p-button-text p-button-success'"
+                                    (click)="toggleActiva(programacion)"
+                                    [pTooltip]="programacion.activa ? 'Pausar' : 'Activar'"></button>
                             </div>
                         </td>
                     </tr>
@@ -121,150 +181,173 @@
         </div>
     </div>
 
-    <!-- Alertas de mantenimiento -->
-    <div class="col-12" *ngIf="alertas.length > 0">
-        <div class="card">
-            <h5>Alertas de Mantenimiento</h5>
-            
-            <p-table [value]="alertas" styleClass="p-datatable-gridlines" [paginator]="true" [rows]="5" 
-                     responsiveLayout="scroll">
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Equipo</th>
-                        <th>Tipo Mantenimiento</th>
-                        <th>Fecha Próxima</th>
-                        <th>Días Restantes</th>
-                        <th>Estado</th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-alerta>
-                    <tr>
-                        <td>
-                            {{ alerta.equipo?.nombre }}
-                            <small class="block text-500">{{ alerta.equipo?.codigoInacif }}</small>
-                        </td>
-                        <td>{{ alerta.tipoMantenimiento?.nombre }}</td>
-                        <td>{{ formatDate(alerta.fechaProximoMantenimiento) | date:'dd/MM/yyyy' }}</td>
-                        <td>
-                            <span [class]="'font-bold text-' + getSeverity(alerta.estadoAlerta)">
-                                {{ alerta.diasRestantes >= 0 ? alerta.diasRestantes + ' días' : getAbsoluteValue(alerta.diasRestantes) + ' días atrasado' }}
-                            </span>
-                        </td>
-                        <td>
-                            <p-tag [value]="alerta.estadoAlerta" [severity]="getSeverity(alerta.estadoAlerta)"></p-tag>
-                        </td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </div>
-    </div>
-</div>
 
 <!-- Diálogo para crear/editar programación -->
-<p-dialog header="{{ isEditing ? 'Editar' : 'Nueva' }} Programación" 
-          [(visible)]="displayDialog" 
-          [modal]="true" 
-          [style]="{width: '600px'}"
-          (onHide)="hideDialog()">
-    
-    <form [formGroup]="programacionForm" (ngSubmit)="saveProgramacion()">
-        <div class="grid p-fluid">
-            <div class="col-12 md:col-6">
-                <label for="equipo" class="block text-900 font-medium mb-2">Equipo *</label>
-                <p-dropdown id="equipo" 
-                           formControlName="id_equipo" 
-                           [options]="equipos" 
-                           optionLabel="nombre" 
-                           optionValue="idEquipo"
-                           placeholder="Seleccione un equipo"
-                           [showClear]="true"
-                           [filter]="true">
-                    <ng-template pTemplate="selectedItem" let-selectedOption>
-                        <div *ngIf="selectedOption">
-                            {{ selectedOption.nombre }}
-                            <small class="block text-500">{{ selectedOption.codigoInacif }}</small>
+<p-dialog [header]="isEditing ? 'Editar Programación' : 'Nueva Programación'" [(visible)]="displayDialog" [modal]="true"
+    [style]="{width: '700px'}" [maximizable]="true" class="p-fluid">
+
+    <ng-template pTemplate="content">
+        <div class="formgrid grid">
+            <!-- Equipo -->
+            <div class="field col-12 md:col-6">
+                <label for="equipo">Equipo *</label>
+                <p-dropdown id="equipo" [(ngModel)]="programacion.equipoId" [options]="equipos" optionLabel="nombre"
+                    optionValue="idEquipo" placeholder="Seleccionar equipo" [filter]="true"
+                    filterBy="nombre,codigoInacif" [showClear]="true" required>
+                    <ng-template pTemplate="selectedItem" let-selectedEquipo>
+                        <div class="flex align-items-center" *ngIf="selectedEquipo">
+                            <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
                         </div>
                     </ng-template>
                     <ng-template pTemplate="item" let-equipo>
-                        <div>
-                            {{ equipo.nombre }}
-                            <small class="block text-500">{{ equipo.codigoInacif }} - {{ equipo.ubicacion }}</small>
+                        <div class="flex align-items-center">
+                            <div>
+                                <div class="font-bold">{{equipo.nombre}}</div>
+                                <div class="text-sm text-gray-500">Código: {{equipo.codigoInacif}}</div>
+                            </div>
                         </div>
                     </ng-template>
                 </p-dropdown>
-                <small class="p-error" *ngIf="programacionForm.get('id_equipo')?.invalid && programacionForm.get('id_equipo')?.touched">
-                    Equipo es requerido
-                </small>
             </div>
 
-            <div class="col-12 md:col-6">
-                <label for="tipo" class="block text-900 font-medium mb-2">Tipo de Mantenimiento *</label>
-                <p-dropdown id="tipo" 
-                           formControlName="id_tipo_mantenimiento" 
-                           [options]="tiposMantenimiento" 
-                           optionLabel="nombre" 
-                           optionValue="id_tipo"
-                           placeholder="Seleccione tipo"
-                           [showClear]="true">
+            <!-- Tipo de Mantenimiento -->
+            <div class="field col-12 md:col-6">
+                <label for="tipoMantenimiento">Tipo de Mantenimiento *</label>
+                <p-dropdown id="tipoMantenimiento" [(ngModel)]="programacion.tipoMantenimientoId"
+                    [options]="tiposMantenimiento" optionLabel="nombre" optionValue="idTipo"
+                    placeholder="Seleccionar tipo" [showClear]="true" required>
                 </p-dropdown>
-                <small class="p-error" *ngIf="programacionForm.get('id_tipo_mantenimiento')?.invalid && programacionForm.get('id_tipo_mantenimiento')?.touched">
-                    Tipo de mantenimiento es requerido
-                </small>
-            </div>
-
-            <div class="col-12 md:col-6">
-                <label for="frecuencia" class="block text-900 font-medium mb-2">Frecuencia (días) *</label>
-                <p-inputNumber id="frecuencia" 
-                              formControlName="frecuencia_dias" 
-                              mode="decimal" 
-                              [min]="1"
-                              [max]="365"
-                              placeholder="Ej: 30">
-                </p-inputNumber>
-                <small class="p-error" *ngIf="programacionForm.get('frecuencia_dias')?.invalid && programacionForm.get('frecuencia_dias')?.touched">
-                    Frecuencia debe ser mayor a 0
-                </small>
-            </div>
-
-            <div class="col-12 md:col-6">
-                <label for="alertaPrevia" class="block text-900 font-medium mb-2">Días de alerta previa</label>
-                <p-inputNumber id="alertaPrevia" 
-                              formControlName="dias_alerta_previa" 
-                              mode="decimal" 
-                              [min]="0"
-                              [max]="60">
-                </p-inputNumber>
-            </div>
-
-            <div class="col-12">
-                <label for="fechaUltimo" class="block text-900 font-medium mb-2">Fecha último mantenimiento</label>
-                <p-calendar id="fechaUltimo" 
-                           formControlName="fecha_ultimo_mantenimiento" 
-                           dateFormat="dd/mm/yy"
-                           [showIcon]="true"
-                           [maxDate]="maxDate">>
-                </p-calendar>
-            </div>
-
-            <div class="col-12">
-                <label for="observaciones" class="block text-900 font-medium mb-2">Observaciones</label>
-                <textarea id="observaciones" 
-                         formControlName="observaciones" 
-                         pInputTextarea 
-                         rows="3" 
-                         placeholder="Observaciones adicionales">
-                </textarea>
-            </div>
-
-            <div class="col-12">
-                <p-checkbox formControlName="activa" binary="true" label="Programación activa"></p-checkbox>
             </div>
         </div>
-    </form>
+
+        <!-- Contrato -->
+        <div class="field col-12">
+            <label for="contrato">Contrato Vigente *</label>
+
+            <p-dropdown id="contrato" [(ngModel)]="programacion.contratoId" [options]="contratosDisponibles"
+                optionLabel="descripcionCompleta" optionValue="idContrato" placeholder="Seleccionar contrato"
+                [filter]="true" filterBy="descripcion,proveedorNombre" [showClear]="true" required>
+                <ng-template pTemplate="selectedItem" let-selectedContrato>
+                    <div class="flex align-items-center" *ngIf="selectedContrato">
+                        <div>
+                            <div class="font-bold">{{selectedContrato.descripcion}}</div>
+                            <div class="text-sm text-gray-500">{{selectedContrato.proveedorNombre}}</div>
+                        </div>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="item" let-contrato>
+                    <div class="flex align-items-center">
+                        <div>
+                            <div class="font-bold">{{contrato.descripcion}}</div>
+                            <div class="text-sm text-gray-500">
+                                Proveedor: {{contrato.proveedorNombre}} |
+                                Vigencia: {{contrato.fechaInicio | date:'dd/MM/yyyy'}} - {{contrato.fechaFin |
+                                date:'dd/MM/yyyy'}}
+                            </div>
+                        </div>
+                    </div>
+                </ng-template>
+            </p-dropdown>
+            <small class="text-500"
+                *ngIf="contratosDisponibles.length === 0 && programacion.equipoId && programacion.tipoMantenimientoId">
+                No hay contratos vigentes que cubran este equipo y tipo de mantenimiento
+            </small>
+        </div>
+
+        <!-- Frecuencia -->
+        <div class="field col-12 md:col-6">
+            <label for="frecuencia">Frecuencia (días) *</label>
+            <p-inputNumber id="frecuencia" [(ngModel)]="programacion.frecuenciaDias" mode="decimal" [min]="1"
+                [max]="365" suffix=" días" placeholder="30" required>
+            </p-inputNumber>
+        </div>
+
+        <!-- Días de alerta previa -->
+        <div class="field col-12 md:col-6">
+            <label for="diasAlerta">Días de alerta previa *</label>
+            <p-inputNumber id="diasAlerta" [(ngModel)]="programacion.diasAlertaPrevia" mode="decimal" [min]="1"
+                [max]="30" suffix=" días" placeholder="7" required>
+            </p-inputNumber>
+        </div>
+
+        <!-- Fecha del último mantenimiento -->
+        <div class="field col-12 md:col-6">
+            <label for="fechaUltimo">Fecha último mantenimiento</label>
+            <p-calendar id="fechaUltimo" [(ngModel)]="programacion.fechaUltimoMantenimiento" dateFormat="dd/mm/yy"
+                [showIcon]="true" placeholder="dd/mm/aaaa" (onSelect)="calcularProximaFecha()">
+            </p-calendar>
+        </div>
+
+        <!-- Fecha próximo mantenimiento (calculada) -->
+        <div class="field col-12 md:col-6">
+            <label for="fechaProximo">Fecha próximo mantenimiento</label>
+            <p-calendar id="fechaProximo" [(ngModel)]="programacion.fechaProximoMantenimiento" dateFormat="dd/mm/yy"
+                [showIcon]="true" placeholder="dd/mm/aaaa" [readonly]="true">
+            </p-calendar>
+            <small class="text-500">Se calcula automáticamente basándose en la frecuencia</small>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="field col-12">
+            <label for="observaciones">Observaciones</label>
+            <textarea pInputTextarea id="observaciones" [(ngModel)]="programacion.observaciones" rows="3"
+                placeholder="Observaciones adicionales sobre la programación..." [autoResize]="true">
+                </textarea>
+        </div>
+
+        <!-- Estado activa -->
+        <div class="field col-12">
+            <p-checkbox [(ngModel)]="programacion.activa" binary="true" inputId="activa" label="Programación activa">
+            </p-checkbox>
+        </div>
+    </ng-template>
 
     <ng-template pTemplate="footer">
-        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
-        <button pButton type="submit" label="Guardar" icon="pi pi-check" [disabled]="programacionForm.invalid" (click)="saveProgramacion()"></button>
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text"
+            (click)="hideDialog()"></button>
+        <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" (click)="saveProgramacion()"
+            [disabled]="!isFormValid()"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo de detalle -->
+<p-dialog header="Detalle de Programación" [(visible)]="displayDetailDialog" [modal]="true" [style]="{width: '600px'}"
+    class="p-fluid">
+
+    <ng-template pTemplate="content" *ngIf="selectedProgramacion">
+        <div class="grid">
+            <div class="col-12 md:col-6">
+                <h6 class="text-primary">Información del Equipo</h6>
+                <p><strong>Nombre:</strong> {{selectedProgramacion.equipo?.nombre}}</p>
+                <p><strong>Código:</strong> {{selectedProgramacion.equipo?.codigoInacif}}</p>
+                <p><strong>Ubicación:</strong> {{selectedProgramacion.equipo?.ubicacion}}</p>
+            </div>
+            <div class="col-12 md:col-6">
+                <h6 class="text-primary">Información del Contrato</h6>
+                <p><strong>Descripción:</strong> {{selectedProgramacion.contrato?.descripcion}}</p>
+                <p><strong>Proveedor:</strong> {{selectedProgramacion.contrato?.proveedor?.nombre}}</p>
+                <p><strong>Vigencia:</strong> {{selectedProgramacion.contrato?.fechaInicio | date:'dd/MM/yyyy'}} -
+                    {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yyyy'}}</p>
+            </div>
+            <div class="col-12">
+                <h6 class="text-primary">Programación</h6>
+                <p><strong>Tipo:</strong> {{selectedProgramacion.tipoMantenimiento?.nombre}}</p>
+                <p><strong>Frecuencia:</strong> {{selectedProgramacion.frecuenciaDias}} días</p>
+                <p><strong>Último mantenimiento:</strong> {{selectedProgramacion.fechaUltimoMantenimiento |
+                    date:'dd/MM/yyyy'}}</p>
+                <p><strong>Próximo mantenimiento:</strong> {{selectedProgramacion.fechaProximoMantenimiento |
+                    date:'dd/MM/yyyy'}}</p>
+                <p><strong>Días de alerta:</strong> {{selectedProgramacion.diasAlertaPrevia}} días</p>
+                <p><strong>Estado:</strong> {{selectedProgramacion.activa ? 'Activa' : 'Inactiva'}}</p>
+                <p *ngIf="selectedProgramacion.observaciones"><strong>Observaciones:</strong>
+                    {{selectedProgramacion.observaciones}}</p>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cerrar" icon="pi pi-times" class="p-button-text"
+            (click)="displayDetailDialog = false"></button>
     </ng-template>
 </p-dialog>
 

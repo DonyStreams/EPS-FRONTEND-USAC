@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
       return false;
     }
 
-    console.log('[AuthGuard] ✅ Usuario autenticado en Keycloak, verificando roles...');
+  //  console.log('[AuthGuard] ✅ Usuario autenticado en Keycloak, verificando roles...');
     
     // 2. Verificar roles requeridos si están definidos en la ruta
     const requiredRoles = route.data['roles'] as string[];
@@ -69,7 +69,7 @@ export class AuthGuard implements CanActivate {
           return false;
         }
 
-        console.log('[AuthGuard] ✅ Usuario activo en el sistema, acceso permitido');
+       // console.log('[AuthGuard] ✅ Usuario activo en el sistema, acceso permitido');
         return true;
       }),
       catchError(error => {

@@ -63,6 +63,17 @@ export class TicketsComponent implements OnInit {
     // Controles de la vista
     mostrarTicketsAbiertos: boolean = false;
 
+    // Estadísticas de tickets
+    statsTickets = {
+        total: 0,
+        abiertos: 0,
+        asignados: 0,
+        enProceso: 0,
+        resueltos: 0,
+        cerrados: 0,
+        prioridadAlta: 0
+    };
+
     constructor(
         private ticketsService: TicketsService,
         private equiposService: EquiposService,
@@ -102,11 +113,13 @@ export class TicketsComponent implements OnInit {
         this.ticketsService.getAll().subscribe({
             next: (tickets: Ticket[]) => {
                 this.tickets = tickets || [];
+                this.calcularEstadisticas();
                 console.log('✅ Tickets cargados:', this.tickets.length);
             },
             error: (error) => {
                 console.error('❌ Error al cargar tickets:', error);
                 this.tickets = []; // Asegurarse de que tickets sea siempre un array
+                this.calcularEstadisticas();
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -741,5 +754,123 @@ export class TicketsComponent implements OnInit {
         this.nuevoComentario = '';
         this.nuevoEstadoSeleccionado = '';
         this.tipoComentarioSeleccionado = 'Seguimiento';
+    }
+
+    /**
+     * Calcula las estadísticas de tickets
+     */
+    calcularEstadisticas(): void {
+        if (!this.tickets || this.tickets.length === 0) {
+            this.statsTickets = {
+                total: 0,
+                abiertos: 0,
+                asignados: 0,
+                enProceso: 0,
+                resueltos: 0,
+                cerrados: 0,
+                prioridadAlta: 0
+            };
+            return;
+        }
+
+        this.statsTickets = {
+            total: this.tickets.length,
+            abiertos: this.tickets.filter(t => t.estado === 'Abierto').length,
+            asignados: this.tickets.filter(t => t.estado === 'Asignado').length,
+            enProceso: this.tickets.filter(t => t.estado === 'En Proceso').length,
+            resueltos: this.tickets.filter(t => t.estado === 'Resuelto').length,
+            cerrados: this.tickets.filter(t => t.estado === 'Cerrado').length,
+            prioridadAlta: this.tickets.filter(t => t.prioridad === 'Alta' || t.prioridad === 'Crítica').length
+        };
+    }
+
+    /**
+     * Exporta los tickets a CSV
+     */
+    exportCSV(): void {
+        try {
+            if (!this.tickets || this.tickets.length === 0) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Advertencia',
+                    detail: 'No hay tickets para exportar'
+                });
+                return;
+            }
+
+            const csvData = this.tickets.map(ticket => ({
+                'ID': ticket.id,
+                'Descripción': ticket.descripcion,
+                'Estado': ticket.estado,
+                'Prioridad': ticket.prioridad,
+                'Equipo': ticket.equipo?.nombre || 'Sin equipo',
+                'Código Equipo': ticket.equipo?.codigoInacif || '',
+                'Usuario Creador': ticket.usuarioCreador?.nombreCompleto || 'Sin asignar',
+                'Usuario Asignado': ticket.usuarioAsignado?.nombreCompleto || 'Sin asignar',
+                'Fecha Creación': ticket.fechaCreacion ? new Date(ticket.fechaCreacion).toLocaleDateString('es-ES') : '',
+                'Fecha Modificación': ticket.fechaModificacion ? new Date(ticket.fechaModificacion).toLocaleDateString('es-ES') : '',
+                'Fecha Cierre': ticket.fechaCierre ? new Date(ticket.fechaCierre).toLocaleDateString('es-ES') : ''
+            }));
+
+            // Convertir a CSV
+            const headers = Object.keys(csvData[0] || {});
+            const csvContent = [
+                headers.join(','),
+                ...csvData.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+            ].join('\n');
+
+            // Crear nombre de archivo con fecha
+            const fechaHoy = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+            const nombreArchivo = `tickets_${fechaHoy}.csv`;
+
+            // Descargar archivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', nombreArchivo);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `Tickets exportados exitosamente como ${nombreArchivo}`
+            });
+        } catch (error) {
+            console.error('Error al exportar CSV:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Error al exportar los datos'
+            });
+        }
+    }
+
+    /**
+     * Alias para abrir nuevo ticket (compatibilidad con template)
+     */
+    openNew(): void {
+        this.abrirNuevoTicket();
+    }
+
+    /**
+     * Actualiza la información (alias para compatibilidad)
+     */
+    loadTickets(): void {
+        this.cargarDatos();
+    }
+
+    /**
+     * Placeholder para funcionalidad de filtros avanzados
+     */
+    toggleFiltros(): void {
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Filtros',
+            detail: 'Panel de filtros avanzados en desarrollo'
+        });
     }
 }

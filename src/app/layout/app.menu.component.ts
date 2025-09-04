@@ -43,8 +43,7 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-ticket',
                 items: [
                     { label: 'Todos los Tickets', icon: 'pi pi-fw pi-inbox', routerLink: ['/administracion/tickets'] },
-                    { label: 'Crear Ticket', icon: 'pi pi-fw pi-plus', routerLink: ['/administracion/tickets/nuevo'] },
-                    { label: 'Prioridades', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/administracion/tickets/prioridades'] }
+                    
                 ]
             },
             {

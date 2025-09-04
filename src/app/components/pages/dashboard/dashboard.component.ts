@@ -5,7 +5,7 @@ import { ProductService } from '../../../demo/service/product.service';
 import { Subscription, debounceTime } from 'rxjs';
 import { LayoutService } from 'src/app/layout/service/app.layout.service';
 import { AlertasService, DashboardAlertas } from '../../../service/alertas.service';
-import { ProgramacionesService } from '../../../service/programaciones.service';
+// import { ProgramacionesService } from '../../../service/programaciones.service';
 import { EquiposService } from '../../../service/equipos.service';
 
 @Component({
@@ -48,7 +48,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         private productService: ProductService, 
         public layoutService: LayoutService,
         private alertasService: AlertasService,
-        private programacionesService: ProgramacionesService,
+        // private programacionesService: ProgramacionesService,
         private equiposService: EquiposService
     ) {
         this.subscription = this.layoutService.configUpdate$
