@@ -24,12 +24,12 @@ export interface ProgramacionMantenimiento {
         codigoInacif?: string;
         ubicacion?: string;
     };
-    
+
     tipoMantenimiento?: {
         idTipo?: number;
         nombre?: string;
     };
-    
+
     contrato?: {
         idContrato?: number;
         descripcion?: string;
@@ -106,7 +106,7 @@ export class ProgramacionesComponent implements OnInit {
         private http: HttpClient,
         private programacionesService: ProgramacionesService,
         private cdr: ChangeDetectorRef
-    ) {}
+    ) { }
 
     ngOnInit() {
         this.loadProgramaciones();
@@ -134,64 +134,30 @@ export class ProgramacionesComponent implements OnInit {
      */
     loadProgramaciones(): void {
         this.loading = true;
-        
-        // TODO: Implementar llamada al backend
-        // this.http.get<ProgramacionMantenimiento[]>(`${this.API_URL}/programaciones`).subscribe({
-        //     next: (data) => {
-        //         this.programaciones = data;
-        //         this.calculateStats();
-        //         this.loading = false;
-        //     },
-        //     error: (error) => {
-        //         console.error('Error cargando programaciones:', error);
-        //         this.messageService.add({
-        //             severity: 'error',
-        //             summary: 'Error',
-        //             detail: 'Error al cargar programaciones'
-        //         });
-        //         this.loading = false;
-        //     }
-        // });
 
-        // Datos de ejemplo mientras implementamos el backend
-        setTimeout(() => {
-            this.programaciones = [
-                {
-                    idProgramacion: 1,
-                    equipoId: 1,
-                    tipoMantenimientoId: 1,
-                    contratoId: 1,
-                    frecuenciaDias: 30,
-                    fechaUltimoMantenimiento: new Date('2025-08-01'),
-                    fechaProximoMantenimiento: new Date('2025-09-01'),
-                    diasAlertaPrevia: 7,
-                    activa: true,
-                    observaciones: 'Mantenimiento preventivo mensual',
-                    equipo: {
-                        idEquipo: 1,
-                        nombre: 'Microscopio Óptico',
-                        codigoInacif: 'MIC-001',
-                        ubicacion: 'Laboratorio A'
-                    },
-                    tipoMantenimiento: {
-                        idTipo: 1,
-                        nombre: 'Preventivo'
-                    },
-                    contrato: {
-                        idContrato: 1,
-                        descripcion: 'Mantenimiento equipos ópticos',
-                        descripcionCompleta: 'Mantenimiento equipos ópticos - TecnoCorp S.A.',
-                        fechaInicio: new Date('2025-01-01'),
-                        fechaFin: new Date('2025-12-31'),
-                        proveedor: {
-                            nombre: 'TecnoCorp S.A.'
-                        }
-                    }
-                }
-            ];
-            this.calculateStats();
-            this.loading = false;
-        }, 1000);
+        this.http.get<ProgramacionMantenimiento[]>(`${this.API_URL}/programaciones`).subscribe({
+            next: (data) => {
+                console.log('📋 Programaciones cargadas:', data);
+                // Convertir las fechas del formato backend a Date
+                this.programaciones = data.map(prog => ({
+                    ...prog,
+                    fechaUltimoMantenimiento: this.parseBackendDate(prog.fechaUltimoMantenimiento),
+                    fechaProximoMantenimiento: this.parseBackendDate(prog.fechaProximoMantenimiento)
+                }));
+                this.calculateStats();
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('❌ Error cargando programaciones:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar programaciones'
+                });
+                this.programaciones = [];
+                this.loading = false;
+            }
+        });
     }
 
     /**
@@ -238,28 +204,40 @@ export class ProgramacionesComponent implements OnInit {
      */
     loadAllContratos(): void {
         console.log('🔍 Cargando todos los contratos vigentes...');
-        
-        this.http.get<Contrato[]>(`${this.API_URL}/contratos/vigentes`).subscribe({
+
+        this.http.get<any[]>(`${this.API_URL}/contratos/vigentes`).subscribe({
             next: (data) => {
                 console.log('✅ Contratos vigentes cargados:', data);
                 console.log('📊 Cantidad de contratos:', data.length);
-                console.log('🔍 Primer contrato:', data[0]);
-                
-                this.contratosDisponibles = data;
-                
+
+                // Transformar los datos para que tengan la estructura correcta
+                this.contratosDisponibles = data.map(contrato => ({
+                    idContrato: contrato.idContrato,
+                    descripcion: contrato.descripcion,
+                    descripcionCompleta: contrato.descripcionCompleta || `${contrato.descripcion} - ${contrato.proveedorNombre}`,
+                    fechaInicio: new Date(contrato.fechaInicio),
+                    fechaFin: new Date(contrato.fechaFin),
+                    estado: contrato.estado,
+                    proveedorNombre: contrato.proveedorNombre,
+                    proveedor: {
+                        nombre: contrato.proveedorNombre
+                    }
+                }));
+
                 console.log('📝 contratosDisponibles asignado:', this.contratosDisponibles);
                 console.log('📊 Cantidad en contratosDisponibles:', this.contratosDisponibles.length);
-                
-                // 🚨 FORZAR DETECCIÓN DE CAMBIOS
-                this.cdr.detectChanges();
-                
+
                 // Forzar detección de cambios
-                setTimeout(() => {
-                    console.log('🔄 Después de timeout - contratosDisponibles:', this.contratosDisponibles);
-                }, 100);
+                this.cdr.detectChanges();
             },
             error: (error) => {
                 console.error('❌ Error cargando contratos vigentes:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al cargar contratos vigentes'
+                });
+                this.contratosDisponibles = [];
             }
         });
     }
@@ -277,7 +255,7 @@ export class ProgramacionesComponent implements OnInit {
 
         // Usar el servicio de programaciones que ya corregimos
         this.programacionesService.getContratosDisponibles(
-            this.programacion.equipoId, 
+            this.programacion.equipoId,
             this.programacion.tipoMantenimientoId
         ).subscribe({
             next: (data) => {
@@ -309,15 +287,15 @@ export class ProgramacionesComponent implements OnInit {
         this.stats = {
             total: this.programaciones.length,
             activas: this.programaciones.filter(p => p.activa).length,
-            proximas: this.programaciones.filter(p => 
-                p.activa && 
-                p.fechaProximoMantenimiento && 
+            proximas: this.programaciones.filter(p =>
+                p.activa &&
+                p.fechaProximoMantenimiento &&
                 p.fechaProximoMantenimiento <= sevenDaysFromNow &&
                 p.fechaProximoMantenimiento >= today
             ).length,
-            vencidas: this.programaciones.filter(p => 
-                p.activa && 
-                p.fechaProximoMantenimiento && 
+            vencidas: this.programaciones.filter(p =>
+                p.activa &&
+                p.fechaProximoMantenimiento &&
                 p.fechaProximoMantenimiento < today
             ).length
         };
@@ -330,7 +308,7 @@ export class ProgramacionesComponent implements OnInit {
         this.programacion = this.initializeProgramacion();
         this.isEditing = false;
         this.displayDialog = true;
-        
+
         // 🚨 CARGAR CONTRATOS CUANDO SE ABRE EL DIÁLOGO
         console.log('🔄 Cargando contratos al abrir diálogo...');
         this.loadAllContratos();
@@ -376,18 +354,34 @@ export class ProgramacionesComponent implements OnInit {
             return;
         }
 
-        // 🔍 LOG PARA VERIFICAR QUE EL CONTRATO ID SE ESTÉ ENVIANDO
-        console.log('💾 Guardando programación:', this.programacion);
-        console.log('🆔 Contrato ID seleccionado:', this.programacion.contratoId);
-        console.log('📋 Datos completos a enviar:', JSON.stringify(this.programacion, null, 2));
+        // Transformar los datos para el backend (espera objetos anidados, no IDs planos)
+        const programacionDTO = {
+            equipo: {
+                idEquipo: this.programacion.equipoId
+            },
+            tipoMantenimiento: {
+                idTipo: this.programacion.tipoMantenimientoId
+            },
+            contrato: {
+                idContrato: this.programacion.contratoId
+            },
+            frecuenciaDias: this.programacion.frecuenciaDias,
+            diasAlertaPrevia: this.programacion.diasAlertaPrevia,
+            fechaUltimoMantenimiento: this.programacion.fechaUltimoMantenimiento,
+            fechaProximoMantenimiento: this.programacion.fechaProximoMantenimiento,
+            activa: this.programacion.activa,
+            observaciones: this.programacion.observaciones
+        };
 
-        const url = this.isEditing ? 
-            `${this.API_URL}/programaciones/${this.programacion.idProgramacion}` : 
+        console.log('💾 Guardando programación:', programacionDTO);
+
+        const url = this.isEditing ?
+            `${this.API_URL}/programaciones/${this.programacion.idProgramacion}` :
             `${this.API_URL}/programaciones`;
-        
+
         const method = this.isEditing ? 'PUT' : 'POST';
-        
-        this.http.request(method, url, { body: this.programacion }).subscribe({
+
+        this.http.request(method, url, { body: programacionDTO }).subscribe({
             next: (response) => {
                 console.log('✅ Programación guardada exitosamente:', response);
                 this.messageService.add({
@@ -403,7 +397,7 @@ export class ProgramacionesComponent implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Error al guardar la programación'
+                    detail: error.error || 'Error al guardar la programación'
                 });
             }
         });
@@ -578,16 +572,16 @@ export class ProgramacionesComponent implements OnInit {
      */
     getDateClass(fecha: Date | undefined): string {
         if (!fecha) return '';
-        
+
         const today = new Date();
         const fechaObj = new Date(fecha);
-        
+
         if (fechaObj < today) {
-            return 'text-red-600 font-bold';
+            return 'fecha-vencida';
         } else if (this.isProxima(fecha)) {
-            return 'text-orange-600 font-medium';
+            return 'fecha-proxima';
         } else {
-            return 'text-green-600';
+            return 'fecha-normal';
         }
     }
 
@@ -610,5 +604,29 @@ export class ProgramacionesComponent implements OnInit {
         const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
         const fechaObj = new Date(fecha);
         return fechaObj >= today && fechaObj <= sevenDaysFromNow;
+    }
+
+    /**
+     * Parsea fechas del backend que vienen en formato "2025-08-08T00:00:00Z[UTC]"
+     */
+    private parseBackendDate(dateString: any): Date | null {
+        if (!dateString) return null;
+
+        // Si ya es un objeto Date, devolverlo
+        if (dateString instanceof Date) return dateString;
+
+        // Convertir a string y limpiar el formato [UTC]
+        const cleanDateString = String(dateString).replace(/\[UTC\]$/, '');
+
+        // Intentar parsear la fecha
+        const parsedDate = new Date(cleanDateString);
+
+        // Verificar si la fecha es válida
+        if (isNaN(parsedDate.getTime())) {
+            console.warn('⚠️ Fecha inválida recibida del backend:', dateString);
+            return null;
+        }
+
+        return parsedDate;
     }
 }

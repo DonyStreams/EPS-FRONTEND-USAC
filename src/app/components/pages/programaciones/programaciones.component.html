@@ -159,9 +159,6 @@
                         </td>
                         <td>
                             <div class="flex">
-                                <button pButton pRipple icon="pi pi-eye"
-                                    class="p-button-rounded p-button-text p-button-info mr-2"
-                                    (click)="verDetalle(programacion)" pTooltip="Ver detalle"></button>
                                 <button pButton pRipple icon="pi pi-pencil"
                                     class="p-button-rounded p-button-text p-button-warning mr-2"
                                     (click)="editProgramacion(programacion)" pTooltip="Editar"></button>
@@ -180,6 +177,7 @@
             </p-table>
         </div>
     </div>
+</div>
 
 
 <!-- Diálogo para crear/editar programación -->
@@ -187,16 +185,23 @@
     [style]="{width: '700px'}" [maximizable]="true" class="p-fluid">
 
     <ng-template pTemplate="content">
+        <!-- Sección: Datos Generales -->
+        <div class="text-primary font-bold text-lg mb-3 flex align-items-center">
+            <i class="pi pi-box mr-2"></i>Datos Generales
+        </div>
+
         <div class="formgrid grid">
             <!-- Equipo -->
             <div class="field col-12 md:col-6">
-                <label for="equipo">Equipo *</label>
+                <label for="equipo" class="font-medium">Equipo <span class="text-red-500">*</span></label>
                 <p-dropdown id="equipo" [(ngModel)]="programacion.equipoId" [options]="equipos" optionLabel="nombre"
                     optionValue="idEquipo" placeholder="Seleccionar equipo" [filter]="true"
-                    filterBy="nombre,codigoInacif" [showClear]="true" required>
+                    filterBy="nombre,codigoInacif" [showClear]="true" required styleClass="w-full">
                     <ng-template pTemplate="selectedItem" let-selectedEquipo>
                         <div class="flex align-items-center" *ngIf="selectedEquipo">
-                            <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
+                            <i class="pi pi-cog mr-2 text-primary"></i>
+                            <div>{{selectedEquipo.nombre}} <span
+                                    class="text-500">({{selectedEquipo.codigoInacif}})</span></div>
                         </div>
                     </ng-template>
                     <ng-template pTemplate="item" let-equipo>
@@ -212,93 +217,132 @@
 
             <!-- Tipo de Mantenimiento -->
             <div class="field col-12 md:col-6">
-                <label for="tipoMantenimiento">Tipo de Mantenimiento *</label>
+                <label for="tipoMantenimiento" class="font-medium">Tipo de Mantenimiento <span
+                        class="text-red-500">*</span></label>
                 <p-dropdown id="tipoMantenimiento" [(ngModel)]="programacion.tipoMantenimientoId"
                     [options]="tiposMantenimiento" optionLabel="nombre" optionValue="idTipo"
-                    placeholder="Seleccionar tipo" [showClear]="true" required>
+                    placeholder="Seleccionar tipo" [showClear]="true" required styleClass="w-full">
+                    <ng-template pTemplate="selectedItem" let-selected>
+                        <div class="flex align-items-center" *ngIf="selected">
+                            <i class="pi pi-wrench mr-2 text-orange-500"></i>
+                            <div>{{selected.nombre}}</div>
+                        </div>
+                    </ng-template>
                 </p-dropdown>
+            </div>
+
+            <!-- Contrato -->
+            <div class="field col-12">
+                <label for="contrato" class="font-medium">Contrato Vigente <span class="text-red-500">*</span></label>
+                <p-dropdown id="contrato" [(ngModel)]="programacion.contratoId" [options]="contratosDisponibles"
+                    optionLabel="descripcionCompleta" optionValue="idContrato" placeholder="Seleccionar contrato"
+                    [filter]="true" filterBy="descripcion,proveedorNombre" [showClear]="true" required
+                    styleClass="w-full">
+                    <ng-template pTemplate="selectedItem" let-selectedContrato>
+                        <div class="flex align-items-center" *ngIf="selectedContrato">
+                            <i class="pi pi-file-o mr-2 text-blue-500"></i>
+                            <div>
+                                <span class="font-bold">{{selectedContrato.descripcion}}</span>
+                                <span class="text-500 mx-2">|</span>
+                                <span class="text-sm">{{selectedContrato.proveedorNombre}}</span>
+                            </div>
+                        </div>
+                    </ng-template>
+                    <ng-template pTemplate="item" let-contrato>
+                        <div class="flex align-items-center border-bottom-1 surface-border pb-2">
+                            <div class="flex-1">
+                                <div class="font-bold text-900">{{contrato.descripcion}}</div>
+                                <div class="text-sm text-600 mb-1"><i
+                                        class="pi pi-building mr-1"></i>{{contrato.proveedorNombre}}</div>
+                                <div class="text-xs text-500">
+                                    <i class="pi pi-calendar mr-1"></i>
+                                    {{contrato.fechaInicio | date:'dd/MM/yyyy'}} - {{contrato.fechaFin |
+                                    date:'dd/MM/yyyy'}}
+                                </div>
+                            </div>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+                <small class="text-500"
+                    *ngIf="contratosDisponibles.length === 0 && programacion.equipoId && programacion.tipoMantenimientoId">
+                    No hay contratos vigentes que cubran este equipo y tipo de mantenimiento
+                </small>
             </div>
         </div>
 
-        <!-- Contrato -->
-        <div class="field col-12">
-            <label for="contrato">Contrato Vigente *</label>
+        <p-divider></p-divider>
 
-            <p-dropdown id="contrato" [(ngModel)]="programacion.contratoId" [options]="contratosDisponibles"
-                optionLabel="descripcionCompleta" optionValue="idContrato" placeholder="Seleccionar contrato"
-                [filter]="true" filterBy="descripcion,proveedorNombre" [showClear]="true" required>
-                <ng-template pTemplate="selectedItem" let-selectedContrato>
-                    <div class="flex align-items-center" *ngIf="selectedContrato">
-                        <div>
-                            <div class="font-bold">{{selectedContrato.descripcion}}</div>
-                            <div class="text-sm text-gray-500">{{selectedContrato.proveedorNombre}}</div>
-                        </div>
-                    </div>
-                </ng-template>
-                <ng-template pTemplate="item" let-contrato>
-                    <div class="flex align-items-center">
-                        <div>
-                            <div class="font-bold">{{contrato.descripcion}}</div>
-                            <div class="text-sm text-gray-500">
-                                Proveedor: {{contrato.proveedorNombre}} |
-                                Vigencia: {{contrato.fechaInicio | date:'dd/MM/yyyy'}} - {{contrato.fechaFin |
-                                date:'dd/MM/yyyy'}}
-                            </div>
-                        </div>
-                    </div>
-                </ng-template>
-            </p-dropdown>
-            <small class="text-500"
-                *ngIf="contratosDisponibles.length === 0 && programacion.equipoId && programacion.tipoMantenimientoId">
-                No hay contratos vigentes que cubran este equipo y tipo de mantenimiento
-            </small>
+        <!-- Sección: Planificación -->
+        <div class="text-primary font-bold text-lg mb-3 flex align-items-center">
+            <i class="pi pi-calendar-plus mr-2"></i>Planificación
         </div>
 
-        <!-- Frecuencia -->
-        <div class="field col-12 md:col-6">
-            <label for="frecuencia">Frecuencia (días) *</label>
-            <p-inputNumber id="frecuencia" [(ngModel)]="programacion.frecuenciaDias" mode="decimal" [min]="1"
-                [max]="365" suffix=" días" placeholder="30" required>
-            </p-inputNumber>
+        <div class="formgrid grid">
+            <!-- Frecuencia -->
+            <div class="field col-12 md:col-6">
+                <label for="frecuencia" class="font-medium">Frecuencia <span class="text-red-500">*</span></label>
+                <div class="p-inputgroup">
+                    <p-inputNumber id="frecuencia" [(ngModel)]="programacion.frecuenciaDias" mode="decimal" [min]="1"
+                        [max]="365" placeholder="30" required class="w-full">
+                    </p-inputNumber>
+                    <span class="p-inputgroup-addon">días</span>
+                </div>
+            </div>
+
+            <!-- Días de alerta previa -->
+            <div class="field col-12 md:col-6">
+                <label for="diasAlerta" class="font-medium">Alerta Previa <span class="text-red-500">*</span></label>
+                <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon"><i class="pi pi-bell text-orange-500"></i></span>
+                    <p-inputNumber id="diasAlerta" [(ngModel)]="programacion.diasAlertaPrevia" mode="decimal" [min]="1"
+                        [max]="30" placeholder="7" required class="w-full">
+                    </p-inputNumber>
+                    <span class="p-inputgroup-addon">días</span>
+                </div>
+            </div>
+
+            <!-- Fecha del último mantenimiento -->
+            <div class="field col-12 md:col-6">
+                <label for="fechaUltimo" class="font-medium">Último Mantenimiento</label>
+                <p-calendar id="fechaUltimo" [(ngModel)]="programacion.fechaUltimoMantenimiento" dateFormat="dd/mm/yy"
+                    [showIcon]="true" placeholder="Seleccionar fecha" (onSelect)="calcularProximaFecha()"
+                    styleClass="w-full">
+                </p-calendar>
+            </div>
+
+            <!-- Fecha próximo mantenimiento (calculada) -->
+            <div class="field col-12 md:col-6">
+                <label for="fechaProximo" class="font-medium">Próximo Mantenimiento</label>
+                <p-calendar id="fechaProximo" [(ngModel)]="programacion.fechaProximoMantenimiento" dateFormat="dd/mm/yy"
+                    [showIcon]="true" placeholder="Calculado automáticamente" [readonly]="true"
+                    [inputStyle]="{'background-color': '#f8f9fa', 'cursor': 'default'}" styleClass="w-full">
+                </p-calendar>
+                <small class="text-500 flex align-items-center mt-1">
+                    <i class="pi pi-info-circle mr-1 text-xs"></i> Se calcula según la frecuencia
+                </small>
+            </div>
         </div>
 
-        <!-- Días de alerta previa -->
-        <div class="field col-12 md:col-6">
-            <label for="diasAlerta">Días de alerta previa *</label>
-            <p-inputNumber id="diasAlerta" [(ngModel)]="programacion.diasAlertaPrevia" mode="decimal" [min]="1"
-                [max]="30" suffix=" días" placeholder="7" required>
-            </p-inputNumber>
+        <p-divider></p-divider>
+
+        <!-- Sección: Detalles Finales -->
+        <div class="text-primary font-bold text-lg mb-3 flex align-items-center">
+            <i class="pi pi-list mr-2"></i>Detalles Finales
         </div>
 
-        <!-- Fecha del último mantenimiento -->
-        <div class="field col-12 md:col-6">
-            <label for="fechaUltimo">Fecha último mantenimiento</label>
-            <p-calendar id="fechaUltimo" [(ngModel)]="programacion.fechaUltimoMantenimiento" dateFormat="dd/mm/yy"
-                [showIcon]="true" placeholder="dd/mm/aaaa" (onSelect)="calcularProximaFecha()">
-            </p-calendar>
-        </div>
-
-        <!-- Fecha próximo mantenimiento (calculada) -->
-        <div class="field col-12 md:col-6">
-            <label for="fechaProximo">Fecha próximo mantenimiento</label>
-            <p-calendar id="fechaProximo" [(ngModel)]="programacion.fechaProximoMantenimiento" dateFormat="dd/mm/yy"
-                [showIcon]="true" placeholder="dd/mm/aaaa" [readonly]="true">
-            </p-calendar>
-            <small class="text-500">Se calcula automáticamente basándose en la frecuencia</small>
-        </div>
-
-        <!-- Observaciones -->
-        <div class="field col-12">
-            <label for="observaciones">Observaciones</label>
+        <div class="field">
+            <label for="observaciones" class="font-medium">Observaciones</label>
             <textarea pInputTextarea id="observaciones" [(ngModel)]="programacion.observaciones" rows="3"
-                placeholder="Observaciones adicionales sobre la programación..." [autoResize]="true">
-                </textarea>
+                placeholder="Ingrese cualquier observación o nota adicional..." [autoResize]="true" class="w-full">
+            </textarea>
         </div>
 
-        <!-- Estado activa -->
-        <div class="field col-12">
-            <p-checkbox [(ngModel)]="programacion.activa" binary="true" inputId="activa" label="Programación activa">
-            </p-checkbox>
+        <div class="field flex align-items-center mt-3">
+            <p-checkbox [(ngModel)]="programacion.activa" binary="true" inputId="activa"></p-checkbox>
+            <label for="activa" class="ml-2 font-medium cursor-pointer select-none"
+                [class.text-green-600]="programacion.activa" [class.text-500]="!programacion.activa">
+                {{ programacion.activa ? 'Programación Activa' : 'Programación Inactiva' }}
+            </label>
         </div>
     </ng-template>
 
