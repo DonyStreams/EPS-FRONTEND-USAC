@@ -250,6 +250,28 @@ export class EquiposListComponent implements OnInit {
 
   onFileSelectedEdit(event: any) {
     const file = event.files?.[0];
+    
+    // Validar tamaño del archivo (10MB = 10,485,760 bytes)
+    const maxSize = 10485760; // 10MB
+    if (file && file.size > maxSize) {
+      this.errorImagenEdit = `El archivo es muy grande (${(file.size / 1048576).toFixed(2)} MB). El tamaño máximo permitido es 10 MB.`;
+      this.previewUrlEdit = null;
+      if (this.equipoEditando) {
+        this.equipoEditando.fotografia = null;
+      }
+      
+      // Limpiar el input
+      if (event.currentTarget) {
+        event.currentTarget.value = '';
+      }
+      
+      // Limpiar el FileUpload para permitir seleccionar de nuevo
+      if (this.fileUploadEdit) {
+        this.fileUploadEdit.clear();
+      }
+      return;
+    }
+    
     if (this.equipoEditando) {
       this.equipoEditando.fotografia = file;
     }
@@ -263,8 +285,16 @@ export class EquiposListComponent implements OnInit {
       reader.onerror = (error) => {
         console.error('Error al leer archivo (edición):', error);
         this.previewUrlEdit = null;
+        this.errorImagenEdit = 'Error al cargar la vista previa de la imagen';
       };
       reader.readAsDataURL(file);
+      
+      // Limpiar el FileUpload para permitir seleccionar otra imagen después
+      setTimeout(() => {
+        if (this.fileUploadEdit) {
+          this.fileUploadEdit.clear();
+        }
+      }, 100);
     } else {
       this.previewUrlEdit = null;
     }
@@ -331,6 +361,21 @@ export class EquiposListComponent implements OnInit {
 
   onFileSelected(event: any) {
     const file = event.files?.[0];
+    
+    // Validar tamaño del archivo (10MB = 10,485,760 bytes)
+    const maxSize = 10485760; // 10MB
+    if (file && file.size > maxSize) {
+      this.errorImagen = `El archivo es muy grande (${(file.size / 1048576).toFixed(2)} MB). El tamaño máximo permitido es 10 MB.`;
+      this.previewUrl = null;
+      this.nuevoEquipo.fotografia = null;
+      
+      // Limpiar el FileUpload para permitir seleccionar de nuevo
+      if (this.fileUpload) {
+        this.fileUpload.clear();
+      }
+      return;
+    }
+    
     this.nuevoEquipo.fotografia = file;
     this.errorImagen = null;
     
@@ -342,11 +387,45 @@ export class EquiposListComponent implements OnInit {
       reader.onerror = (error) => {
         console.error('Error al leer archivo:', error);
         this.previewUrl = null;
+        this.errorImagen = 'Error al cargar la vista previa de la imagen';
       };
       reader.readAsDataURL(file);
+      
+      // Limpiar el FileUpload para permitir seleccionar otra imagen después
+      setTimeout(() => {
+        if (this.fileUpload) {
+          this.fileUpload.clear();
+        }
+      }, 100);
     } else {
       this.previewUrl = null;
     }
+  }
+
+  limpiarImagen() {
+    // Limpiar el FileUpload
+    if (this.fileUpload) {
+      this.fileUpload.clear();
+    }
+    
+    // Limpiar variables
+    this.previewUrl = null;
+    this.nuevoEquipo.fotografia = null;
+    this.errorImagen = null;
+  }
+
+  limpiarImagenEdit() {
+    // Limpiar el FileUpload de edición
+    if (this.fileUploadEdit) {
+      this.fileUploadEdit.clear();
+    }
+    
+    // Limpiar variables
+    this.previewUrlEdit = null;
+    if (this.equipoEditando) {
+      this.equipoEditando.fotografia = null;
+    }
+    this.errorImagenEdit = null;
   }
 
   descargarFicha(equipo: Equipo) {
@@ -360,14 +439,23 @@ export class EquiposListComponent implements OnInit {
     
     if (confirm(`¿Está seguro de eliminar ${this.equiposSeleccionados.length} equipo(s) seleccionado(s)?`)) {
       const equiposEliminados: string[] = [];
-      const equiposFallidos: string[] = [];
+      const equiposFallidos: {nombre: string, motivo: string}[] = [];
       
       for (const equipo of this.equiposSeleccionados) {
         try {
           await this.equiposService.eliminarEquipo(equipo.idEquipo!).toPromise();
           equiposEliminados.push(`${equipo.nombre} (${equipo.numeroSerie || 'Sin serie'})`);
-        } catch (error) {
-          equiposFallidos.push(`${equipo.nombre} (${equipo.numeroSerie || 'Sin serie'})`);
+        } catch (error: any) {
+          let motivo = 'Error desconocido';
+          if (error?.error?.error) {
+            motivo = error.error.error;
+          } else if (error?.message) {
+            motivo = error.message;
+          }
+          equiposFallidos.push({
+            nombre: `${equipo.nombre} (${equipo.numeroSerie || 'Sin serie'})`,
+            motivo: motivo
+          });
         }
       }
       
@@ -384,9 +472,10 @@ export class EquiposListComponent implements OnInit {
       
       if (equiposFallidos.length > 0) {
         if (mensaje) mensaje += '\n\n';
-        mensaje += `❌ Equipos que no se pudieron eliminar (${equiposFallidos.length}):\n`;
-        mensaje += equiposFallidos.map(eq => `• ${eq}`).join('\n');
-        mensaje += '\n\nPosibles causas: El equipo tiene registros relacionados o no existe.';
+        mensaje += `❌ Equipos que no se pudieron eliminar (${equiposFallidos.length}):\n\n`;
+        equiposFallidos.forEach(equipo => {
+          mensaje += `• ${equipo.nombre}\n  Motivo: ${equipo.motivo}\n\n`;
+        });
       }
       
       if (mensaje) {
@@ -396,6 +485,25 @@ export class EquiposListComponent implements OnInit {
       if (equiposFallidos.length === 0) {
         this.mensaje = `${equiposEliminados.length} equipo(s) eliminado(s) correctamente.`;
         setTimeout(() => this.mensaje = null, 3500);
+      }
+    }
+  }
+
+  async eliminarEquipo(equipo: any) {
+    if (confirm(`¿Está seguro de eliminar el equipo "${equipo.nombre}"?`)) {
+      try {
+        await this.equiposService.eliminarEquipo(equipo.idEquipo!).toPromise();
+        this.mensaje = `Equipo "${equipo.nombre}" eliminado correctamente.`;
+        setTimeout(() => this.mensaje = null, 3500);
+        this.cargarEquipos();
+      } catch (error: any) {
+        let motivo = 'Error desconocido';
+        if (error?.error?.error) {
+          motivo = error.error.error;
+        } else if (error?.message) {
+          motivo = error.message;
+        }
+        alert(`❌ No se pudo eliminar el equipo:\n\n${equipo.nombre}\n\nMotivo: ${motivo}`);
       }
     }
   }

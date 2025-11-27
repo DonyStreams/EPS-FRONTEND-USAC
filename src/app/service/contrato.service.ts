@@ -172,6 +172,15 @@ export class ContratoService {
             );
     }
     
+    delete(id: number): Observable<{message: string, success: boolean}> {
+        console.log('🗑️ ContratoService: Eliminando contrato:', id);
+        return this.http.delete<{message: string, success: boolean}>(`${this.apiUrl}/${id}`, this.getHttpOptions())
+            .pipe(
+                tap(response => console.log('✅ ContratoService: Contrato eliminado:', response)),
+                catchError(this.handleError)
+            );
+    }
+    
     // 🔍 MÉTODOS DE CONSULTA ESPECIALIZADA
     
     getVigentes(): Observable<Contrato[]> {

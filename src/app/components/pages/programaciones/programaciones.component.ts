@@ -436,29 +436,97 @@ export class ProgramacionesComponent implements OnInit {
      * Calcula la próxima fecha de mantenimiento
      */
     calcularProximaFecha(): void {
-        if (this.programacion.fechaUltimoMantenimiento && this.programacion.frecuenciaDias) {
-            const fecha = new Date(this.programacion.fechaUltimoMantenimiento);
-            fecha.setDate(fecha.getDate() + this.programacion.frecuenciaDias);
-            this.programacion.fechaProximoMantenimiento = fecha;
+        if (!this.programacion.frecuenciaDias) {
+            return;
         }
+
+        // Si hay fecha de último mantenimiento, usarla como base
+        // Si no, usar la fecha actual
+        const fechaBase = this.programacion.fechaUltimoMantenimiento
+            ? new Date(this.programacion.fechaUltimoMantenimiento)
+            : new Date();
+
+        // Calcular la próxima fecha sumando la frecuencia
+        const fechaProxima = new Date(fechaBase);
+        fechaProxima.setDate(fechaProxima.getDate() + this.programacion.frecuenciaDias);
+
+        this.programacion.fechaProximoMantenimiento = fechaProxima;
+
+        console.log('📅 Próxima fecha calculada:', fechaProxima.toLocaleDateString('es-ES'));
     }
 
     /**
      * Alternar estado activa/inactiva
      */
     toggleActiva(programacion: ProgramacionMantenimiento): void {
+        const accion = programacion.activa ? 'pausar' : 'activar';
+        const explicacion = programacion.activa 
+            ? 'La programación se ocultará del calendario pero no se eliminará. Las ejecuciones existentes permanecerán.' 
+            : 'La programación volverá a aparecer en el calendario.';
+        
         this.confirmationService.confirm({
-            message: `¿Está seguro de ${programacion.activa ? 'pausar' : 'activar'} esta programación?`,
-            header: 'Confirmar',
+            message: `¿Está seguro de ${accion} esta programación? ${explicacion}`,
+            header: accion === 'pausar' ? 'Pausar Programación' : 'Activar Programación',
             icon: 'pi pi-exclamation-triangle',
             accept: () => {
-                programacion.activa = !programacion.activa;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: `Programación ${programacion.activa ? 'activada' : 'pausada'}`
-                });
-                this.calculateStats();
+                if (!programacion.idProgramacion) return;
+                
+                this.http.patch(`${this.API_URL}/programaciones/${programacion.idProgramacion}/toggle`, {})
+                    .subscribe({
+                        next: () => {
+                            programacion.activa = !programacion.activa;
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Éxito',
+                                detail: `Programación ${programacion.activa ? 'activada' : 'pausada'} correctamente`
+                            });
+                            this.calculateStats();
+                        },
+                        error: (error) => {
+                            console.error('Error al cambiar estado:', error);
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: 'No se pudo cambiar el estado de la programación'
+                            });
+                        }
+                    });
+            }
+        });
+    }
+
+    /**
+     * Eliminar programación (con sus ejecuciones asociadas)
+     */
+    deleteProgramacion(programacion: ProgramacionMantenimiento): void {
+        this.confirmationService.confirm({
+            message: '⚠️ ¿Está seguro de eliminar esta programación? Se eliminarán también TODAS las ejecuciones asociadas a esta programación. Esta acción no se puede deshacer.',
+            header: 'Eliminar Programación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                if (!programacion.idProgramacion) return;
+                
+                this.http.delete(`${this.API_URL}/programaciones/${programacion.idProgramacion}`)
+                    .subscribe({
+                        next: () => {
+                            this.programaciones = this.programaciones.filter(p => p.idProgramacion !== programacion.idProgramacion);
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Éxito',
+                                detail: 'Programación eliminada correctamente'
+                            });
+                            this.calculateStats();
+                        },
+                        error: (error) => {
+                            console.error('Error al eliminar programación:', error);
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: 'No se pudo eliminar la programación'
+                            });
+                        }
+                    });
             }
         });
     }
@@ -467,15 +535,40 @@ export class ProgramacionesComponent implements OnInit {
      * Crear mantenimiento desde programación
      */
     crearMantenimiento(programacion: ProgramacionMantenimiento): void {
+        if (!programacion.idProgramacion) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'La programación seleccionada no tiene un identificador válido'
+            });
+            return;
+        }
+
         this.confirmationService.confirm({
             message: `¿Crear mantenimiento para ${programacion.equipo?.nombre}?`,
             header: 'Confirmar Creación',
             icon: 'pi pi-question',
             accept: () => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Mantenimiento creado exitosamente'
+                this.loading = true;
+                this.programacionesService.crearMantenimiento(programacion.idProgramacion!).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: `Se generó el mantenimiento para ${programacion.equipo?.nombre || 'el equipo'}`
+                        });
+                        this.loadProgramaciones();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error creando mantenimiento:', error);
+                        this.loading = false;
+                        const detail = error?.error?.message || error?.error || 'No se pudo crear el mantenimiento';
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail
+                        });
+                    }
                 });
             }
         });

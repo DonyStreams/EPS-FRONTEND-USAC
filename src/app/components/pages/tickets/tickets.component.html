@@ -141,7 +141,6 @@
                         <th style="width: 3rem">
                             <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
                         </th>
-                        <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
                         <th pSortableColumn="descripcion">Descripción <p-sortIcon field="descripcion"></p-sortIcon></th>
                         <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
                         <th pSortableColumn="prioridad">Prioridad <p-sortIcon field="prioridad"></p-sortIcon></th>
@@ -154,11 +153,7 @@
                         <td>
                             <p-tableCheckbox [value]="ticket"></p-tableCheckbox>
                         </td>
-                        <td style="width:10%; min-width:8rem;">
-                            <span class="p-column-title">ID</span>
-                            {{ticket.id}}
-                        </td>
-                        <td style="width:35%; min-width:15rem;">
+                        <td style="width:45%; min-width:15rem;">
                             <span class="p-column-title">Descripción</span>
                             {{ticket.descripcion}}
                         </td>
@@ -175,9 +170,10 @@
                             {{ticket.fechaCreacion | date:'short'}}
                         </td>
                         <td>
-                            <div class="flex">
-                                <button pButton pRipple icon="pi pi-comments" class="p-button-rounded p-button-success mr-2" (click)="verComentarios(ticket)" pTooltip="Ver comentarios"></button>
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-warning" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
+                            <div class="flex gap-2">
+                                <button pButton pRipple icon="pi pi-comments" class="p-button-rounded p-button-text p-button-success" (click)="verComentarios(ticket)" pTooltip="Ver comentarios"></button>
+                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
+                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="confirmarEliminarTicket(ticket)" pTooltip="Eliminar"></button>
                             </div>
                         </td>
                     </tr>
@@ -577,6 +573,72 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- SECCIÓN DE EVIDENCIAS -->
+                    <div class="mt-4">
+                        <div class="surface-card border-round-lg shadow-1">
+                            <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                                <div class="flex align-items-center justify-content-between">
+                                    <div class="flex align-items-center">
+                                        <i class="pi pi-paperclip text-orange-500 mr-2"></i>
+                                        <h6 class="m-0">Evidencias Adjuntas</h6>
+                                        <p-badge [value]="evidencias.length" severity="warning" class="ml-2"></p-badge>
+                                    </div>
+                                    <button 
+                                        pButton 
+                                        pRipple 
+                                        label="Subir Evidencia" 
+                                        icon="pi pi-upload" 
+                                        class="p-button-sm p-button-outlined p-button-warning"
+                                        (click)="mostrarDialogEvidencia()">
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3">
+                                <!-- ESTADO VACÍO -->
+                                <div *ngIf="evidencias.length === 0" class="text-center py-4">
+                                    <div class="surface-100 border-circle w-4rem h-4rem flex align-items-center justify-content-center mx-auto mb-2">
+                                        <i class="pi pi-image text-3xl text-400"></i>
+                                    </div>
+                                    <p class="text-500 text-sm m-0">No hay evidencias adjuntas</p>
+                                </div>
+
+                                <!-- LISTA DE EVIDENCIAS -->
+                                <div class="grid">
+                                    <div *ngFor="let evidencia of evidencias" class="col-12 md:col-6 lg:col-4">
+                                        <div class="surface-50 border-round-lg p-3 shadow-1 hover:shadow-3 transition-all transition-duration-200">
+                                            <div class="flex justify-content-between align-items-start mb-2">
+                                                <i class="pi pi-file text-2xl text-orange-500"></i>
+                                                <button 
+                                                    pButton 
+                                                    pRipple 
+                                                    icon="pi pi-trash" 
+                                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                                    (click)="eliminarEvidencia(evidencia)"
+                                                    pTooltip="Eliminar evidencia">
+                                                </button>
+                                            </div>
+                                            <div class="mb-2">
+                                                <p class="text-sm font-medium text-900 m-0 mb-1">{{evidencia.descripcion || 'Sin descripción'}}</p>
+                                                <small class="text-500">
+                                                    <i class="pi pi-calendar mr-1"></i>
+                                                    {{evidencia.fechaCreacion | date:'short'}}
+                                                </small>
+                                            </div>
+                                            <a 
+                                                [href]="evidencia.archivoUrl" 
+                                                target="_blank" 
+                                                class="text-primary text-sm">
+                                                <i class="pi pi-external-link mr-1"></i>
+                                                Ver archivo
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </ng-template>
 
@@ -591,6 +653,52 @@
                         (click)="cerrarModalComentarios()">
                     </button>
                 </div>
+            </ng-template>
+        </p-dialog>
+
+        <!-- DIALOG PARA SUBIR EVIDENCIA -->
+        <p-dialog [(visible)]="dialogEvidencia" [style]="{width: '450px'}" header="📎 Subir Evidencia" [modal]="true" class="p-fluid">
+            <ng-template pTemplate="content">
+                <div class="field">
+                    <label for="archivoUrl">URL del Archivo *</label>
+                    <input 
+                        type="text" 
+                        pInputText 
+                        id="archivoUrl" 
+                        [(ngModel)]="nuevaEvidencia.archivoUrl" 
+                        placeholder="https://ejemplo.com/archivo.pdf"
+                        required>
+                    <small class="text-500">Ingresa la URL pública del archivo</small>
+                </div>
+                <div class="field">
+                    <label for="descripcionEvidencia">Descripción</label>
+                    <textarea 
+                        pInputTextarea 
+                        id="descripcionEvidencia" 
+                        [(ngModel)]="nuevaEvidencia.descripcion" 
+                        rows="3" 
+                        placeholder="Descripción opcional de la evidencia"></textarea>
+                </div>
+            </ng-template>
+
+            <ng-template pTemplate="footer">
+                <button 
+                    pButton 
+                    pRipple 
+                    label="Cancelar" 
+                    icon="pi pi-times" 
+                    class="p-button-text"
+                    (click)="dialogEvidencia = false">
+                </button>
+                <button 
+                    pButton 
+                    pRipple 
+                    label="Subir" 
+                    icon="pi pi-upload" 
+                    class="p-button-primary"
+                    (click)="subirEvidencia()"
+                    [disabled]="!nuevaEvidencia.archivoUrl || nuevaEvidencia.archivoUrl.trim().length === 0">
+                </button>
             </ng-template>
         </p-dialog>
     </div>

@@ -134,4 +134,17 @@ export class TicketsService {
     addComentario(ticketId: number, data: {comentario: string, tipoComentario?: string, nuevoEstado?: string}): Observable<{message: string, success: boolean}> {
         return this.http.post<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/comentarios`, data);
     }
+
+    // Servicios para evidencias
+    getEvidencias(ticketId: number): Observable<{evidencias: any[], success: boolean}> {
+        return this.http.get<{evidencias: any[], success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias`);
+    }
+
+    addEvidencia(ticketId: number, evidencia: {archivoUrl: string, descripcion?: string}): Observable<{message: string, success: boolean}> {
+        return this.http.post<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias`, evidencia);
+    }
+
+    deleteEvidencia(ticketId: number, evidenciaId: number): Observable<{message: string, success: boolean}> {
+        return this.http.delete<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias/${evidenciaId}`);
+    }
 }

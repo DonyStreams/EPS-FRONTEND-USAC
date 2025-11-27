@@ -15,6 +15,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
+import { FileUploadModule } from 'primeng/fileupload';
+import { ProgressBarModule } from 'primeng/progressbar';
 
 import { EjecucionesRoutingModule } from './ejecuciones-routing.module';
 import { EjecucionesComponent } from './ejecuciones.component';
@@ -38,7 +40,9 @@ import { EjecucionesComponent } from './ejecuciones.component';
         InputNumberModule,
         ConfirmDialogModule,
         TooltipModule,
-        TagModule
+        TagModule,
+        FileUploadModule,
+        ProgressBarModule
     ]
 })
 export class EjecucionesModule { }

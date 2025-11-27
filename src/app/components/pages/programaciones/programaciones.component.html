@@ -77,6 +77,9 @@
                 <ng-template pTemplate="left">
                     <button pButton pRipple label="Nueva Programación" icon="pi pi-plus" class="p-button-success mr-2"
                         (click)="openNew()"></button>
+                    <button pButton pRipple label="Ver Calendario" icon="pi pi-calendar" class="p-button-outlined mr-2"
+                        routerLink="/administracion/mantenimientos"
+                        pTooltip="Ver programaciones y ejecuciones en calendario"></button>
                 </ng-template>
                 <ng-template pTemplate="right">
                     <button pButton pRipple label="Exportar CSV" icon="pi pi-download" class="p-button-help"
@@ -158,18 +161,24 @@
                                 [severity]="programacion.activa ? 'success' : 'secondary'" [rounded]="true"></p-tag>
                         </td>
                         <td>
-                            <div class="flex">
+                            <div class="flex flex-nowrap gap-0">
+                                <button pButton pRipple icon="pi pi-eye"
+                                    class="p-button-text p-button-info p-button-sm"
+                                    (click)="verDetalle(programacion)" pTooltip="Ver detalle"></button>
                                 <button pButton pRipple icon="pi pi-pencil"
-                                    class="p-button-rounded p-button-text p-button-warning mr-2"
+                                    class="p-button-text p-button-warning p-button-sm"
                                     (click)="editProgramacion(programacion)" pTooltip="Editar"></button>
                                 <button pButton pRipple icon="pi pi-calendar-plus"
-                                    class="p-button-rounded p-button-text p-button-success mr-2"
-                                    (click)="crearMantenimiento(programacion)" pTooltip="Crear mantenimiento"
+                                    class="p-button-text p-button-success p-button-sm"
+                                    (click)="crearMantenimiento(programacion)" pTooltip="Crear ejecución"
                                     [disabled]="!programacion.activa"></button>
                                 <button pButton pRipple [icon]="programacion.activa ? 'pi pi-pause' : 'pi pi-play'"
-                                    [class]="programacion.activa ? 'p-button-rounded p-button-text p-button-secondary' : 'p-button-rounded p-button-text p-button-success'"
+                                    [class]="programacion.activa ? 'p-button-text p-button-secondary p-button-sm' : 'p-button-text p-button-success p-button-sm'"
                                     (click)="toggleActiva(programacion)"
-                                    [pTooltip]="programacion.activa ? 'Pausar' : 'Activar'"></button>
+                                    [pTooltip]="programacion.activa ? 'Pausar (ocultar del calendario)' : 'Activar (mostrar en calendario)'"></button>
+                                <button pButton pRipple icon="pi pi-trash"
+                                    class="p-button-text p-button-danger p-button-sm"
+                                    (click)="deleteProgramacion(programacion)" pTooltip="Eliminar"></button>
                             </div>
                         </td>
                     </tr>

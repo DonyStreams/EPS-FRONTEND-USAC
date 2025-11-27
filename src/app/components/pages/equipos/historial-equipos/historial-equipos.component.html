@@ -1,0 +1,128 @@
+<div class="card">
+    <div class="flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="m-0 mb-2">📋 Bitácora / Historial de Equipos</h3>
+            <p class="text-600 m-0">Registro cronológico de todos los cambios y eventos de los equipos</p>
+        </div>
+    </div>
+
+    <p-table 
+        #dt
+        [value]="historial" 
+        [loading]="loading"
+        [paginator]="true" 
+        [rows]="15" 
+        [rowsPerPageOptions]="[15, 25, 50, 100]"
+        [showCurrentPageReport]="true" 
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+        [globalFilterFields]="['equipoNombre', 'equipoNumeroSerie', 'descripcion']"
+        styleClass="p-datatable-sm"
+        [rowHover]="true"
+        responsiveLayout="scroll">
+        
+        <ng-template pTemplate="caption">
+            <div class="flex justify-content-between align-items-center">
+                <span class="p-input-icon-left w-full md:w-20rem">
+                    <i class="pi pi-search"></i>
+                    <input 
+                        pInputText 
+                        type="text" 
+                        (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                        placeholder="Buscar en historial..."
+                        class="w-full" />
+                </span>
+                <div class="flex gap-2">
+                    <button 
+                        pButton 
+                        label="Recargar" 
+                        icon="pi pi-refresh" 
+                        class="p-button-outlined"
+                        (click)="loadHistorial()"></button>
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="fechaRegistro" style="width: 160px">
+                    Fecha/Hora <p-sortIcon field="fechaRegistro"></p-sortIcon>
+                </th>
+                <th pSortableColumn="tipoCambio" style="width: 150px">
+                    Tipo <p-sortIcon field="tipoCambio"></p-sortIcon>
+                </th>
+                <th pSortableColumn="equipoNombre">
+                    Equipo <p-sortIcon field="equipoNombre"></p-sortIcon>
+                </th>
+                <th pSortableColumn="descripcion">
+                    Descripción
+                </th>
+                <th pSortableColumn="usuarioNombre" style="width: 150px">
+                    Usuario <p-sortIcon field="usuarioNombre"></p-sortIcon>
+                </th>
+                <th style="width: 80px">Acciones</th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-registro>
+            <tr>
+                <td>
+                    <div class="text-sm">
+                        <i class="pi pi-clock text-500 mr-1"></i>
+                        {{ formatDate(registro.fechaRegistro) }}
+                    </div>
+                </td>
+                <td>
+                    <p-tag 
+                        [value]="getTipoCambioLabel(registro.tipoCambio)" 
+                        [severity]="getTipoCambioSeverity(registro.tipoCambio)"
+                        [icon]="getTipoCambioIcon(registro.tipoCambio)">
+                    </p-tag>
+                </td>
+                <td>
+                    <div class="flex align-items-center">
+                        <i class="pi pi-desktop text-primary mr-2"></i>
+                        <div>
+                            <div class="font-semibold">{{ registro.equipoNombre }}</div>
+                            <small class="text-500" *ngIf="registro.equipoNumeroSerie">
+                                S/N: {{ registro.equipoNumeroSerie }}
+                            </small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="white-space-normal text-600">{{ registro.descripcion || 'Sin descripción' }}</div>
+                </td>
+                <td>
+                    <div class="flex align-items-center" *ngIf="registro.usuarioNombre">
+                        <i class="pi pi-user text-500 mr-2"></i>
+                        <span class="text-sm">{{ registro.usuarioNombre }}</span>
+                    </div>
+                    <div class="text-500 text-sm" *ngIf="!registro.usuarioNombre">
+                        <i class="pi pi-minus"></i> Sin usuario
+                    </div>
+                </td>
+                <td>
+                    <div class="flex gap-1">
+                        <button 
+                            pButton 
+                            pRipple 
+                            icon="pi pi-trash" 
+                            class="p-button-text p-button-danger p-button-sm"
+                            (click)="deleteHistorial(registro)"
+                            pTooltip="Eliminar registro"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="4" class="text-center p-5">
+                    <i class="pi pi-inbox text-5xl text-400 mb-3"></i>
+                    <p class="text-xl font-medium mt-0 mb-2">No hay registros en el historial</p>
+                    <p class="text-600 mt-0">Los eventos y cambios de equipos aparecerán aquí</p>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

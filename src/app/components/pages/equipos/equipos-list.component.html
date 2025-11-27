@@ -1,68 +1,165 @@
 <div class="card">
-  <div class="flex justify-content-between align-items-center mb-3">
-    <h4 class="m-0">Listado de Equipos</h4>
-    <button pButton type="button" icon="pi pi-plus" label="Registrar nuevo equipo"
-      class="p-button-success" style="min-width: 220px"
-      (click)="abrirModalNuevoEquipo()"></button>
+  <!-- HEADER CON TÍTULO -->
+  <div class="mb-4">
+    <h4 class="m-0 text-900">
+      <i class="pi pi-desktop mr-2 text-primary"></i>
+      Gestión de Equipos
+    </h4>
+    <p class="text-600 mt-1 mb-0">Administra el inventario de equipos del laboratorio</p>
   </div>
 
-  <!-- Filtros externos eliminados, solo se usan los nativos de PrimeNG en la tabla -->
-  <div class="flex justify-content-between align-items-center mb-2">
-    <div class="w-50">
-      <span class="p-input-icon-left w-full">
-        <i class="pi pi-search"></i>
-        <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Filtrar equipos..." class="w-full" />
-      </span>
+  <!-- BARRA DE ACCIONES -->
+  <div class="surface-ground border-round p-3 mb-4">
+    <div class="flex flex-column md:flex-row justify-content-between align-items-start md:align-items-center gap-3">
+      <!-- ACCIÓN PRINCIPAL -->
+      <div>
+        <button pButton type="button" icon="pi pi-plus" label="Nuevo Equipo"
+          class="p-button-success"
+          (click)="abrirModalNuevoEquipo()"
+          pTooltip="Registrar un nuevo equipo">
+        </button>
+      </div>
+
+      <!-- BÚSQUEDA -->
+      <div class="flex-auto md:flex-none" style="min-width: 300px;">
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-search"></i>
+          <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+            placeholder="Buscar por nombre, código, marca..." class="w-full" />
+        </span>
+      </div>
     </div>
-    <button pButton type="button" label="Eliminar seleccionados" icon="pi pi-trash" class="p-button-danger" [disabled]="!equiposSeleccionados?.length" (click)="eliminarSeleccionados()"></button>
   </div>
+
+  <!-- ESTADÍSTICAS RÁPIDAS -->
+  <div class="grid mb-4">
+    <div class="col-12 md:col-3">
+      <div class="surface-card shadow-1 border-round p-3">
+        <div class="flex align-items-center">
+          <div class="bg-blue-100 border-circle p-3 mr-3">
+            <i class="pi pi-desktop text-blue-500 text-2xl"></i>
+          </div>
+          <div>
+            <span class="text-600 text-sm">Total Equipos</span>
+            <div class="text-900 font-bold text-2xl">{{equipos?.length || 0}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 md:col-3">
+      <div class="surface-card shadow-1 border-round p-3">
+        <div class="flex align-items-center">
+          <div class="bg-green-100 border-circle p-3 mr-3">
+            <i class="pi pi-check-circle text-green-500 text-2xl"></i>
+          </div>
+          <div>
+            <span class="text-600 text-sm">Operativos</span>
+            <div class="text-900 font-bold text-2xl">{{equipos?.length || 0}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 md:col-3">
+      <div class="surface-card shadow-1 border-round p-3">
+        <div class="flex align-items-center">
+          <div class="bg-orange-100 border-circle p-3 mr-3">
+            <i class="pi pi-wrench text-orange-500 text-2xl"></i>
+          </div>
+          <div>
+            <span class="text-600 text-sm">En Mantenimiento</span>
+            <div class="text-900 font-bold text-2xl">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 md:col-3">
+      <div class="surface-card shadow-1 border-round p-3">
+        <div class="flex align-items-center">
+          <div class="bg-red-100 border-circle p-3 mr-3">
+            <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
+          </div>
+          <div>
+            <span class="text-600 text-sm">Fuera de Servicio</span>
+            <div class="text-900 font-bold text-2xl">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE EQUIPOS -->
   <p-table #dt
     [value]="equipos"
-    [(selection)]="equiposSeleccionados"
     dataKey="idEquipo"
     [paginator]="true"
     [rows]="10"
-    [rowsPerPageOptions]="[5,10,20]"
+    [rowsPerPageOptions]="[5,10,20,50]"
     [responsiveLayout]="'scroll'"
     [showCurrentPageReport]="true"
     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} equipos"
     [globalFilterFields]="['nombre','codigoInacif','marca','modelo','numeroSerie']"
+    styleClass="p-datatable-sm"
   >
     <ng-template pTemplate="header">
       <tr>
-        <th style="width: 3rem">
-          <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-        </th>
         <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
         <th pSortableColumn="codigoInacif">Código INACIF <p-sortIcon field="codigoInacif"></p-sortIcon></th>
         <th pSortableColumn="marca">Marca <p-sortIcon field="marca"></p-sortIcon></th>
         <th pSortableColumn="modelo">Modelo <p-sortIcon field="modelo"></p-sortIcon></th>
         <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
-        <th>Acciones</th>
+        <th style="width: 12rem">Acciones</th>
       </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-equipo let-selected="selected">
+    <ng-template pTemplate="body" let-equipo>
       <tr>
         <td>
-          <p-tableCheckbox [value]="equipo"></p-tableCheckbox>
+          <div class="flex align-items-center">
+            <i class="pi pi-desktop text-primary mr-2"></i>
+            <span class="font-semibold">{{ equipo.nombre }}</span>
+          </div>
         </td>
-        <td>{{ equipo.nombre }}</td>
-        <td>{{ equipo.codigoInacif }}</td>
-        <td>{{ equipo.marca }}</td>
-        <td>{{ equipo.modelo }}</td>
-        <td>{{ equipo.numeroSerie }}</td>
         <td>
-          <button pButton icon="pi pi-pencil" class="p-button-text p-button-info" pTooltip="Editar" (click)="editarEquipo(equipo)"></button>
-          <button pButton icon="pi pi-history" class="p-button-text" pTooltip="Ver historial"></button>
-          <button pButton icon="pi pi-wrench" class="p-button-text" pTooltip="Ver mantenimientos"></button>
-          <button pButton icon="pi pi-download" class="p-button-text" pTooltip="Descargar ficha" (click)="descargarFicha(equipo)"></button>
+          <span class="text-600">{{ equipo.codigoInacif || '-' }}</span>
+        </td>
+        <td>{{ equipo.marca || '-' }}</td>
+        <td>{{ equipo.modelo || '-' }}</td>
+        <td>
+          <span class="text-600 font-italic">{{ equipo.numeroSerie || 'Sin serie' }}</span>
+        </td>
+        <td>
+          <div class="flex gap-2">
+            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" pTooltip="Editar equipo" tooltipPosition="top" (click)="editarEquipo(equipo)"></button>
+            <button pButton icon="pi pi-history" class="p-button-rounded p-button-text p-button-info" pTooltip="Historial de cambios" tooltipPosition="top"></button>
+            <button pButton icon="pi pi-wrench" class="p-button-rounded p-button-text p-button-secondary" pTooltip="Mantenimientos" tooltipPosition="top"></button>
+            <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-help" pTooltip="Descargar ficha técnica" tooltipPosition="top" (click)="descargarFicha(equipo)"></button>
+            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Eliminar equipo" tooltipPosition="top" (click)="eliminarEquipo(equipo)"></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    
+    <!-- MENSAJE CUANDO NO HAY DATOS -->
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">
+          <div class="text-center p-6">
+            <div class="mb-4">
+              <i class="pi pi-inbox text-6xl text-400"></i>
+            </div>
+            <h5 class="text-600 mb-2">No hay equipos registrados</h5>
+            <p class="text-500 mb-4">Comienza agregando tu primer equipo al inventario</p>
+            <button pButton type="button" label="Registrar Primer Equipo" icon="pi pi-plus" 
+              class="p-button-success"
+              (click)="abrirModalNuevoEquipo()">
+            </button>
+          </div>
         </td>
       </tr>
     </ng-template>
   </p-table>
 
   <!-- Modal para registrar nuevo equipo -->
-  <p-dialog header="Registrar Nuevo Equipo" [(visible)]="mostrarModalNuevoEquipo" [modal]="true" [style]="{width: '700px'}" [closable]="false">
+  <p-dialog header="Registrar Nuevo Equipo" [(visible)]="mostrarModalNuevoEquipo" [modal]="true" [style]="{width: '900px'}" [closable]="false" styleClass="p-fluid">
     <form #formEquipo="ngForm" (ngSubmit)="registrarEquipo()" autocomplete="off">
       <div *ngIf="mensaje" class="p-message p-message-success mb-3">
         <div class="p-message-wrapper">
@@ -70,94 +167,167 @@
           <span class="p-message-text">{{ mensaje }}</span>
         </div>
       </div>
-      <div class="grid">
-        <div class="col-12 md:col-6">
-          <div class="field mb-2">
-            <label for="nombre">Nombre del equipo</label>
-            <input pInputText id="nombre" name="nombre" [(ngModel)]="nuevoEquipo.nombre" required maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="codigoInacif">Código del INACIF</label>
-            <input pInputText id="codigoInacif" name="codigoInacif" [(ngModel)]="nuevoEquipo.codigoInacif" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="marca">Marca</label>
-            <input pInputText id="marca" name="marca" [(ngModel)]="nuevoEquipo.marca" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="modelo">Modelo</label>
-            <input pInputText id="modelo" name="modelo" [(ngModel)]="nuevoEquipo.modelo" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="serie">No. de serie</label>
-            <input pInputText id="serie" name="serie" [(ngModel)]="nuevoEquipo.numeroSerie" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="ubicacion">Ubicación</label>
-            <input pInputText id="ubicacion" name="ubicacion" [(ngModel)]="nuevoEquipo.ubicacion" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="magnitud">Magnitud de medición</label>
-            <input pInputText id="magnitud" name="magnitud" [(ngModel)]="nuevoEquipo.magnitudMedicion" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="rango">Rango o capacidad</label>
-            <input pInputText id="rango" name="rango" [(ngModel)]="nuevoEquipo.rangoCapacidad" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="manual">Código y nombre del manual del fabricante</label>
-            <input pInputText id="manual" name="manual" [(ngModel)]="nuevoEquipo.manualFabricante" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="software">Software/Firmware</label>
-            <input pInputText id="software" name="software" [(ngModel)]="nuevoEquipo.softwareFirmware" maxlength="100" class="w-full" />
-          </div>
-        </div>
-        <div class="col-12 md:col-6">
-          <div class="field mb-3">
-            <label for="fotografia">Fotografía</label>
-            <p-fileUpload #fileUpload
-                          mode="basic"
-                          name="fotografia"
-                          accept="image/*"
-                          maxFileSize="2000000"
-                          chooseLabel="Seleccionar imagen"
-                          (onSelect)="onFileSelected($event)"
-                          (onUpload)="onFileSelected($event)"
-                          [auto]="true"
-                          [customUpload]="true"
-                          [showUploadButton]="false"
-                          [showCancelButton]="false"
-                          class="w-full" />
-            <div *ngIf="previewUrl" class="mt-2">
-              <img [src]="previewUrl" alt="Previsualización" class="border-round" style="max-width: 100%; max-height: 180px;">
-            </div>
-            <div *ngIf="errorImagen" class="p-message p-message-error mt-2">
-              <div class="p-message-wrapper">
-                <span class="p-message-icon pi pi-times"></span>
-                <span class="p-message-text">{{ errorImagen }}</span>
-              </div>
+
+      <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-info-circle mr-2"></i>Información Básica
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="nombre" class="font-semibold">Nombre del equipo *</label>
+              <input pInputText id="nombre" name="nombre" [(ngModel)]="nuevoEquipo.nombre" required maxlength="100" class="w-full" placeholder="Ej: Microscopio Óptico"/>
+              <small class="text-500">Nombre comercial o técnico del equipo</small>
             </div>
           </div>
-          <div class="field mb-2">
-            <label for="condiciones">Condiciones de operación</label>
-            <textarea pInputTextarea id="condiciones" name="condiciones" [(ngModel)]="nuevoEquipo.condicionesOperacion" rows="3" class="w-full"></textarea>
-          </div>
-          <div class="field mb-2"> 
-            <label for="descripcion">Descripción del equipo</label>
-            <textarea pInputTextarea id="descripcion" name="descripcion" [(ngModel)]="nuevoEquipo.descripcion" rows="3" class="w-full"></textarea>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="codigoInacif" class="font-semibold">Código INACIF</label>
+              <input pInputText id="codigoInacif" name="codigoInacif" [(ngModel)]="nuevoEquipo.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001"/>
+              <small class="text-500">Código interno de identificación</small>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- SECCIÓN: IDENTIFICACIÓN DEL FABRICANTE -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-tag mr-2"></i>Identificación del Fabricante
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="marca" class="font-semibold">Marca</label>
+              <input pInputText id="marca" name="marca" [(ngModel)]="nuevoEquipo.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus"/>
+            </div>
+          </div>
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="modelo" class="font-semibold">Modelo</label>
+              <input pInputText id="modelo" name="modelo" [(ngModel)]="nuevoEquipo.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23"/>
+            </div>
+          </div>
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="serie" class="font-semibold">No. de Serie</label>
+              <input pInputText id="serie" name="serie" [(ngModel)]="nuevoEquipo.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: ESPECIFICACIONES TÉCNICAS -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-cog mr-2"></i>Especificaciones Técnicas
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="magnitud" class="font-semibold">Magnitud de Medición</label>
+              <input pInputText id="magnitud" name="magnitud" [(ngModel)]="nuevoEquipo.magnitudMedicion" maxlength="100" class="w-full" placeholder="Ej: Temperatura, Peso, Volumen"/>
+              <small class="text-500">Qué mide el equipo</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="rango" class="font-semibold">Rango o Capacidad</label>
+              <input pInputText id="rango" name="rango" [(ngModel)]="nuevoEquipo.rangoCapacidad" maxlength="100" class="w-full" placeholder="Ej: 0-100°C, 0-500g"/>
+              <small class="text-500">Rango de operación del equipo</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="software" class="font-semibold">Software/Firmware</label>
+              <input pInputText id="software" name="software" [(ngModel)]="nuevoEquipo.softwareFirmware" maxlength="100" class="w-full" placeholder="Ej: v2.1.5"/>
+              <small class="text-500">Versión del software instalado</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="manual" class="font-semibold">Manual del Fabricante</label>
+              <input pInputText id="manual" name="manual" [(ngModel)]="nuevoEquipo.manualFabricante" maxlength="100" class="w-full" placeholder="Ej: MAN-CX23-2024"/>
+              <small class="text-500">Código del manual de usuario</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- SECCIÓN: UBICACIÓN Y CONDICIONES -->
+        <div class="col-12 md:col-6">
+          <div class="surface-section border-round p-3 h-full">
+            <h6 class="text-primary mb-3">
+              <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
+            </h6>
+            <div class="field mb-3">
+              <label for="ubicacion" class="font-semibold">Ubicación</label>
+              <input pInputText id="ubicacion" name="ubicacion" [(ngModel)]="nuevoEquipo.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A"/>
+              <small class="text-500">Ubicación física del equipo</small>
+            </div>
+            <div class="field mb-3">
+              <label for="condiciones" class="font-semibold">Condiciones de Operación</label>
+              <textarea pInputTextarea id="condiciones" name="condiciones" [(ngModel)]="nuevoEquipo.condicionesOperacion" rows="4" class="w-full" placeholder="Ej: Temperatura ambiente, humedad controlada"></textarea>
+              <small class="text-500">Condiciones ambientales requeridas</small>
+            </div>
+            <div class="field">
+              <label for="descripcion" class="font-semibold">Descripción General</label>
+              <textarea pInputTextarea id="descripcion" name="descripcion" [(ngModel)]="nuevoEquipo.descripcion" rows="4" class="w-full" placeholder="Descripción detallada del equipo y sus usos"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: FOTOGRAFÍA -->
+        <div class="col-12 md:col-6">
+          <div class="surface-section border-round p-3 h-full">
+            <h6 class="text-primary mb-3">
+              <i class="pi pi-image mr-2"></i>Fotografía del Equipo
+            </h6>
+            <div class="field mb-3">
+              <p-fileUpload #fileUpload
+                            mode="basic"
+                            name="fotografia"
+                            accept="image/*"
+                            maxFileSize="10000000"
+                            chooseLabel="Seleccionar Imagen"
+                            (onSelect)="onFileSelected($event)"
+                            [customUpload]="true"
+                            [showUploadButton]="false"
+                            [showCancelButton]="false"
+                            class="w-full" />
+              <small class="text-500">Tamaño máximo: 10MB | Formatos: JPG, PNG, JPEG</small>
+            </div>
+            
+            <div *ngIf="previewUrl" class="text-center">
+              <div class="surface-100 border-round p-3">
+                <img [src]="previewUrl" alt="Previsualización" class="border-round shadow-2" style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                <p class="text-500 mt-2 mb-0"><i class="pi pi-check-circle text-green-500 mr-1"></i>Imagen cargada correctamente</p>
+              </div>
+            </div>
+            
+            <div *ngIf="!previewUrl" class="text-center p-5 surface-100 border-round border-dashed surface-border">
+              <i class="pi pi-image text-6xl text-400 mb-3"></i>
+              <p class="text-500 m-0">No se ha seleccionado ninguna imagen</p>
+            </div>
+            
+            <div *ngIf="errorImagen" class="mt-3">
+              <p-message severity="error" [text]="errorImagen" styleClass="w-full"></p-message>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="flex justify-content-end gap-2 mt-4">
-        <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="cerrarModalNuevoEquipo()"></button>
-        <button pButton type="submit" label="Registrar" class="p-button-success" [disabled]="formEquipo.invalid"></button>
+        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-secondary" (click)="cerrarModalNuevoEquipo()"></button>
+        <button pButton type="submit" label="Registrar Equipo" icon="pi pi-check" class="p-button-success" [disabled]="formEquipo.invalid"></button>
       </div>
     </form>
   </p-dialog>
 
   <!-- Modal para editar equipo -->
-  <p-dialog header="Editar Equipo" [(visible)]="mostrarModalEditarEquipo" [modal]="true" [style]="{width: '700px'}" [closable]="false">
+  <p-dialog header="Editar Equipo" [(visible)]="mostrarModalEditarEquipo" [modal]="true" [style]="{width: '900px'}" [closable]="false" styleClass="p-fluid">
     <form #formEditarEquipo="ngForm" (ngSubmit)="actualizarEquipo()" autocomplete="off" *ngIf="equipoEditando">
       <div *ngIf="mensaje" class="p-message p-message-success mb-3">
         <div class="p-message-wrapper">
@@ -165,88 +335,161 @@
           <span class="p-message-text">{{ mensaje }}</span>
         </div>
       </div>
-      <div class="grid">
-        <div class="col-12 md:col-6">
-          <div class="field mb-2">
-            <label for="editNombre">Nombre del equipo</label>
-            <input pInputText id="editNombre" name="editNombre" [(ngModel)]="equipoEditando.nombre" required maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editCodigoInacif">Código del INACIF</label>
-            <input pInputText id="editCodigoInacif" name="editCodigoInacif" [(ngModel)]="equipoEditando.codigoInacif" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editMarca">Marca</label>
-            <input pInputText id="editMarca" name="editMarca" [(ngModel)]="equipoEditando.marca" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editModelo">Modelo</label>
-            <input pInputText id="editModelo" name="editModelo" [(ngModel)]="equipoEditando.modelo" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editSerie">No. de serie</label>
-            <input pInputText id="editSerie" name="editSerie" [(ngModel)]="equipoEditando.numeroSerie" maxlength="50" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editUbicacion">Ubicación</label>
-            <input pInputText id="editUbicacion" name="editUbicacion" [(ngModel)]="equipoEditando.ubicacion" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editMagnitud">Magnitud de medición</label>
-            <input pInputText id="editMagnitud" name="editMagnitud" [(ngModel)]="equipoEditando.magnitudMedicion" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editRango">Rango o capacidad</label>
-            <input pInputText id="editRango" name="editRango" [(ngModel)]="equipoEditando.rangoCapacidad" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editManual">Código y nombre del manual del fabricante</label>
-            <input pInputText id="editManual" name="editManual" [(ngModel)]="equipoEditando.manualFabricante" maxlength="100" class="w-full" />
-          </div>
-          <div class="field mb-2">
-            <label for="editSoftware">Software/Firmware</label>
-            <input pInputText id="editSoftware" name="editSoftware" [(ngModel)]="equipoEditando.softwareFirmware" maxlength="100" class="w-full" />
-          </div>
-        </div>
-        <div class="col-12 md:col-6">
-          <div class="field mb-3">
-            <label for="editFotografia">Fotografía</label>
-            <p-fileUpload #fileUploadEdit
-                          mode="basic"
-                          name="editFotografia"
-                          accept="image/*"
-                          maxFileSize="2000000"
-                          chooseLabel="Cambiar imagen"
-                          (onSelect)="onFileSelectedEdit($event)"
-                          (onUpload)="onFileSelectedEdit($event)"
-                          [auto]="true"
-                          [customUpload]="true"
-                          [showUploadButton]="false"
-                          [showCancelButton]="false"
-                          class="w-full" />
-            <div *ngIf="previewUrlEdit" class="mt-2">
-              <img [src]="previewUrlEdit" alt="Previsualización" class="border-round" style="max-width: 100%; max-height: 180px;">
-            </div>
-            <div *ngIf="errorImagenEdit" class="p-message p-message-error mt-2">
-              <div class="p-message-wrapper">
-                <span class="p-message-icon pi pi-times"></span>
-                <span class="p-message-text">{{ errorImagenEdit }}</span>
-              </div>
+
+      <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-info-circle mr-2"></i>Información Básica
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editNombre" class="font-semibold">Nombre del equipo *</label>
+              <input pInputText id="editNombre" name="editNombre" [(ngModel)]="equipoEditando.nombre" required maxlength="100" class="w-full" placeholder="Ej: Microscopio Óptico"/>
+              <small class="text-500">Nombre comercial o técnico del equipo</small>
             </div>
           </div>
-          <div class="field mb-2">
-            <label for="editCondiciones">Condiciones de operación</label>
-            <textarea pInputTextarea id="editCondiciones" name="editCondiciones" [(ngModel)]="equipoEditando.condicionesOperacion" rows="3" class="w-full"></textarea>
-          </div>
-          <div class="field mb-2"> 
-            <label for="editDescripcion">Descripción del equipo</label>
-            <textarea pInputTextarea id="editDescripcion" name="editDescripcion" [(ngModel)]="equipoEditando.descripcion" rows="3" class="w-full"></textarea>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editCodigoInacif" class="font-semibold">Código INACIF</label>
+              <input pInputText id="editCodigoInacif" name="editCodigoInacif" [(ngModel)]="equipoEditando.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001"/>
+              <small class="text-500">Código interno de identificación</small>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- SECCIÓN: IDENTIFICACIÓN DEL FABRICANTE -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-tag mr-2"></i>Identificación del Fabricante
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="editMarca" class="font-semibold">Marca</label>
+              <input pInputText id="editMarca" name="editMarca" [(ngModel)]="equipoEditando.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus"/>
+            </div>
+          </div>
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="editModelo" class="font-semibold">Modelo</label>
+              <input pInputText id="editModelo" name="editModelo" [(ngModel)]="equipoEditando.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23"/>
+            </div>
+          </div>
+          <div class="col-12 md:col-4">
+            <div class="field">
+              <label for="editSerie" class="font-semibold">No. de Serie</label>
+              <input pInputText id="editSerie" name="editSerie" [(ngModel)]="equipoEditando.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: ESPECIFICACIONES TÉCNICAS -->
+      <div class="surface-section border-round p-3 mb-3">
+        <h6 class="text-primary mb-3">
+          <i class="pi pi-cog mr-2"></i>Especificaciones Técnicas
+        </h6>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editMagnitud" class="font-semibold">Magnitud de Medición</label>
+              <input pInputText id="editMagnitud" name="editMagnitud" [(ngModel)]="equipoEditando.magnitudMedicion" maxlength="100" class="w-full" placeholder="Ej: Temperatura, Peso, Volumen"/>
+              <small class="text-500">Qué mide el equipo</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editRango" class="font-semibold">Rango o Capacidad</label>
+              <input pInputText id="editRango" name="editRango" [(ngModel)]="equipoEditando.rangoCapacidad" maxlength="100" class="w-full" placeholder="Ej: 0-100°C, 0-500g"/>
+              <small class="text-500">Rango de operación del equipo</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editSoftware" class="font-semibold">Software/Firmware</label>
+              <input pInputText id="editSoftware" name="editSoftware" [(ngModel)]="equipoEditando.softwareFirmware" maxlength="100" class="w-full" placeholder="Ej: v2.1.5"/>
+              <small class="text-500">Versión del software instalado</small>
+            </div>
+          </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editManual" class="font-semibold">Manual del Fabricante</label>
+              <input pInputText id="editManual" name="editManual" [(ngModel)]="equipoEditando.manualFabricante" maxlength="100" class="w-full" placeholder="Ej: MAN-CX23-2024"/>
+              <small class="text-500">Código del manual de usuario</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- SECCIÓN: UBICACIÓN Y CONDICIONES -->
+        <div class="col-12 md:col-6">
+          <div class="surface-section border-round p-3 h-full">
+            <h6 class="text-primary mb-3">
+              <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
+            </h6>
+            <div class="field mb-3">
+              <label for="editUbicacion" class="font-semibold">Ubicación</label>
+              <input pInputText id="editUbicacion" name="editUbicacion" [(ngModel)]="equipoEditando.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A"/>
+              <small class="text-500">Ubicación física del equipo</small>
+            </div>
+            <div class="field mb-3">
+              <label for="editCondiciones" class="font-semibold">Condiciones de Operación</label>
+              <textarea pInputTextarea id="editCondiciones" name="editCondiciones" [(ngModel)]="equipoEditando.condicionesOperacion" rows="4" class="w-full" placeholder="Ej: Temperatura ambiente, humedad controlada"></textarea>
+              <small class="text-500">Condiciones ambientales requeridas</small>
+            </div>
+            <div class="field">
+              <label for="editDescripcion" class="font-semibold">Descripción General</label>
+              <textarea pInputTextarea id="editDescripcion" name="editDescripcion" [(ngModel)]="equipoEditando.descripcion" rows="4" class="w-full" placeholder="Descripción detallada del equipo y sus usos"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: FOTOGRAFÍA -->
+        <div class="col-12 md:col-6">
+          <div class="surface-section border-round p-3 h-full">
+            <h6 class="text-primary mb-3">
+              <i class="pi pi-image mr-2"></i>Fotografía del Equipo
+            </h6>
+            <div class="field mb-3">
+              <p-fileUpload #fileUploadEdit
+                            mode="basic"
+                            name="editFotografia"
+                            accept="image/*"
+                            maxFileSize="10000000"
+                            chooseLabel="Seleccionar Imagen"
+                            (onSelect)="onFileSelectedEdit($event)"
+                            [customUpload]="true"
+                            [showUploadButton]="false"
+                            [showCancelButton]="false"
+                            class="w-full" />
+              <small class="text-500">Tamaño máximo: 10MB | Formatos: JPG, PNG, JPEG</small>
+            </div>
+            
+            <div *ngIf="previewUrlEdit" class="text-center">
+              <div class="surface-100 border-round p-3">
+                <img [src]="previewUrlEdit" alt="Previsualización" class="border-round shadow-2" style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                <p class="text-500 mt-2 mb-0"><i class="pi pi-check-circle text-green-500 mr-1"></i>Imagen cargada correctamente</p>
+              </div>
+            </div>
+            
+            <div *ngIf="!previewUrlEdit" class="text-center p-5 surface-100 border-round border-dashed surface-border">
+              <i class="pi pi-image text-6xl text-400 mb-3"></i>
+              <p class="text-500 m-0">No se ha seleccionado ninguna imagen</p>
+            </div>
+            
+            <div *ngIf="errorImagenEdit" class="mt-3">
+              <p-message severity="error" [text]="errorImagenEdit" styleClass="w-full"></p-message>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="flex justify-content-end gap-2 mt-4">
-        <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="cerrarModalEditarEquipo()"></button>
-        <button pButton type="submit" label="Actualizar" class="p-button-success" [disabled]="formEditarEquipo.invalid"></button>
+        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-secondary" (click)="cerrarModalEditarEquipo()"></button>
+        <button pButton type="submit" label="Actualizar Equipo" icon="pi pi-check" class="p-button-success" [disabled]="formEditarEquipo.invalid"></button>
       </div>
     </form>
   </p-dialog>

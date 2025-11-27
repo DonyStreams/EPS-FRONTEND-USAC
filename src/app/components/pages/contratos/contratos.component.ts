@@ -543,6 +543,38 @@ export class ContratosComponent implements OnInit {
         });
     }
     
+    deleteContrato(contrato: Contrato): void {
+        this.confirmationService.confirm({
+            message: `¿Está seguro de eliminar el contrato "${contrato.descripcion}"?${contrato.totalArchivos && contrato.totalArchivos > 0 ? '\n\nEste contrato tiene ' + contrato.totalArchivos + ' archivo(s) asociado(s) que también se eliminarán.' : ''}`,
+            header: 'Confirmar eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, eliminar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.contratoService.delete(contrato.id!).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Contrato eliminado correctamente'
+                        });
+                        this.loadContratos();
+                        this.loadStats();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error al eliminar contrato:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Error al eliminar contrato: ' + (error.error?.error || error.message || 'Error desconocido')
+                        });
+                    }
+                });
+            }
+        });
+    }
+    
     deleteFile(archivo: any): void {
         this.confirmationService.confirm({
             message: '¿Está seguro de eliminar este archivo?',

@@ -60,6 +60,11 @@ export class TicketsComponent implements OnInit {
     nuevoEstadoSeleccionado: string = '';
     tiposComentario: string[] = ['Técnico', 'Seguimiento', 'Alerta', 'Resolución', 'General'];
     
+    // Funcionalidad de evidencias
+    evidencias: any[] = [];
+    dialogEvidencia: boolean = false;
+    nuevaEvidencia: any = { archivoUrl: '', descripcion: '' };
+    
     // Controles de la vista
     mostrarTicketsAbiertos: boolean = false;
 
@@ -239,6 +244,7 @@ export class TicketsComponent implements OnInit {
         this.ticketSeleccionado = { ...ticket };
         this.dialogComentarios = true;
         this.cargarComentarios(ticket.id!);
+        this.cargarEvidencias(ticket.id!);
     }
 
     /**
@@ -248,7 +254,7 @@ export class TicketsComponent implements OnInit {
         this.ticketsService.getComentarios(ticketId).subscribe({
             next: (comentarios: ComentarioTicketResponse[]) => {
                 this.comentarios = comentarios || [];
-                console.log('� Comentarios cargados:', this.comentarios.length);
+                console.log('💬 Comentarios cargados:', this.comentarios.length);
             },
             error: (error) => {
                 console.error('❌ Error al cargar comentarios:', error);
@@ -871,6 +877,99 @@ export class TicketsComponent implements OnInit {
             severity: 'info',
             summary: 'Filtros',
             detail: 'Panel de filtros avanzados en desarrollo'
+        });
+    }
+
+    /**
+     * Carga las evidencias de un ticket
+     */
+    cargarEvidencias(ticketId: number): void {
+        this.ticketsService.getEvidencias(ticketId).subscribe({
+            next: (response: any) => {
+                this.evidencias = response.evidencias || [];
+                console.log('📎 Evidencias cargadas:', this.evidencias.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar evidencias:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar las evidencias'
+                });
+            }
+        });
+    }
+
+    /**
+     * Muestra el dialog para subir evidencia
+     */
+    mostrarDialogEvidencia(): void {
+        this.nuevaEvidencia = { archivoUrl: '', descripcion: '' };
+        this.dialogEvidencia = true;
+    }
+
+    /**
+     * Sube una nueva evidencia al ticket
+     */
+    subirEvidencia(): void {
+        if (!this.ticketSeleccionado?.id || !this.nuevaEvidencia.archivoUrl) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Debe ingresar la URL del archivo'
+            });
+            return;
+        }
+
+        this.ticketsService.addEvidencia(this.ticketSeleccionado.id, this.nuevaEvidencia).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Evidencia subida correctamente'
+                });
+                this.dialogEvidencia = false;
+                this.cargarEvidencias(this.ticketSeleccionado!.id!);
+            },
+            error: (error) => {
+                console.error('❌ Error al subir evidencia:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo subir la evidencia'
+                });
+            }
+        });
+    }
+
+    /**
+     * Elimina una evidencia del ticket
+     */
+    eliminarEvidencia(evidencia: any): void {
+        this.confirmationService.confirm({
+            message: '¿Está seguro de eliminar esta evidencia?',
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.ticketsService.deleteEvidencia(this.ticketSeleccionado!.id!, evidencia.id).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Evidencia eliminada correctamente'
+                        });
+                        this.cargarEvidencias(this.ticketSeleccionado!.id!);
+                    },
+                    error: (error) => {
+                        console.error('❌ Error al eliminar evidencia:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'No se pudo eliminar la evidencia'
+                        });
+                    }
+                });
+            }
         });
     }
 }

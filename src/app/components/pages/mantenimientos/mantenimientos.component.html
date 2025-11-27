@@ -1,305 +1,279 @@
 <div class="grid">
     <div class="col-12">
-        <div class="card px-6 py-6">
+        <div class="card">
             <p-toast></p-toast>
             
-            <p-toolbar styleClass="mb-4">
-                <ng-template pTemplate="left">
-                    <div class="my-2">
-                        <button pButton pRipple label="Nuevo Mantenimiento" icon="pi pi-plus" class="p-button-success mr-2" 
-                                (click)="openNew()"></button>
-                        <button pButton pRipple label="Eliminar" icon="pi pi-trash" class="p-button-danger" 
-                                (click)="deleteSelectedMantenimientos()" 
-                                [disabled]="!selectedMantenimientos || !selectedMantenimientos.length"></button>
-                    </div>
-                </ng-template>
+            <!-- Header con titulo y controles -->
+            <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="m-0 flex align-items-center gap-2">
+                        <i class="pi pi-calendar text-primary"></i>
+                        Calendario de Mantenimientos
+                    </h4>
+                    <p class="text-500 mt-1 mb-0">Programaciones y ejecuciones de mantenimiento</p>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 align-items-center">
+                    <!-- Filtro por tipo -->
+                    <p-dropdown [options]="tiposFiltro" 
+                                [(ngModel)]="filtroTipo"
+                                (onChange)="onFilterChange()"
+                                placeholder="Filtrar por tipo"
+                                styleClass="w-12rem">
+                    </p-dropdown>
+                    
+                    <!-- Boton refrescar -->
+                    <button pButton pRipple 
+                            icon="pi pi-refresh" 
+                            class="p-button-outlined"
+                            (click)="refreshCalendar()"
+                            pTooltip="Actualizar calendario"></button>
+                </div>
+            </div>
+            
+            <!-- Leyenda de colores -->
+            <div class="flex flex-wrap gap-3 mb-4 p-3 surface-100 border-round">
+                <div class="flex align-items-center gap-2">
+                    <span class="w-1rem h-1rem border-round" style="background-color: #6366f1"></span>
+                    <span class="text-sm">Programado (recurrente)</span>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    <span class="w-1rem h-1rem border-round" style="background-color: #f59e0b"></span>
+                    <span class="text-sm">Ejecucion Programada</span>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
+                    <span class="text-sm">En Proceso</span>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
+                    <span class="text-sm">Completado</span>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
+                    <span class="text-sm">Cancelado</span>
+                </div>
+            </div>
 
-                <ng-template pTemplate="right">
-                    <button pButton pRipple label="Exportar" icon="pi pi-upload" class="p-button-help" 
-                            (click)="exportMantenimientos()"></button>
-                </ng-template>
-            </p-toolbar>
-
-            <!-- TABLA DE PRIMENG -->
-            <p-table #dt [value]="mantenimientos" [columns]="cols" responsiveLayout="scroll" 
-                     [rows]="10" [globalFilterFields]="['descripcion','proveedor.nombre','frecuencia']" 
-                     [loading]="loading" [paginator]="true" [rowsPerPageOptions]="rowsPerPageOptions" 
-                     [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mantenimientos"
-                     [(selection)]="selectedMantenimientos" selectionMode="multiple" [rowHover]="true" dataKey="idContrato">
+            <!-- Calendario -->
+            <div class="calendar-container" *ngIf="!loading">
+                <full-calendar [options]="calendarOptions"></full-calendar>
                 
-                <ng-template pTemplate="caption">
-                    <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                        <h5 class="m-0">Gestión de Mantenimientos</h5>
-                        <span class="block mt-2 md:mt-0 p-input-icon-left">
-                            <i class="pi pi-search"></i>
-                            <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" 
-                                   placeholder="Buscar..." class="w-full sm:w-auto"/>
-                        </span>
+                <!-- Mensaje cuando no hay eventos -->
+                <div *ngIf="events.length === 0" class="text-center p-5 mt-3 surface-100 border-round">
+                    <i class="pi pi-calendar-times text-5xl text-400 mb-3"></i>
+                    <h5 class="mt-0 mb-2">No hay eventos en el calendario</h5>
+                    <p class="text-600 mt-0 mb-3">Para ver eventos necesitas:</p>
+                    <div class="text-left inline-block">
+                        <p class="text-600 m-0 mb-2">
+                            <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                            <strong>Programaciones activas</strong> con fecha próxima configurada
+                        </p>
+                        <p class="text-600 m-0">
+                            <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                            <strong>Ejecuciones</strong> con fecha programada
+                        </p>
                     </div>
-                </ng-template>
+                    <div class="mt-4 flex gap-2 justify-content-center">
+                        <button pButton pRipple label="Crear Programación" icon="pi pi-plus" 
+                                class="p-button-sm"
+                                routerLink="/administracion/programaciones"></button>
+                        <button pButton pRipple label="Crear Ejecución" icon="pi pi-plus" 
+                                class="p-button-sm p-button-success"
+                                (click)="crearEjecucionManual()"></button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading -->
+            <div *ngIf="loading" class="text-center p-6">
+                <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+                <p class="mt-3 text-500">Cargando calendario...</p>
+            </div>
+
+            <!-- Ayuda -->
+            <div class="mt-4 p-3 surface-50 border-round">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-info-circle text-primary"></i>
+                    <span class="font-semibold">¿Cómo usar el calendario?</span>
+                </div>
+                <ul class="m-0 pl-4 text-sm text-600">
+                    <li>Haz clic en un <strong>evento morado</strong> (programación) para crear una ejecución real</li>
+                    <li>Haz clic en un <strong>evento de color</strong> (ejecución) para ver sus detalles y evidencias</li>
+                    <li>Haz clic en un <strong>día vacío</strong> para crear una nueva ejecución manual</li>
+                    <li>Usa los botones de navegación para cambiar de mes o semana</li>
+                    <li>Filtra por tipo: solo programaciones, solo ejecuciones, o ambos</li>
+                </ul>
                 
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th style="width: 3rem">
-                            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-                        </th>
-                        <th pSortableColumn="descripcion">Descripción <p-sortIcon field="descripcion"></p-sortIcon></th>
-                        <th pSortableColumn="proveedor.nombre">Proveedor <p-sortIcon field="proveedor.nombre"></p-sortIcon></th>
-                        <th pSortableColumn="fechaInicio">Fecha Inicio <p-sortIcon field="fechaInicio"></p-sortIcon></th>
-                        <th pSortableColumn="fechaFin">Fecha Fin <p-sortIcon field="fechaFin"></p-sortIcon></th>
-                        <th pSortableColumn="frecuencia">Frecuencia <p-sortIcon field="frecuencia"></p-sortIcon></th>
-                        <th>Equipos</th>
-                        <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
-                        <th>Acciones</th>
-                    </tr>
-                </ng-template>
-                
-                <ng-template pTemplate="body" let-mantenimiento>
-                    <tr>
-                        <td>
-                            <p-tableCheckbox [value]="mantenimiento"></p-tableCheckbox>
-                        </td>
-                        <td style="width:16%; min-width:10rem;">
-                            <span class="p-column-title">Descripción</span>
-                            {{mantenimiento.descripcion}}
-                        </td>
-                        <td style="width:14%; min-width:8rem;">
-                            <span class="p-column-title">Proveedor</span>
-                            {{mantenimiento.proveedor?.nombre || 'Sin proveedor'}}
-                        </td>
-                        <td style="width:12%; min-width:8rem;">
-                            <span class="p-column-title">Fecha Inicio</span>
-                            {{formatDate(mantenimiento.fechaInicio)}}
-                        </td>
-                        <td style="width:12%; min-width:8rem;">
-                            <span class="p-column-title">Fecha Fin</span>
-                            {{formatDate(mantenimiento.fechaFin)}}
-                        </td>
-                        <td style="width:12%; min-width:8rem;">
-                            <span class="p-column-title">Frecuencia</span>
-                            <p-tag [value]="mantenimiento.frecuencia || 'Sin frecuencia'" severity="info"></p-tag>
-                        </td>
-                        <td style="width:12%; min-width:8rem;">
-                            <span class="p-column-title">Equipos</span>
-                            <button pButton pRipple 
-                                    type="button" 
-                                    icon="pi pi-list" 
-                                    class="p-button-text p-button-sm"
-                                    [label]="getEquiposButtonText(mantenimiento)"
-                                    (click)="verEquipos(mantenimiento)"
-                                    pTooltip="Ver/gestionar equipos asociados">
-                            </button>
-                        </td>
-                        <td style="width:10%; min-width:6rem;">
-                            <span class="p-column-title">Estado</span>
-                            <p-tag [value]="getEstadoText(mantenimiento.estado)" 
-                                   [severity]="getEstadoSeverity(mantenimiento.estado)"></p-tag>
-                        </td>
-                        <td style="width:12%;">
-                            <div class="flex">
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" 
-                                        (click)="editMantenimiento(mantenimiento)" pTooltip="Editar"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" 
-                                        (click)="deleteMantenimiento(mantenimiento)" pTooltip="Eliminar"></button>
-                            </div>
-                        </td>
-                    </tr>
-                </ng-template>
-                
-                <ng-template pTemplate="emptymessage">
-                    <tr>
-                        <td colspan="9" class="text-center">No se encontraron mantenimientos</td>
-                    </tr>
-                </ng-template>
-            </p-table>
+                <div class="mt-3 flex gap-2">
+                    <button pButton pRipple label="Ir a Programaciones" icon="pi pi-calendar-plus" 
+                            class="p-button-sm p-button-outlined"
+                            routerLink="/administracion/programaciones"></button>
+                    <button pButton pRipple label="Ir a Ejecuciones" icon="pi pi-list" 
+                            class="p-button-sm p-button-outlined"
+                            routerLink="/administracion/ejecuciones"></button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Diálogo simple para crear mantenimiento -->
-<p-dialog [(visible)]="mantenimientoDialog" [style]="{width: '500px'}" header="Nuevo Mantenimiento" 
-          [modal]="true" class="p-fluid">
+<!-- Dialog de detalle del evento -->
+<p-dialog [(visible)]="showDetailDialog" 
+          [style]="{width: '500px'}" 
+          [header]="selectedEvent?.extendedProps?.tipo === 'programacion' ? 'Programacion de Mantenimiento' : 'Ejecucion de Mantenimiento'"
+          [modal]="true">
+    
     <ng-template pTemplate="content">
-        <div class="field">
-            <label for="descripcion">Descripción *</label>
-            <input type="text" pInputText id="descripcion" [(ngModel)]="mantenimiento.descripcion" 
-                   required [class.ng-invalid]="submitted && !mantenimiento.descripcion" />
-        </div>
-        
-        <div class="field">
-            <label for="fechaInicio">Fecha Inicio *</label>
-            <p-calendar [(ngModel)]="mantenimiento.fechaInicio" 
-                        dateFormat="dd/mm/yy" 
-                        [showIcon]="true" 
-                        [touchUI]="false"
-                        [readonlyInput]="false"
-                        inputId="fechaInicio">
-            </p-calendar>
-        </div>
-        
-        <div class="field">
-            <label for="fechaFin">Fecha Fin *</label>
-            <p-calendar [(ngModel)]="mantenimiento.fechaFin" 
-                        dateFormat="dd/mm/yy" 
-                        [showIcon]="true" 
-                        [touchUI]="false"
-                        [readonlyInput]="false"
-                        inputId="fechaFin">
-            </p-calendar>
-        </div>
-        
-        <div class="field">
-            <label for="frecuencia">Frecuencia *</label>
-            <p-dropdown [options]="frecuenciaOptions" [(ngModel)]="mantenimiento.frecuencia" 
-                        placeholder="Seleccionar frecuencia"></p-dropdown>
-        </div>
-        
-        <div class="field">
-            <label for="proveedor">Proveedor *</label>
-            <p-dropdown [options]="proveedoresDisponibles" [(ngModel)]="mantenimiento.proveedor" 
-                        optionLabel="nombre" placeholder="Seleccionar proveedor"></p-dropdown>
-        </div>
-        
-        <div class="field">
-            <label for="equipos">Equipos a incluir</label>
-            <p-multiSelect [options]="equiposDisponibles" 
-                           [(ngModel)]="mantenimiento.equipos" 
-                           optionLabel="nombre" 
-                           optionValue="idEquipo"
-                           placeholder="Seleccionar equipos"
-                           [filter]="true"
-                           [showHeader]="true"
-                           [showClear]="true">
-                <ng-template let-equipo pTemplate="item">
-                    <div>
-                        <span>{{equipo.nombre}}</span>
-                        <small class="block text-500">{{equipo.codigoInacif}} - {{equipo.ubicacion}}</small>
-                    </div>
-                </ng-template>
-            </p-multiSelect>
-            <small class="text-500">Los equipos pueden agregarse después de crear el contrato si se deja vacío</small>
-        </div>
-    </ng-template>
-
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" 
-                (click)="hideDialog()"></button>
-        <button pButton pRipple label="Guardar" icon="pi pi-check" class="p-button-text" 
-                (click)="saveMantenimiento()"></button>
-    </ng-template>
-</p-dialog>
-
-<!-- Diálogo de confirmación para eliminar -->
-<p-dialog [(visible)]="deleteMantenimientoDialog" header="Confirmar" [modal]="true" [style]="{width:'450px'}">
-    <div class="flex align-items-center justify-content-center">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-        <span *ngIf="mantenimiento">¿Está seguro que desea eliminar <b>{{mantenimiento.descripcion}}</b>?</span>
-    </div>
-    <ng-template pTemplate="footer">
-        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" 
-                (click)="deleteMantenimientoDialog = false"></button>
-        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" 
-                (click)="confirmDelete()"></button>
-    </ng-template>
-</p-dialog>
-
-<!-- Diálogo para ver equipos -->
-<p-dialog [(visible)]="equiposDialog" [style]="{width: '800px'}" header="Equipos del Contrato" 
-          [modal]="true" class="p-fluid">
-    <ng-template pTemplate="content">
-        <!-- Información del contrato -->
-        <div class="mb-3 p-3 border-1 surface-border border-round">
-            <h6 class="mb-2">Contrato: {{mantenimiento?.descripcion || 'Sin descripción'}}</h6>
-            <p class="text-sm text-500 mb-0">ID: {{mantenimiento?.idContrato}} | Proveedor: {{mantenimiento?.proveedor?.nombre || 'Sin proveedor'}}</p>
-        </div>
-
-        <!-- Equipos asociados -->
-        <div *ngIf="equiposSeleccionados && equiposSeleccionados.length > 0">
-            <h6 class="mb-2 text-primary">Equipos Asociados ({{equiposSeleccionados.length}})</h6>
-            <p-dataView [value]="equiposSeleccionados" layout="list">
-                <ng-template let-equipo pTemplate="listItem">
-                    <div class="col-12 border-1 surface-border border-round p-3 mb-2">
-                        <div class="flex flex-column md:flex-row justify-content-between md:align-items-center">
-                            <div class="flex-1">
-                                <h6 class="mb-1">{{equipo.nombre}}</h6>
-                                <p class="text-sm text-500 mb-1">
-                                    <strong>Código:</strong> {{equipo.codigoInacif || 'Sin código'}}
-                                </p>
-                                <p class="text-sm text-500 mb-1">
-                                    <strong>Ubicación:</strong> {{equipo.ubicacion || 'Sin ubicación'}}
-                                </p>
-                                <p class="text-sm text-500 mb-0">
-                                    <strong>Marca:</strong> {{equipo.marca || 'Sin marca'}} 
-                                    <span *ngIf="equipo.modelo"> - {{equipo.modelo}}</span>
-                                </p>
-                            </div>
-                            <div class="flex align-items-center mt-2 md:mt-0">
-                                <p-tag [value]="'Asociado'" severity="success"></p-tag>
-                            </div>
-                        </div>
-                    </div>
-                </ng-template>
-            </p-dataView>
-        </div>
-
-        <!-- Cuando no hay equipos asociados -->
-        <div *ngIf="(!equiposSeleccionados || equiposSeleccionados.length === 0) && !loadingEquipos">
-            <div class="text-center p-4 mb-3 border-1 surface-border border-round">
-                <i class="pi pi-info-circle text-4xl text-400 mb-3"></i>
-                <h6 class="text-500 mb-2">Sin Equipos Asociados</h6>
-                <p class="text-500 mb-3">Este contrato aún no tiene equipos asociados.</p>
-                <p class="text-sm text-600">
-                    <strong>Nota:</strong> La asociación de equipos debe realizarse desde el backend 
-                    o mediante el módulo de gestión de contratos.
-                </p>
-            </div>
-
-            <!-- Lista de equipos disponibles para referencia -->
-            <div *ngIf="equiposDisponibles && equiposDisponibles.length > 0">
-                <h6 class="mb-2 text-600">Equipos Disponibles en el Sistema</h6>
-                <p class="text-sm text-500 mb-3">
-                    Equipos que podrían asociarse a este contrato (solo referencia):
-                </p>
-                <div style="max-height: 300px; overflow-y: auto;">
-                    <p-dataView [value]="equiposDisponibles.slice(0, 10)" layout="list">
-                        <ng-template let-equipo pTemplate="listItem">
-                            <div class="col-12 border-1 surface-border border-round p-2 mb-2 bg-gray-50">
-                                <div class="flex flex-column md:flex-row justify-content-between md:align-items-center">
-                                    <div class="flex-1">
-                                        <h6 class="mb-1 text-sm">{{equipo.nombre}}</h6>
-                                        <p class="text-xs text-500 mb-0">
-                                            {{equipo.codigoInacif || 'Sin código'}} | {{equipo.ubicacion || 'Sin ubicación'}}
-                                        </p>
-                                    </div>
-                                    <div class="flex align-items-center mt-1 md:mt-0">
-                                        <p-tag [value]="'Disponible'" severity="info" class="text-xs"></p-tag>
-                                    </div>
-                                </div>
-                            </div>
-                        </ng-template>
-                    </p-dataView>
+        <div *ngIf="selectedEvent" class="flex flex-column gap-3">
+            <!-- Fecha -->
+            <div class="flex align-items-center gap-2 p-3 surface-100 border-round">
+                <i class="pi pi-calendar text-2xl text-primary"></i>
+                <div>
+                    <div class="font-semibold">{{ formatDate(selectedEvent.start) }}</div>
+                    <small class="text-500">Fecha programada</small>
                 </div>
-                <p class="text-xs text-500 mt-2" *ngIf="equiposDisponibles.length > 10">
-                    Mostrando 10 de {{equiposDisponibles.length}} equipos disponibles.
-                </p>
+            </div>
+
+            <!-- Equipo -->
+            <div class="flex align-items-center gap-3">
+                <i class="pi pi-cog text-xl text-500"></i>
+                <div>
+                    <div class="font-medium">{{ selectedEvent.extendedProps?.equipoNombre || 'Sin equipo' }}</div>
+                    <small class="text-500">Equipo</small>
+                </div>
+            </div>
+
+            <!-- Proveedor -->
+            <div class="flex align-items-center gap-3">
+                <i class="pi pi-building text-xl text-500"></i>
+                <div>
+                    <div class="font-medium">{{ selectedEvent.extendedProps?.proveedorNombre || 'Sin proveedor' }}</div>
+                    <small class="text-500">Proveedor</small>
+                </div>
+            </div>
+
+            <!-- Contrato -->
+            <div class="flex align-items-center gap-3">
+                <i class="pi pi-file text-xl text-500"></i>
+                <div>
+                    <div class="font-medium">{{ selectedEvent.extendedProps?.contratoDescripcion || 'Sin contrato' }}</div>
+                    <small class="text-500">Contrato</small>
+                </div>
+            </div>
+
+            <!-- Estado (solo para ejecuciones) -->
+            <div *ngIf="selectedEvent.extendedProps?.tipo === 'ejecucion'" class="flex align-items-center gap-3">
+                <i class="pi pi-tag text-xl text-500"></i>
+                <div>
+                    <p-tag [value]="getEstadoLabel(selectedEvent.extendedProps?.estado)"
+                           [severity]="getEstadoSeverity(selectedEvent.extendedProps?.estado)"></p-tag>
+                    <small class="text-500 block mt-1">Estado actual</small>
+                </div>
+            </div>
+
+            <!-- Frecuencia (solo para programaciones) -->
+            <div *ngIf="selectedEvent.extendedProps?.tipo === 'programacion'" class="flex align-items-center gap-3">
+                <i class="pi pi-sync text-xl text-500"></i>
+                <div>
+                    <p-tag [value]="selectedEvent.extendedProps?.frecuencia || 'Sin frecuencia'" severity="info"></p-tag>
+                    <small class="text-500 block mt-1">Frecuencia de mantenimiento</small>
+                </div>
             </div>
         </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cerrar" icon="pi pi-times" 
+                class="p-button-text" (click)="closeDetailDialog()"></button>
+        
+        <!-- Bot\u00f3n para crear ejecuci\u00f3n desde programaci\u00f3n -->
+        <button *ngIf="selectedEvent?.extendedProps?.tipo === 'programacion'"
+                pButton pRipple label="Crear Ejecucion" icon="pi pi-plus" 
+                class="p-button-success" (click)="crearDesdeProgamacion()"></button>
+        
+        <!-- Botón para ir a ejecución existente -->
+        <button *ngIf="selectedEvent?.extendedProps?.tipo === 'ejecucion'"
+                pButton pRipple label="Ver Ejecucion" icon="pi pi-eye" 
+                class="p-button-primary" 
+                routerLink="/administracion/ejecuciones"
+                (click)="closeDetailDialog()"></button>
+    </ng-template>
+</p-dialog>
 
-        <!-- Loading de equipos -->
-        <div *ngIf="loadingEquipos" class="text-center p-4">
-            <i class="pi pi-spin pi-spinner text-4xl text-primary mb-3"></i>
-            <h6 class="text-primary mb-2">Cargando equipos...</h6>
-            <p class="text-500">Consultando equipos asociados al contrato.</p>
+<!-- Dialog para crear nueva ejecucion -->
+<p-dialog [(visible)]="showCreateDialog" 
+          [style]="{width: '500px'}" 
+          header="Nueva Ejecucion de Mantenimiento"
+          [modal]="true">
+    
+    <ng-template pTemplate="content">
+        <div class="flex flex-column gap-4">
+            <!-- Fecha seleccionada -->
+            <div class="p-3 surface-100 border-round">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-calendar text-primary"></i>
+                    <span class="font-semibold">{{ formatDate(selectedDate) }}</span>
+                </div>
+            </div>
+
+            <!-- Contrato -->
+            <div class="field">
+                <label for="contrato" class="font-medium">Contrato *</label>
+                <p-dropdown id="contrato"
+                            [(ngModel)]="nuevaEjecucion.idContrato"
+                            [options]="contratos"
+                            optionLabel="descripcion"
+                            optionValue="id"
+                            placeholder="Seleccione un contrato"
+                            [filter]="true"
+                            filterBy="descripcion"
+                            (onChange)="onContratoChange()"
+                            styleClass="w-full">
+                    <ng-template let-contrato pTemplate="item">
+                        <div>
+                            <div>{{ contrato.descripcion }}</div>
+                            <small class="text-500">{{ contrato.proveedor?.nombre }}</small>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+            </div>
+
+            <!-- Equipo -->
+            <div class="field">
+                <label for="equipo" class="font-medium">Equipo *</label>
+                <p-dropdown id="equipo"
+                            [(ngModel)]="nuevaEjecucion.idEquipo"
+                            [options]="equiposContrato"
+                            optionLabel="nombre"
+                            optionValue="idEquipo"
+                            placeholder="Seleccione un equipo"
+                            [disabled]="!nuevaEjecucion.idContrato || equiposContrato.length === 0"
+                            [filter]="true"
+                            styleClass="w-full">
+                    <ng-template let-equipo pTemplate="item">
+                        <div>
+                            <div>{{ equipo.nombre }}</div>
+                            <small class="text-500">{{ equipo.codigoInacif }} - {{ equipo.ubicacion }}</small>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+                <small *ngIf="!nuevaEjecucion.idContrato" class="text-500">
+                    Primero seleccione un contrato
+                </small>
+                <small *ngIf="nuevaEjecucion.idContrato && equiposContrato.length === 0" class="text-orange-500">
+                    Este contrato no tiene equipos asociados
+                </small>
+            </div>
         </div>
     </ng-template>
-
+    
     <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cerrar" icon="pi pi-times" class="p-button-text" 
-                (click)="equiposDialog = false"></button>
-        <button *ngIf="equiposSeleccionados && equiposSeleccionados.length > 0" 
-                pButton pRipple label="Gestionar Equipos" icon="pi pi-cog" 
-                class="p-button-outlined" 
-                pTooltip="Función disponible en próximas versiones"
-                [disabled]="true"></button>
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
+                class="p-button-text" (click)="closeCreateDialog()"></button>
+        <button pButton pRipple label="Crear Ejecucion" icon="pi pi-check" 
+                class="p-button-success" 
+                [disabled]="!nuevaEjecucion.idContrato || !nuevaEjecucion.idEquipo"
+                (click)="crearEjecucion()"></button>
     </ng-template>
 </p-dialog>

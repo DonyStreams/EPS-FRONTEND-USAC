@@ -5,12 +5,15 @@ import { environment } from 'src/environments/environment';
 
 export interface Mantenimiento {
   idContrato?: number;
-  fechaInicio: Date;
-  fechaFin: Date;
+  fechaInicio: Date | string;
+  fechaFin: Date | string;
   descripcion: string;
   frecuencia: string;
   estado?: boolean;
   proveedor?: Proveedor;
+  idProveedor?: number;
+  nombreProveedor?: string;
+  proveedorNombre?: string;
   equipos?: number[]; // Array de IDs de equipos seleccionados para envío al backend
   equiposCompletos?: Equipo[]; // Array de objetos Equipo completos recibidos del backend
   tiposMantenimiento?: TipoMantenimiento[];
@@ -18,6 +21,16 @@ export interface Mantenimiento {
   fechaModificacion?: Date;
   usuarioCreacion?: Usuario;
   usuarioModificacion?: Usuario;
+}
+
+export interface GuardarMantenimientoPayload {
+  descripcion: string;
+  fechaInicio: Date | string | null;
+  fechaFin: Date | string | null;
+  frecuencia: string;
+  estado: boolean;
+  idProveedor?: number;
+  idEstado?: number;
 }
 
 export interface Equipo {
@@ -86,14 +99,14 @@ export class MantenimientoService {
   /**
    * Crear nuevo mantenimiento
    */
-  createMantenimiento(mantenimiento: Mantenimiento): Observable<Mantenimiento> {
+  createMantenimiento(mantenimiento: GuardarMantenimientoPayload): Observable<Mantenimiento> {
     return this.http.post<Mantenimiento>(this.apiUrl, mantenimiento);
   }
 
   /**
    * Actualizar mantenimiento
    */
-  updateMantenimiento(id: number, mantenimiento: Mantenimiento): Observable<Mantenimiento> {
+  updateMantenimiento(id: number, mantenimiento: GuardarMantenimientoPayload): Observable<Mantenimiento> {
     return this.http.put<Mantenimiento>(`${this.apiUrl}/${id}`, mantenimiento);
   }
 

@@ -24,7 +24,8 @@ export class AppMenuComponent implements OnInit {
                 label: 'Gestión de Equipos',
                 icon: 'pi pi-fw pi-desktop',
                 items: [
-                    { label: 'Equipos', icon: 'pi pi-fw pi-server', routerLink: ['/administracion/equipos'] },                    
+                    { label: 'Equipos', icon: 'pi pi-fw pi-server', routerLink: ['/administracion/equipos'] },
+                    { label: 'Bitácora/Historial', icon: 'pi pi-fw pi-book', routerLink: ['/administracion/equipos/historial'] }
                 ]
             },
             {

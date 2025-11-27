@@ -1,621 +1,506 @@
 import { Component, OnInit } from '@angular/core';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { Table } from 'primeng/table';
-import { MantenimientoService, Mantenimiento, Equipo, Proveedor, TipoMantenimiento } from 'src/app/service/mantenimiento.service';
+import { MessageService } from 'primeng/api';
+import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import esLocale from '@fullcalendar/core/locales/es';
+import { ProgramacionesService, ProgramacionMantenimiento } from 'src/app/service/programaciones.service';
+import { EjecucionesService, EjecucionMantenimiento } from 'src/app/service/ejecuciones.service';
+import { ContratosService } from 'src/app/service/contratos.service';
+
+interface ContratoCalendario {
+    id: number;
+    descripcion: string;
+    proveedor?: { nombre?: string };
+    equipos?: any[];
+}
+
+interface CalendarEvent {
+    id: string;
+    title: string;
+    start: Date | string;
+    end?: Date | string;
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+    extendedProps?: {
+        tipo: 'programacion' | 'ejecucion';
+        estado?: string;
+        equipoNombre?: string;
+        proveedorNombre?: string;
+        contratoDescripcion?: string;
+        frecuencia?: string;
+        idProgramacion?: number;
+        idEjecucion?: number;
+        idContrato?: number;
+        idEquipo?: number;
+    };
+}
 
 @Component({
     selector: 'app-mantenimientos',
     templateUrl: './mantenimientos.component.html',
-    providers: [MessageService, ConfirmationService]
+    providers: [MessageService]
 })
 export class MantenimientosComponent implements OnInit {
 
-    mantenimientoDialog: boolean = false;
-    deleteMantenimientoDialog: boolean = false;
-    deleteMantenimientosDialog: boolean = false;
-    equiposDialog: boolean = false;
-
-    mantenimientos: Mantenimiento[] = [];
-    mantenimiento: Mantenimiento = this.getEmptyMantenimiento();
-    selectedMantenimientos: Mantenimiento[] = [];
-    equiposSeleccionados: Equipo[] = [];
-
-    equiposDisponibles: Equipo[] = [];
-    proveedoresDisponibles: Proveedor[] = [];
-    tiposDisponibles: TipoMantenimiento[] = [];
-
-    submitted: boolean = false;
-    loading: boolean = false;
-    loadingEquipos: boolean = false;
-
-    cols: any[] = [];
-    frecuenciaOptions: any[] = [];
-    rowsPerPageOptions = [5, 10, 20];
+    calendarOptions: CalendarOptions = {};
+    events: CalendarEvent[] = [];
+    
+    programaciones: ProgramacionMantenimiento[] = [];
+    ejecuciones: EjecucionMantenimiento[] = [];
+    contratos: ContratoCalendario[] = [];
+    
+    loading = false;
+    
+    // Dialog para ver detalle
+    showDetailDialog = false;
+    selectedEvent: CalendarEvent | null = null;
+    
+    // Dialog para crear ejecucion
+    showCreateDialog = false;
+    selectedDate: Date | null = null;
+    nuevaEjecucion: Partial<EjecucionMantenimiento> = {};
+    equiposContrato: any[] = [];
+    
+    // Filtros
+    filtroTipo: string = 'todos';
+    tiposFiltro = [
+        { label: 'Todos', value: 'todos' },
+        { label: 'Programaciones', value: 'programacion' },
+        { label: 'Ejecuciones', value: 'ejecucion' }
+    ];
 
     constructor(
-        private mantenimientoService: MantenimientoService,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService
-    ) { }
+        private programacionesService: ProgramacionesService,
+        private ejecucionesService: EjecucionesService,
+        private contratosService: ContratosService,
+        private messageService: MessageService
+    ) {}
 
-    ngOnInit() {
-        this.loadMantenimientos();
-        this.loadCatalogos();
-        this.initColumns();
-        this.initFrecuenciaOptions();
+    ngOnInit(): void {
+        this.initCalendar();
+        this.loadData();
     }
 
-    /**
-     * Cargar todos los mantenimientos
-     */
-    loadMantenimientos() {
-        this.loading = true;
-        console.log('[Mantenimientos] Iniciando carga de mantenimientos...');
-        
-        this.mantenimientoService.getMantenimientos().subscribe({
-            next: (data) => {
-                console.log('[Mantenimientos] Datos recibidos:', data);
-                console.log('[Mantenimientos] Primer mantenimiento:', data[0]);
-                if (data[0]) {
-                    console.log('[Mantenimientos] Estructura del objeto:', Object.keys(data[0]));
-                    console.log('[Mantenimientos] fechaInicio:', data[0].fechaInicio, typeof data[0].fechaInicio);
-                    console.log('[Mantenimientos] fechaFin:', data[0].fechaFin, typeof data[0].fechaFin);
-                    console.log('[Mantenimientos] equipos:', data[0].equipos);
-                    console.log('[Mantenimientos] equiposCompletos:', data[0].equiposCompletos);
-                }
-                this.mantenimientos = data;
-                this.loading = false;
+    private initCalendar(): void {
+        this.calendarOptions = {
+            plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+            initialView: 'dayGridMonth',
+            locale: esLocale,
+            headerToolbar: {
+                left: 'prev,today,next',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
             },
-            error: (error) => {
-                console.error('[Mantenimientos] Error al cargar:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: `No se pudieron cargar los mantenimientos: ${error.message || error.error?.message || 'Error desconocido'}`
-                });
-                this.loading = false;
-            }
-        });
-    }
-
-    /**
-     * Cargar catálogos necesarios
-     */
-    loadCatalogos() {
-        console.log('[Mantenimientos] Cargando catálogos...');
-        
-        // Cargar equipos
-        this.mantenimientoService.getEquiposDisponibles().subscribe({
-            next: (equipos) => {
-                console.log('[Mantenimientos] Equipos cargados:', equipos);
-                this.equiposDisponibles = equipos;
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana'
             },
-            error: (error) => {
-                console.error('[Mantenimientos] Error cargando equipos:', error);
-            }
-        });
-
-        // Cargar proveedores
-        this.mantenimientoService.getProveedoresDisponibles().subscribe({
-            next: (proveedores) => {
-                console.log('[Mantenimientos] Proveedores cargados:', proveedores);
-                this.proveedoresDisponibles = proveedores;
-            },
-            error: (error) => {
-                console.error('[Mantenimientos] Error cargando proveedores:', error);
-            }
-        });
-
-        // Cargar tipos de mantenimiento
-        this.mantenimientoService.getTiposDisponibles().subscribe({
-            next: (tipos) => {
-                console.log('[Mantenimientos] Tipos cargados:', tipos);
-                this.tiposDisponibles = tipos;
-            },
-            error: (error) => {
-                console.error('[Mantenimientos] Error cargando tipos:', error);
-            }
-        });
-    }
-
-    /**
-     * Inicializar columnas de la tabla
-     */
-    initColumns() {
-        this.cols = [
-            { field: 'descripcion', header: 'Descripción' },
-            { field: 'proveedor.nombre', header: 'Proveedor' },
-            { field: 'fechaInicio', header: 'Fecha Inicio' },
-            { field: 'fechaFin', header: 'Fecha Fin' },
-            { field: 'frecuencia', header: 'Frecuencia' },
-            { field: 'equipos', header: 'Equipos' },
-            { field: 'estado', header: 'Estado' }
-        ];
-    }
-
-    /**
-     * Inicializar opciones de frecuencia
-     */
-    initFrecuenciaOptions() {
-        this.frecuenciaOptions = [
-            { label: 'Mensual', value: 'mensual' },
-            { label: 'Bimestral', value: 'bimestral' },
-            { label: 'Trimestral', value: 'trimestral' },
-            { label: 'Semestral', value: 'semestral' },
-            { label: 'Anual', value: 'anual' },
-            { label: 'A demanda', value: 'a_demanda' }
-        ];
-    }
-
-    /**
-     * Abrir diálogo para nuevo mantenimiento
-     */
-    openNew() {
-        this.mantenimiento = this.getEmptyMantenimiento();
-        this.submitted = false;
-        this.mantenimientoDialog = true;
-    }
-
-    /**
-     * Eliminar mantenimientos seleccionados
-     */
-    deleteSelectedMantenimientos() {
-        this.deleteMantenimientosDialog = true;
-    }
-
-    /**
-     * Editar mantenimiento
-     */
-    editMantenimiento(mantenimiento: Mantenimiento) {
-        this.mantenimiento = { ...mantenimiento };
-        
-        // Si el mantenimiento tiene equipos completos del backend, extraer solo los IDs
-        if (this.mantenimiento.equiposCompletos && this.mantenimiento.equiposCompletos.length > 0) {
-            this.mantenimiento.equipos = this.mantenimiento.equiposCompletos.map(equipo => equipo.idEquipo);
-        } else if (!this.mantenimiento.equipos) {
-            this.mantenimiento.equipos = [];
-        }
-        
-        this.mantenimientoDialog = true;
-    }
-
-    /**
-     * Eliminar mantenimiento
-     */
-    deleteMantenimiento(mantenimiento: Mantenimiento) {
-        this.deleteMantenimientoDialog = true;
-        this.mantenimiento = { ...mantenimiento };
-    }
-
-    /**
-     * Confirmar eliminación de mantenimientos seleccionados
-     */
-    confirmDeleteSelected() {
-        this.deleteMantenimientosDialog = false;
-        
-        const deletePromises = this.selectedMantenimientos.map(mantenimiento => 
-            this.mantenimientoService.deleteMantenimiento(mantenimiento.idContrato!).toPromise()
-        );
-
-        Promise.all(deletePromises).then(() => {
-            this.mantenimientos = this.mantenimientos.filter(val => 
-                !this.selectedMantenimientos.includes(val)
-            );
-            this.selectedMantenimientos = [];
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Mantenimientos eliminados'
-            });
-        }).catch((error) => {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Error al eliminar mantenimientos'
-            });
-        });
-    }
-
-    /**
-     * Confirmar eliminación de mantenimiento
-     */
-    confirmDelete() {
-        this.deleteMantenimientoDialog = false;
-        
-        this.mantenimientoService.deleteMantenimiento(this.mantenimiento.idContrato!).subscribe({
-            next: () => {
-                this.mantenimientos = this.mantenimientos.filter(val => 
-                    val.idContrato !== this.mantenimiento.idContrato
-                );
-                this.mantenimiento = this.getEmptyMantenimiento();
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Mantenimiento eliminado'
-                });
-            },
-            error: (error) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo eliminar el mantenimiento. Puede tener ejecuciones asociadas.'
-                });
-            }
-        });
-    }
-
-    /**
-     * Ocultar diálogo
-     */
-    hideDialog() {
-        this.mantenimientoDialog = false;
-        this.mantenimiento = this.getEmptyMantenimiento();
-        this.submitted = false;
-    }
-
-    /**
-     * Guardar mantenimiento
-     */
-    saveMantenimiento() {
-        this.submitted = true;
-
-        if (this.isValidMantenimiento()) {
-            // Preparar el payload para el backend - NO incluir equipos en la creación inicial
-            const payload = {
-                descripcion: this.mantenimiento.descripcion,
-                fechaInicio: this.mantenimiento.fechaInicio,
-                fechaFin: this.mantenimiento.fechaFin,
-                frecuencia: this.mantenimiento.frecuencia,
-                estado: this.mantenimiento.estado,
-                proveedor: this.mantenimiento.proveedor
-                // NO incluir equipos aquí - se manejarán por separado
-            };
-
-            console.log('[Mantenimiento] Payload a enviar:', payload);
-
-            if (this.mantenimiento.idContrato) {
-                // Actualizar existente
-                this.mantenimientoService.updateMantenimiento(
-                    this.mantenimiento.idContrato, 
-                    payload
-                ).subscribe({
-                    next: (updatedMantenimiento) => {
-                        // Actualizar en la lista
-                        const index = this.findIndexById(this.mantenimiento.idContrato!);
-                        if (index !== -1) {
-                            this.mantenimientos[index] = updatedMantenimiento;
-                        }
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Mantenimiento actualizado'
-                        });
-                        this.hideDialog();
-                    },
-                    error: (error) => {
-                        console.error('[Mantenimiento] Error al actualizar:', error);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error al actualizar mantenimiento'
-                        });
-                    }
-                });
-            } else {
-                // Crear nuevo
-                this.mantenimientoService.createMantenimiento(payload).subscribe({
-                    next: (newMantenimiento) => {
-                        console.log('[Mantenimiento] Respuesta del backend al crear:', newMantenimiento);
-                        console.log('[Mantenimiento] Estructura respuesta:', Object.keys(newMantenimiento));
-                        console.log('[Mantenimiento] fechaInicio respuesta:', newMantenimiento.fechaInicio);
-                        console.log('[Mantenimiento] fechaFin respuesta:', newMantenimiento.fechaFin);
-                        console.log('[Mantenimiento] equipos respuesta:', newMantenimiento.equipos);
-                        
-                        this.mantenimientos.push(newMantenimiento);
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Mantenimiento creado exitosamente'
-                        });
-                        this.hideDialog();
-                        
-                        // Recargar la lista para obtener datos completos del backend
-                        console.log('[Mantenimiento] Recargando lista...');
-                        this.loadMantenimientos();
-                    },
-                    error: (error) => {
-                        console.error('[Mantenimiento] Error al crear:', error);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error al crear mantenimiento. Verifique los datos.'
-                        });
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Validar mantenimiento
-     */
-    isValidMantenimiento(): boolean {
-        return this.mantenimiento.descripcion && 
-               this.mantenimiento.descripcion.trim() !== '' &&
-               this.mantenimiento.fechaInicio != null &&
-               this.mantenimiento.fechaFin != null &&
-               this.mantenimiento.frecuencia && 
-               this.mantenimiento.frecuencia.trim() !== '' &&
-               this.mantenimiento.proveedor != null;
-    }
-
-    /**
-     * Encontrar índice por ID
-     */
-    findIndexById(id: number): number {
-        return this.mantenimientos.findIndex(mantenimiento => mantenimiento.idContrato === id);
-    }
-
-    /**
-     * Obtener mantenimiento vacío
-     */
-    getEmptyMantenimiento(): Mantenimiento {
-        return {
-            descripcion: '',
-            fechaInicio: new Date(),
-            fechaFin: new Date(),
-            frecuencia: '',
-            estado: true,
-            equipos: [] // Array de IDs de equipos seleccionados
+            editable: false,
+            selectable: true,
+            selectMirror: true,
+            dayMaxEvents: 3,
+            weekends: true,
+            events: [],
+            eventClick: this.handleEventClick.bind(this),
+            select: this.handleDateSelect.bind(this),
+            height: 'auto',
+            aspectRatio: 1.8
         };
     }
 
-    /**
-     * Filtro global para la tabla
-     */
-    onGlobalFilter(table: Table, event: Event) {
-        table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
-    }
+    private loadData(): void {
+        this.loading = true;
+        let programacionesCargadas = false;
+        let ejecucionesCargadas = false;
+        
+        // Cargar programaciones
+        this.programacionesService.getAll().subscribe({
+            next: (data) => {
+                this.programaciones = data || [];
+                console.log('📅 Programaciones cargadas:', this.programaciones.length);
+                programacionesCargadas = true;
+                if (programacionesCargadas && ejecucionesCargadas) {
+                    this.generateEvents();
+                }
+            },
+            error: (err) => {
+                console.error('Error cargando programaciones:', err);
+                programacionesCargadas = true;
+                if (programacionesCargadas && ejecucionesCargadas) {
+                    this.generateEvents();
+                }
+            }
+        });
 
-    /**
-     * Formatear fecha para mostrar
-     */
-    formatDate(date: Date | string | null | undefined): string {
-        if (!date) return 'Sin fecha';
-        
-        console.log('[formatDate] Input:', date, 'Tipo:', typeof date);
-        
-        let d: Date;
-        
-        if (typeof date === 'string') {
-            // Limpiar la cadena de espacios en blanco y sufijos problemáticos
-            let cleanDate = date.trim();
-            
-            // Remover el sufijo [UTC] que puede venir del backend
-            if (cleanDate.endsWith('[UTC]')) {
-                cleanDate = cleanDate.replace('[UTC]', '');
-                console.log('[formatDate] Removido [UTC], nueva fecha:', cleanDate);
+        // Cargar ejecuciones
+        this.ejecucionesService.getAll().subscribe({
+            next: (data) => {
+                this.ejecuciones = data || [];
+                console.log('✅ Ejecuciones cargadas:', this.ejecuciones.length);
+                ejecucionesCargadas = true;
+                if (programacionesCargadas && ejecucionesCargadas) {
+                    this.generateEvents();
+                }
+            },
+            error: (err) => {
+                console.error('Error cargando ejecuciones:', err);
+                ejecucionesCargadas = true;
+                if (programacionesCargadas && ejecucionesCargadas) {
+                    this.generateEvents();
+                }
             }
-            
-            // Manejar diferentes formatos de string de fecha
-            if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
-                // Formato YYYY-MM-DD
-                d = new Date(cleanDate + 'T00:00:00');
-            } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(cleanDate)) {
-                // Formato ISO completo (con o sin Z)
-                d = new Date(cleanDate);
-            } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(cleanDate)) {
-                // Formato DD/MM/YYYY
-                const parts = cleanDate.split('/');
-                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else if (/^\d{2}-\d{2}-\d{4}$/.test(cleanDate)) {
-                // Formato DD-MM-YYYY
-                const parts = cleanDate.split('-');
-                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDate)) {
-                // Formato D/M/YYYY o DD/M/YYYY
-                const parts = cleanDate.split('/');
-                d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else if (/^\d{4}\/\d{2}\/\d{2}$/.test(cleanDate)) {
-                // Formato YYYY/MM/DD
-                const parts = cleanDate.split('/');
-                d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else if (/^\[object Date\]$/.test(cleanDate)) {
-                // Si es un objeto Date serializado mal
-                console.warn('[formatDate] Fecha serializada incorrectamente:', cleanDate);
-                return 'Error de formato';
-            } else {
-                // Intentar parsearlo directamente
-                d = new Date(cleanDate);
+        });
+
+        // Cargar contratos para crear ejecuciones
+        this.contratosService.getAll().subscribe({
+            next: (data) => {
+                this.contratos = (data || []).map((c: any) => ({
+                    id: c.id || c.idContrato,
+                    descripcion: c.descripcion,
+                    proveedor: c.proveedor,
+                    equipos: c.equipos || []
+                }));
+                console.log('📋 Contratos cargados:', this.contratos.length);
+                this.loading = false;
+            },
+            error: (err) => {
+                console.error('Error cargando contratos:', err);
+                this.loading = false;
             }
-        } else if (date instanceof Date) {
-            d = date;
-        } else if (typeof date === 'number') {
-            // Si es un timestamp
-            d = new Date(date);
-        } else if (date && typeof date === 'object') {
-            // Si es un objeto con propiedades de fecha
-            console.warn('[formatDate] Objeto fecha no estándar:', date);
-            if ((date as any).time) {
-                d = new Date((date as any).time);
-            } else if ((date as any).year && (date as any).month && (date as any).day) {
-                d = new Date((date as any).year, (date as any).month - 1, (date as any).day);
-            } else {
-                return 'Formato no reconocido';
-            }
-        } else {
-            console.warn('[formatDate] Tipo de fecha no reconocido:', typeof date, date);
-            return 'Tipo inválido';
-        }
-        
-        console.log('[formatDate] Fecha parseada:', d, 'Valid:', !isNaN(d.getTime()));
-        
-        if (isNaN(d.getTime())) {
-            console.warn('[formatDate] Fecha inválida después del parseo:', date);
-            return 'Error al procesar';
-        }
-        
-        return d.toLocaleDateString('es-GT', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
         });
     }
 
-    /**
-     * Obtener texto de estado
-     */
-    getEstadoText(estado: boolean): string {
-        return estado ? 'Activo' : 'Inactivo';
-    }
+    private generateEvents(): void {
+        const eventos: CalendarEvent[] = [];
+        const hoy = new Date();
+        const unAnioAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate());
+        const unAnioAdelante = new Date(hoy.getFullYear() + 1, hoy.getMonth(), hoy.getDate());
 
-    /**
-     * Obtener severidad para el estado
-     */
-    getEstadoSeverity(estado: boolean): string {
-        return estado ? 'success' : 'danger';
-    }
+        console.log('🔄 Generando eventos del calendario...');
+        console.log('📅 Programaciones totales:', this.programaciones.length);
+        console.log('📅 Programaciones activas:', this.programaciones.filter(p => p.activa).length);
+        console.log('✅ Ejecuciones totales:', this.ejecuciones.length);
 
-    /**
-     * Obtener nombres de equipos asociados al mantenimiento
-     */
-    getEquiposNames(mantenimiento: Mantenimiento): string {
-        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
-            // Si tiene equipos completos del backend, usar esos nombres
-            return mantenimiento.equiposCompletos.map(equipo => equipo.nombre).join(', ');
-        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
-            // Si solo tiene IDs, buscar los nombres en equiposDisponibles
-            const nombres = mantenimiento.equipos.map(idEquipo => {
-                const equipo = this.equiposDisponibles.find(e => e.idEquipo === idEquipo);
-                return equipo ? equipo.nombre : `ID: ${idEquipo}`;
-            });
-            return nombres.join(', ');
-        } else if ((mantenimiento as any).contratoEquipos && (mantenimiento as any).contratoEquipos.length > 0) {
-            // Si viene como contratoEquipos
-            return (mantenimiento as any).contratoEquipos.map((ce: any) => 
-                ce.equipo?.nombre || ce.nombre || 'Equipo sin nombre'
-            ).join(', ');
-        } else if ((mantenimiento as any).equiposAsociados && (mantenimiento as any).equiposAsociados.length > 0) {
-            // Si viene como equiposAsociados
-            return (mantenimiento as any).equiposAsociados.map((ea: any) => 
-                ea.nombre || ea.equipo?.nombre || 'Equipo sin nombre'
-            ).join(', ');
-        } else if ((mantenimiento as any).listaEquipos && (mantenimiento as any).listaEquipos.length > 0) {
-            // Si viene como listaEquipos
-            return (mantenimiento as any).listaEquipos.map((le: any) => 
-                le.nombre || le.equipo?.nombre || 'Equipo sin nombre'
-            ).join(', ');
+        // DEBUG: Ver estructura de primera programación
+        if (this.programaciones.length > 0) {
+            console.log('🔍 Estructura de programación:', this.programaciones[0]);
+            console.log('🔍 ¿Tiene fechaProximoMantenimiento?', this.programaciones[0].fechaProximoMantenimiento);
         }
-        return '';
-    }
 
-    /**
-     * Verificar si el mantenimiento tiene equipos
-     */
-    hasEquipos(mantenimiento: Mantenimiento): boolean {
-        // TEMPORAL: Como el backend no está enviando equipos por la configuración LAZY,
-        // vamos a mostrar siempre un botón que permita buscar/ver equipos
-        // TODO: Cuando el backend se configure con EAGER o endpoint específico, usar la lógica original
-        return true; // Siempre mostrar el botón de equipos para que el usuario pueda ver/agregar
-    }
+        // Generar eventos de programaciones (recurrentes)
+        this.programaciones.forEach(prog => {
+            console.log(`🔍 Programación ${prog.idProgramacion}: activa=${prog.activa}, fechaProxima=${prog.fechaProximoMantenimiento}`);
+            if (prog.activa && prog.fechaProximoMantenimiento) {
+                const eventosRecurrentes = this.generarEventosRecurrentes(prog, unAnioAtras, unAnioAdelante);
+                console.log(`  ✅ Generó ${eventosRecurrentes.length} eventos recurrentes`);
+                eventos.push(...eventosRecurrentes);
+            } else {
+                console.log(`  ❌ No cumple condiciones: activa=${prog.activa}, fechaProxima=${!!prog.fechaProximoMantenimiento}`);
+            }
+        });
+        console.log('🟣 Eventos de programaciones generados:', eventos.length);
 
-    /**
-     * Obtener el número de equipos asociados
-     */
-    getEquiposCount(mantenimiento: Mantenimiento): number {
-        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
-            return mantenimiento.equiposCompletos.length;
-        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
-            return mantenimiento.equipos.length;
-        } else if ((mantenimiento as any).contratoEquipos && (mantenimiento as any).contratoEquipos.length > 0) {
-            return (mantenimiento as any).contratoEquipos.length;
-        } else if ((mantenimiento as any).equiposAsociados && (mantenimiento as any).equiposAsociados.length > 0) {
-            return (mantenimiento as any).equiposAsociados.length;
-        } else if ((mantenimiento as any).listaEquipos && (mantenimiento as any).listaEquipos.length > 0) {
-            return (mantenimiento as any).listaEquipos.length;
-        }
-        // Retornar 0 pero mostrar como "Ver" en lugar de "0 equipos"
-        return 0;
-    }
-
-    /**
-     * Obtener texto para el botón de equipos - SIEMPRE "Ver equipos"
-     */
-    getEquiposButtonText(mantenimiento: Mantenimiento): string {
-        return 'Ver equipos';
-    }
-
-    /**
-     * Ver equipos asociados al mantenimiento
-     */
-    verEquipos(mantenimiento: Mantenimiento) {
-        console.log('[verEquipos] Iniciando para contrato:', mantenimiento.idContrato, mantenimiento.descripcion);
-        
-        // Guardar referencia del mantenimiento actual para el modal
-        this.mantenimiento = { ...mantenimiento };
-        
-        // Abrir el modal inmediatamente
-        this.equiposDialog = true;
-        
-        // Intentar usar equipos ya cargados primero
-        if (mantenimiento.equiposCompletos && mantenimiento.equiposCompletos.length > 0) {
-            // Si ya tiene los equipos completos del backend
-            console.log('[verEquipos] Usando equiposCompletos:', mantenimiento.equiposCompletos);
-            this.equiposSeleccionados = [...mantenimiento.equiposCompletos];
-        } else if (mantenimiento.equipos && mantenimiento.equipos.length > 0) {
-            // Si solo tiene IDs, buscar los objetos completos
-            console.log('[verEquipos] Buscando equipos por IDs:', mantenimiento.equipos);
-            this.equiposSeleccionados = mantenimiento.equipos.map(idEquipo => {
-                return this.equiposDisponibles.find(e => e.idEquipo === idEquipo);
-            }).filter(equipo => equipo !== undefined) as Equipo[];
-        } else {
-            // No hay equipos en el objeto - consultar al backend directamente
-            console.log('[verEquipos] Consultando equipos al backend para contrato:', mantenimiento.idContrato);
-            this.equiposSeleccionados = []; // Limpiar primero
-            this.loadingEquipos = true; // Activar loading
-            
-            if (mantenimiento.idContrato) {
-                this.mantenimientoService.getEquiposByContrato(mantenimiento.idContrato).subscribe({
-                    next: (equipos) => {
-                        console.log('[verEquipos] Equipos recibidos del backend:', equipos);
-                        this.equiposSeleccionados = equipos;
-                        this.loadingEquipos = false;
-                        
-                        // Actualizar también el objeto mantenimiento para futuras consultas
-                        this.mantenimiento.equiposCompletos = equipos;
-                    },
-                    error: (error) => {
-                        console.error('[verEquipos] Error al cargar equipos:', error);
-                        this.equiposSeleccionados = [];
-                        this.loadingEquipos = false;
-                        
-                        // Mostrar mensaje informativo
-                        this.messageService.add({
-                            severity: 'info',
-                            summary: 'Información',
-                            detail: 'No se pudieron cargar los equipos asociados o no hay equipos para este contrato.'
-                        });
+        // Agregar ejecuciones reales
+        let ejecucionesValidas = 0;
+        this.ejecuciones.forEach(ejec => {
+            console.log(`🔍 Ejecución ${ejec.idEjecucion}: fecha=${ejec.fechaEjecucion}, estado=${ejec.estado}`);
+            if (ejec.fechaEjecucion) {
+                ejecucionesValidas++;
+                
+                // Parsear fecha si viene como string
+                let fechaEjecucion: Date;
+                const fechaOriginal = ejec.fechaEjecucion as any;
+                
+                if (typeof fechaOriginal === 'string') {
+                    const fechaLimpia = fechaOriginal.replace('[UTC]', '');
+                    fechaEjecucion = new Date(fechaLimpia);
+                } else if (fechaOriginal instanceof Date) {
+                    fechaEjecucion = fechaOriginal;
+                } else {
+                    fechaEjecucion = new Date(fechaOriginal);
+                }
+                
+                console.log(`  📅 Fecha parseada: ${fechaEjecucion.toISOString()}`);
+                
+                eventos.push({
+                    id: `ejec-${ejec.idEjecucion}`,
+                    title: ejec.equipoNombre || 'Equipo',
+                    start: fechaEjecucion,
+                    backgroundColor: this.getColorByEstado(ejec.estado),
+                    borderColor: this.getColorByEstado(ejec.estado),
+                    textColor: '#ffffff',
+                    extendedProps: {
+                        tipo: 'ejecucion',
+                        estado: ejec.estado,
+                        equipoNombre: ejec.equipoNombre,
+                        proveedorNombre: ejec.proveedorNombre,
+                        contratoDescripcion: ejec.contratoDescripcion,
+                        idEjecucion: ejec.idEjecucion,
+                        idContrato: ejec.idContrato,
+                        idEquipo: ejec.idEquipo
                     }
                 });
-            } else {
-                console.warn('[verEquipos] No hay ID de contrato para consultar equipos');
-                this.equiposSeleccionados = [];
-                this.loadingEquipos = false;
             }
-        }
-        
-        console.log('[verEquipos] Modal abierto, equipos iniciales:', this.equiposSeleccionados);
+        });
+        console.log('✅ Eventos de ejecuciones agregados:', ejecucionesValidas);
+
+        this.events = eventos;
+        console.log('📊 Total eventos en calendario:', this.events.length);
+        this.applyFilter();
     }
 
-    /**
-     * Exportar mantenimientos
-     */
-    exportMantenimientos() {
-        // Implementar funcionalidad de exportación
+    private generarEventosRecurrentes(prog: ProgramacionMantenimiento, desde: Date, hasta: Date): CalendarEvent[] {
+        const eventos: CalendarEvent[] = [];
+        const frecuenciaDias = prog.frecuenciaDias || 30;
+        
+        if (!frecuenciaDias || !prog.fechaProximoMantenimiento) return eventos;
+
+        // Parsear la fecha que viene como string del backend
+        let fechaProxima: Date;
+        const fechaOriginal = prog.fechaProximoMantenimiento as any;
+        
+        if (typeof fechaOriginal === 'string') {
+            // Limpiar el formato "[UTC]" si existe
+            const fechaLimpia = fechaOriginal.replace('[UTC]', '');
+            fechaProxima = new Date(fechaLimpia);
+        } else if (fechaOriginal instanceof Date) {
+            fechaProxima = fechaOriginal;
+        } else {
+            fechaProxima = new Date(fechaOriginal);
+        }
+
+        // Validar que la fecha sea válida
+        if (isNaN(fechaProxima.getTime())) {
+            console.warn(`⚠️ Fecha inválida en programación ${prog.idProgramacion}:`, prog.fechaProximoMantenimiento);
+            return eventos;
+        }
+
+        let fecha = new Date(fechaProxima);
+        
+        console.log(`📅 Generando eventos para programación ${prog.idProgramacion} desde ${fecha.toISOString()}`);
+        
+        // Retroceder para mostrar programaciones pasadas
+        while (fecha > desde) {
+            fecha = new Date(fecha.getTime() - frecuenciaDias * 24 * 60 * 60 * 1000);
+        }
+        fecha = new Date(fecha.getTime() + frecuenciaDias * 24 * 60 * 60 * 1000);
+
+        // Generar eventos hacia adelante
+        let contadorEventos = 0;
+        while (fecha <= hasta) {
+            const equipoNombre = prog.equipo?.nombre || 'Equipo';
+            const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
+            const contratoDesc = prog.contrato?.descripcion || '';
+            
+            eventos.push({
+                id: `prog-${prog.idProgramacion}-${fecha.getTime()}`,
+                title: equipoNombre,
+                start: new Date(fecha),
+                backgroundColor: '#6366f1',
+                borderColor: '#6366f1',
+                textColor: '#ffffff',
+                extendedProps: {
+                    tipo: 'programacion',
+                    equipoNombre: equipoNombre,
+                    proveedorNombre: proveedorNombre,
+                    contratoDescripcion: contratoDesc,
+                    frecuencia: this.getFrecuenciaLabel(frecuenciaDias),
+                    idProgramacion: prog.idProgramacion,
+                    idContrato: prog.contratoId,
+                    idEquipo: prog.equipoId
+                }
+            });
+            contadorEventos++;
+            fecha = new Date(fecha.getTime() + frecuenciaDias * 24 * 60 * 60 * 1000);
+        }
+
+        console.log(`  ✅ Generó ${contadorEventos} eventos para programación ${prog.idProgramacion}`);
+        return eventos;
+    }
+
+    private getFrecuenciaLabel(dias: number): string {
+        if (dias <= 1) return 'DIARIO';
+        if (dias <= 7) return 'SEMANAL';
+        if (dias <= 15) return 'QUINCENAL';
+        if (dias <= 30) return 'MENSUAL';
+        if (dias <= 60) return 'BIMESTRAL';
+        if (dias <= 90) return 'TRIMESTRAL';
+        if (dias <= 180) return 'SEMESTRAL';
+        return 'ANUAL';
+    }
+
+    private getColorByEstado(estado?: string): string {
+        switch (estado?.toUpperCase()) {
+            case 'PROGRAMADO': return '#f59e0b';
+            case 'EN_PROCESO': return '#3b82f6';
+            case 'COMPLETADO': return '#22c55e';
+            case 'CANCELADO': return '#ef4444';
+            default: return '#6b7280';
+        }
+    }
+
+    handleEventClick(info: EventClickArg): void {
+        const event = info.event;
+        this.selectedEvent = {
+            id: event.id,
+            title: event.title,
+            start: event.start || new Date(),
+            backgroundColor: event.backgroundColor || '',
+            extendedProps: event.extendedProps as any
+        };
+        this.showDetailDialog = true;
+    }
+
+    handleDateSelect(info: DateSelectArg): void {
+        this.selectedDate = info.start;
+        this.nuevaEjecucion = {
+            fechaEjecucion: info.start,
+            estado: 'PROGRAMADO'
+        };
+        this.showCreateDialog = true;
+    }
+
+    crearEjecucionManual(): void {
+        this.selectedDate = new Date();
+        this.nuevaEjecucion = {
+            fechaEjecucion: new Date(),
+            estado: 'PROGRAMADO'
+        };
+        this.showCreateDialog = true;
+    }
+
+    applyFilter(): void {
+        let filteredEvents = [...this.events];
+        
+        if (this.filtroTipo !== 'todos') {
+            filteredEvents = this.events.filter(e => e.extendedProps?.tipo === this.filtroTipo);
+        }
+
+        this.calendarOptions = {
+            ...this.calendarOptions,
+            events: filteredEvents
+        };
+    }
+
+    onFilterChange(): void {
+        this.applyFilter();
+    }
+
+    closeDetailDialog(): void {
+        this.showDetailDialog = false;
+        this.selectedEvent = null;
+    }
+
+    getEstadoLabel(estado?: string): string {
+        switch (estado?.toUpperCase()) {
+            case 'PROGRAMADO': return 'Programado';
+            case 'EN_PROCESO': return 'En Proceso';
+            case 'COMPLETADO': return 'Completado';
+            case 'CANCELADO': return 'Cancelado';
+            default: return estado || 'Sin estado';
+        }
+    }
+
+    getEstadoSeverity(estado?: string): string {
+        switch (estado?.toUpperCase()) {
+            case 'PROGRAMADO': return 'warning';
+            case 'EN_PROCESO': return 'info';
+            case 'COMPLETADO': return 'success';
+            case 'CANCELADO': return 'danger';
+            default: return 'secondary';
+        }
+    }
+
+    closeCreateDialog(): void {
+        this.showCreateDialog = false;
+        this.selectedDate = null;
+        this.nuevaEjecucion = {};
+        this.equiposContrato = [];
+    }
+
+    onContratoChange(): void {
+        if (this.nuevaEjecucion.idContrato) {
+            const contrato = this.contratos.find(c => c.id === this.nuevaEjecucion.idContrato);
+            this.equiposContrato = contrato?.equipos || [];
+            this.nuevaEjecucion.idEquipo = undefined;
+        } else {
+            this.equiposContrato = [];
+        }
+    }
+
+    crearEjecucion(): void {
+        if (!this.nuevaEjecucion.idContrato || !this.nuevaEjecucion.idEquipo) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Campos requeridos',
+                detail: 'Seleccione un contrato y un equipo'
+            });
+            return;
+        }
+
+        this.ejecucionesService.create(this.nuevaEjecucion as any).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Exito',
+                    detail: 'Ejecucion creada correctamente'
+                });
+                this.closeCreateDialog();
+                this.loadData();
+            },
+            error: (err) => {
+                console.error('Error al crear ejecucion:', err);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo crear la ejecucion'
+                });
+            }
+        });
+    }
+
+    crearDesdeProgamacion(): void {
+        if (!this.selectedEvent?.extendedProps) return;
+        
+        const props = this.selectedEvent.extendedProps;
+        this.nuevaEjecucion = {
+            idContrato: props.idContrato,
+            idEquipo: props.idEquipo,
+            idProgramacion: props.idProgramacion, // Vincular con programación
+            fechaEjecucion: this.selectedEvent.start as Date,
+            estado: 'PROGRAMADO'
+        };
+        
+        if (props.idContrato) {
+            const contrato = this.contratos.find(c => c.id === props.idContrato);
+            this.equiposContrato = contrato?.equipos || [];
+        }
+        
+        this.closeDetailDialog();
+        this.showCreateDialog = true;
+    }
+
+    formatDate(date: Date | string | null | undefined): string {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString('es-GT', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    refreshCalendar(): void {
+        this.loadData();
         this.messageService.add({
             severity: 'info',
-            summary: 'Exportación',
-            detail: 'Funcionalidad de exportación pendiente de implementar'
+            summary: 'Actualizado',
+            detail: 'Calendario actualizado'
         });
     }
 }

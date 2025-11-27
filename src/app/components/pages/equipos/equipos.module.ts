@@ -10,10 +10,14 @@ import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 
 import { EquiposListComponent } from './equipos-list.component';
+import { HistorialEquiposComponent } from './historial-equipos/historial-equipos.component';
 import { EquiposRoutingModule } from './equipos-routing.module';
 
 @NgModule({
-  declarations: [EquiposListComponent],
+  declarations: [
+    EquiposListComponent,
+    HistorialEquiposComponent
+  ],
   imports: [
     CommonModule,
     FormsModule,

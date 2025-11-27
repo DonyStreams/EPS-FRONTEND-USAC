@@ -5,51 +5,46 @@ import { environment } from '../../environments/environment';
 
 export interface EjecucionMantenimiento {
     idEjecucion?: number;
-    fechaEjecucion?: Date;
+    fechaEjecucion?: string | Date;
+    fechaInicioTrabajo?: string | Date | null;
+    fechaCierre?: string | Date | null;
+    estado?: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO';
     bitacora?: string;
-    usuarioResponsable?: number;
-    usuarioCreacion?: number;
-    fechaCreacion?: Date;
-    usuarioModificacion?: number;
-    fechaModificacion?: Date;
-    
-    // Referencias (IDs)
+
+    idContrato?: number;
+    contratoDescripcion?: string;
+    proveedorNombre?: string;
+
+    idEquipo?: number;
+    equipoNombre?: string;
+    equipoCodigo?: string;
+    equipoUbicacion?: string;
+
+    idProgramacion?: number;
+    frecuenciaDias?: number;
+    fechaProximoProgramado?: string | Date | null;
+
+    usuarioResponsableId?: number;
+    usuarioResponsableNombre?: string;
+}
+
+export interface GuardarEjecucionRequest {
     idContrato?: number;
     idEquipo?: number;
-    
-    // Objetos anidados para mostrar información relacionada
-    contrato?: {
-        idContrato?: number;
-        descripcion?: string;
-        fechaInicio?: Date;
-        fechaFin?: Date;
-        valorTotal?: number;
-        estado?: string;
-        proveedor?: {
-            idProveedor?: number;
-            nombre?: string;
-            nit?: string;
-        };
-    };
-    
-    equipo?: {
-        idEquipo?: number;
-        nombre?: string;
-        modelo?: string;
-        serie?: string;
-        estado?: string;
-        codigoInacif?: string;
-        ubicacion?: string;
-        laboratorio?: {
-            idLaboratorio?: number;
-            nombre?: string;
-        };
-    };
-    
-    usuarioResponsableObj?: {
-        id?: number;
-        nombreCompleto?: string;
-    };
+    idProgramacion?: number;
+    usuarioResponsableId?: number;
+    fechaEjecucion?: Date | string;
+    fechaInicioTrabajo?: Date | string | null;
+    fechaCierre?: Date | string | null;
+    estado?: string;
+    bitacora?: string;
+}
+
+export interface CambioEstadoRequest {
+    estado: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO';
+    bitacora?: string;
+    fechaReferencia?: Date | string | null;
+    fechaInicio?: Date | string | null;
 }
 
 @Injectable({
@@ -68,12 +63,12 @@ export class EjecucionesService {
         return this.http.get<EjecucionMantenimiento>(`${this.apiUrl}/${id}`);
     }
 
-    create(ejecucion: EjecucionMantenimiento): Observable<EjecucionMantenimiento> {
-        return this.http.post<EjecucionMantenimiento>(this.apiUrl, ejecucion);
+    create(request: GuardarEjecucionRequest): Observable<EjecucionMantenimiento> {
+        return this.http.post<EjecucionMantenimiento>(this.apiUrl, request);
     }
 
-    update(id: number, ejecucion: EjecucionMantenimiento): Observable<EjecucionMantenimiento> {
-        return this.http.put<EjecucionMantenimiento>(`${this.apiUrl}/${id}`, ejecucion);
+    update(id: number, request: GuardarEjecucionRequest): Observable<EjecucionMantenimiento> {
+        return this.http.put<EjecucionMantenimiento>(`${this.apiUrl}/${id}`, request);
     }
 
     delete(id: number): Observable<void> {
@@ -86,5 +81,9 @@ export class EjecucionesService {
 
     getByEquipo(idEquipo: number): Observable<EjecucionMantenimiento[]> {
         return this.http.get<EjecucionMantenimiento[]>(`${this.apiUrl}/equipo/${idEquipo}`);
+    }
+
+    actualizarEstado(id: number, payload: CambioEstadoRequest): Observable<EjecucionMantenimiento> {
+        return this.http.patch<EjecucionMantenimiento>(`${this.apiUrl}/${id}/estado`, payload);
     }
 }
