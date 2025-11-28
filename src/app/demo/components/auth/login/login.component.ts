@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { LayoutService } from 'src/app/layout/service/app.layout.service';
 import { KeycloakService } from 'src/app/service/keycloak.service';
 import { MessageService } from 'primeng/api';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
     selector: 'app-login',
@@ -30,7 +31,7 @@ export class LoginComponent implements OnInit {
     testingUpload = false;
     testingImagenes = false;
     testingImageUpload = false;
-    private apiUrl = 'http://localhost:8081/MantenimientosBackend/api';
+    private apiUrl = environment.apiUrl;
 
     constructor(
         public layoutService: LayoutService,

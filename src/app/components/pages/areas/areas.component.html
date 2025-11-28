@@ -1,118 +1,113 @@
 <div class="card">
-    <h5>Gestión de Áreas</h5>
+    <!-- HEADER CON TÍTULO -->
+    <div class="mb-4">
+        <h4 class="m-0 text-900">
+            <i class="pi pi-building mr-2 text-primary"></i>
+            Gestión de Áreas
+        </h4>
+        <p class="text-600 mt-1 mb-0">Administra las áreas y laboratorios de la institución</p>
+    </div>
     
-    <!-- Estadísticas -->
-    <div class="grid mb-3">
+    <!-- ESTADÍSTICAS -->
+    <div class="grid mb-4">
         <div class="col-12 md:col-4">
-            <div class="card bg-blue-100 border-left-3 border-blue-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-blue-600 font-medium">Total</span>
-                        <div class="text-2xl font-bold text-blue-900">{{ totalAreas }}</div>
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="bg-blue-100 border-circle p-3 mr-3">
+                        <i class="pi pi-building text-blue-500 text-2xl"></i>
                     </div>
-                    <div class="flex align-items-center justify-content-center bg-blue-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-building text-white text-xl"></i>
+                    <div>
+                        <span class="text-600 text-sm">Total Áreas</span>
+                        <div class="text-900 font-bold text-2xl">{{ totalAreas }}</div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-12 md:col-4">
-            <div class="card bg-green-100 border-left-3 border-green-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-green-600 font-medium">Activas</span>
-                        <div class="text-2xl font-bold text-green-900">{{ areasActivas }}</div>
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="bg-green-100 border-circle p-3 mr-3">
+                        <i class="pi pi-check-circle text-green-500 text-2xl"></i>
                     </div>
-                    <div class="flex align-items-center justify-content-center bg-green-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-check-circle text-white text-xl"></i>
+                    <div>
+                        <span class="text-600 text-sm">Áreas Activas</span>
+                        <div class="text-900 font-bold text-2xl">{{ areasActivas }}</div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-12 md:col-4">
-            <div class="card bg-red-100 border-left-3 border-red-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-red-600 font-medium">Inactivas</span>
-                        <div class="text-2xl font-bold text-red-900">{{ areasInactivas }}</div>
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="bg-red-100 border-circle p-3 mr-3">
+                        <i class="pi pi-times-circle text-red-500 text-2xl"></i>
                     </div>
-                    <div class="flex align-items-center justify-content-center bg-red-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-times-circle text-white text-xl"></i>
+                    <div>
+                        <span class="text-600 text-sm">Áreas Inactivas</span>
+                        <div class="text-900 font-bold text-2xl">{{ areasInactivas }}</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
+    <!-- TOOLBAR -->
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left">
-            <button pButton pRipple label="Nueva Área" icon="pi pi-plus" class="p-button-success" (click)="showCreateDialog()"></button>
+            <button pButton label="Nueva Área" icon="pi pi-plus" class="p-button-success" (click)="showCreateDialog()"></button>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                       placeholder="Buscar área..." />
+            </span>
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="areas" [loading]="loading" styleClass="p-datatable-gridlines" [paginator]="true" [rows]="10" 
-             responsiveLayout="scroll" [globalFilterFields]="['codigoArea','nombre','tipoArea']" #dt>
-        
-        <ng-template pTemplate="caption">
-            <div class="flex">
-                <span class="p-input-icon-left ml-auto">
-                    <i class="pi pi-search"></i>
-                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
-                           placeholder="Buscar por código, nombre o tipo..." />
-                </span>
-            </div>
-        </ng-template>
+    <!-- TABLA -->
+    <p-table [value]="areas" [loading]="loading" [paginator]="true" [rows]="10" 
+             responsiveLayout="scroll" [globalFilterFields]="['nombre','tipoArea']" #dt
+             [rowHover]="true" dataKey="idArea">
 
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="codigoArea">Código <p-sortIcon field="codigoArea"></p-sortIcon></th>
+                <th pSortableColumn="idArea" style="width: 5rem">ID <p-sortIcon field="idArea"></p-sortIcon></th>
                 <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
                 <th pSortableColumn="tipoArea">Tipo <p-sortIcon field="tipoArea"></p-sortIcon></th>
-                <th>Estado</th>
-                <th pSortableColumn="fechaCreacion">Fecha Creación <p-sortIcon field="fechaCreacion"></p-sortIcon></th>
-                <th pSortableColumn="fechaModificacion">Fecha Modificación <p-sortIcon field="fechaModificacion"></p-sortIcon></th>
-                <th>Acciones</th>
+                <th style="width: 8rem">Estado</th>
+                <th style="width: 10rem">Acciones</th>
             </tr>
         </ng-template>
         
         <ng-template pTemplate="body" let-area>
             <tr>
                 <td>
-                    <span class="p-column-title">Código</span>
-                    <span class="font-bold">{{ area.codigoArea }}</span>
+                    <span class="font-bold text-primary">#{{ area.idArea }}</span>
                 </td>
                 <td>
-                    <span class="p-column-title">Nombre</span>
-                    {{ area.nombre }}
+                    <div class="flex align-items-center">
+                        <i class="pi pi-building text-600 mr-2"></i>
+                        <span class="font-semibold">{{ area.nombre }}</span>
+                    </div>
                 </td>
                 <td>
-                    <span class="p-column-title">Tipo</span>
                     <p-tag [value]="area.tipoArea" 
                            [severity]="area.tipoArea === 'LABORATORIO' ? 'info' : 
                                       area.tipoArea === 'TECNICA' ? 'warning' : 
                                       area.tipoArea === 'ADMINISTRATIVA' ? 'secondary' : 'primary'"></p-tag>
                 </td>
                 <td>
-                    <span class="p-column-title">Estado</span>
-                    <p-tag [value]="area.estado ? 'Activa' : 'Inactiva'" 
-                           [severity]="area.estado ? 'success' : 'danger'"></p-tag>
+                    <p-tag [value]="area.estado ? 'Activa' : 'Inactiva' " 
+                           [severity]="area.estado ? 'success' : 'danger'"
+                           [icon]="area.estado ? 'pi pi-check' : 'pi pi-times'"></p-tag>
                 </td>
                 <td>
-                    <span class="p-column-title">Fecha Creación</span>
-                    {{ formatDate(area.fechaCreacion) }}
-                </td>
-                <td>
-                    <span class="p-column-title">Fecha Modificación</span>
-                    <span [class]="area.fechaModificacion ? '' : 'text-muted'">
-                        {{ area.fechaModificacion ? formatDate(area.fechaModificacion) : 'Sin modificar' }}
-                    </span>
-                </td>
-                <td>
-                    <div class="flex">
-                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" 
-                                (click)="editArea(area)" pTooltip="Editar"></button>
-                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" 
-                                (click)="deleteArea(area)" pTooltip="Eliminar"></button>
+                    <div class="flex gap-2">
+                        <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" 
+                                (click)="editArea(area)" pTooltip="Editar" tooltipPosition="top"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" 
+                                (click)="deleteArea(area)" pTooltip="Eliminar" tooltipPosition="top"></button>
                     </div>
                 </td>
             </tr>
@@ -120,35 +115,29 @@
         
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7">No se encontraron áreas.</td>
+                <td colspan="5" class="text-center">
+                    <div class="py-5">
+                        <i class="pi pi-inbox text-400" style="font-size: 3rem"></i>
+                        <p class="text-600 mt-3 mb-0">No se encontraron áreas</p>
+                    </div>
+                </td>
             </tr>
         </ng-template>
     </p-table>
 </div>
 
 <!-- Diálogo para crear/editar área -->
-<p-dialog header="{{ isEditing ? 'Editar' : 'Nueva' }} Área" 
+<p-dialog [header]="isEditing ? 'Editar Área' : 'Nueva Área'" 
           [(visible)]="displayDialog" 
           [modal]="true" 
           [responsive]="true" 
-          [style]="{width: '500px'}"
+          [style]="{width: '450px'}"
           (onHide)="hideDialog()">
     
     <form [formGroup]="areaForm" (ngSubmit)="saveArea()">
         <div class="grid p-fluid">
             <div class="col-12">
-                <label for="codigoArea" class="block text-900 font-medium mb-2">Código *</label>
-                <input id="codigoArea" type="text" pInputText formControlName="codigoArea" 
-                       placeholder="Ej: LAB01, ADM01" maxlength="20" 
-                       (input)="onCodigoInput($event)"
-                       [class.ng-invalid]="areaForm.get('codigoArea')?.invalid && areaForm.get('codigoArea')?.touched" />
-                <small class="p-error" *ngIf="getFieldError('codigoArea')">
-                    {{ getFieldError('codigoArea') }}
-                </small>
-            </div>
-
-            <div class="col-12">
-                <label for="nombre" class="block text-900 font-medium mb-2">Nombre *</label>
+                <label for="nombre" class="block text-900 font-semibold mb-2">Nombre del Área *</label>
                 <input id="nombre" type="text" pInputText formControlName="nombre" 
                        placeholder="Ej: Laboratorio de Criminalística" maxlength="100" 
                        [class.ng-invalid]="areaForm.get('nombre')?.invalid && areaForm.get('nombre')?.touched" />
@@ -158,10 +147,11 @@
             </div>
 
             <div class="col-12">
-                <label for="tipoArea" class="block text-900 font-medium mb-2">Tipo de Área *</label>
+                <label for="tipoArea" class="block text-900 font-semibold mb-2">Tipo de Área *</label>
                 <p-dropdown formControlName="tipoArea" 
                            [options]="tiposArea" 
                            optionLabel="label" 
+                           appendTo="body"
                            optionValue="value"
                            placeholder="Seleccione un tipo"
                            [class.ng-invalid]="areaForm.get('tipoArea')?.invalid && areaForm.get('tipoArea')?.touched">
@@ -174,7 +164,7 @@
             <div class="col-12">
                 <div class="field-checkbox">
                     <p-checkbox formControlName="estado" binary="true" inputId="estado"></p-checkbox>
-                    <label for="estado" class="ml-2">Activa</label>
+                    <label for="estado" class="ml-2 font-medium">Área Activa</label>
                 </div>
             </div>
         </div>

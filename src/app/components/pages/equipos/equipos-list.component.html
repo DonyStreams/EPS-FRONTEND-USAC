@@ -1,3 +1,5 @@
+<p-toast></p-toast>
+
 <div class="card">
   <!-- HEADER CON TÍTULO -->
   <div class="mb-4">
@@ -104,6 +106,7 @@
       <tr>
         <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
         <th pSortableColumn="codigoInacif">Código INACIF <p-sortIcon field="codigoInacif"></p-sortIcon></th>
+        <th>Área / Laboratorio</th>
         <th pSortableColumn="marca">Marca <p-sortIcon field="marca"></p-sortIcon></th>
         <th pSortableColumn="modelo">Modelo <p-sortIcon field="modelo"></p-sortIcon></th>
         <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
@@ -121,6 +124,9 @@
         <td>
           <span class="text-600">{{ equipo.codigoInacif || '-' }}</span>
         </td>
+        <td>
+          <span class="text-600">{{ equipo.areaNombre || 'Sin área' }}</span>
+        </td>
         <td>{{ equipo.marca || '-' }}</td>
         <td>{{ equipo.modelo || '-' }}</td>
         <td>
@@ -129,8 +135,8 @@
         <td>
           <div class="flex gap-2">
             <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" pTooltip="Editar equipo" tooltipPosition="top" (click)="editarEquipo(equipo)"></button>
-            <button pButton icon="pi pi-history" class="p-button-rounded p-button-text p-button-info" pTooltip="Historial de cambios" tooltipPosition="top"></button>
-            <button pButton icon="pi pi-wrench" class="p-button-rounded p-button-text p-button-secondary" pTooltip="Mantenimientos" tooltipPosition="top"></button>
+            <button pButton icon="pi pi-history" class="p-button-rounded p-button-text p-button-info" pTooltip="Historial de cambios" tooltipPosition="top" (click)="verHistorial(equipo)"></button>
+            <button pButton icon="pi pi-wrench" class="p-button-rounded p-button-text p-button-secondary" pTooltip="Programaciones de mantenimiento" tooltipPosition="top" (click)="verMantenimientos(equipo)"></button>
             <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-help" pTooltip="Descargar ficha técnica" tooltipPosition="top" (click)="descargarFicha(equipo)"></button>
             <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Eliminar equipo" tooltipPosition="top" (click)="eliminarEquipo(equipo)"></button>
           </div>
@@ -183,9 +189,34 @@
           </div>
           <div class="col-12 md:col-6">
             <div class="field">
-              <label for="codigoInacif" class="font-semibold">Código INACIF</label>
-              <input pInputText id="codigoInacif" name="codigoInacif" [(ngModel)]="nuevoEquipo.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001"/>
+              <label for="codigoInacif" class="font-semibold">Código INACIF *</label>
+              <input pInputText id="codigoInacif" name="codigoInacif" [(ngModel)]="nuevoEquipo.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001" required/>
               <small class="text-500">Código interno de identificación</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="field">
+              <label for="area" class="font-semibold">Área / Laboratorio *</label>
+              <p-dropdown id="area" name="area" [(ngModel)]="nuevoEquipo.idArea" [options]="areas" 
+                          optionLabel="nombre" optionValue="idArea" placeholder="Seleccione un área" 
+                          [showClear]="false" class="w-full" required [disabled]="areas.length === 0"></p-dropdown>
+              <small class="text-500">Área o laboratorio donde se encuentra el equipo</small>
+              <div *ngIf="areas.length === 0" class="mt-2">
+                <p-message severity="error" styleClass="w-full">
+                  <ng-template pTemplate>
+                    <div class="flex align-items-center">
+                      <i class="pi pi-exclamation-triangle mr-2"></i>
+                      <div>
+                        <div class="font-semibold">No hay áreas registradas</div>
+                        <div>Debes crear al menos un área antes de registrar equipos.</div>
+                        <a routerLink="/administracion/areas" class="text-primary font-semibold">
+                          <i class="pi pi-arrow-right mr-1"></i>Ir a Gestión de Áreas
+                        </a>
+                      </div>
+                    </div>
+                  </ng-template>
+                </p-message>
+              </div>
             </div>
           </div>
         </div>
@@ -199,20 +230,20 @@
         <div class="grid">
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="marca" class="font-semibold">Marca</label>
-              <input pInputText id="marca" name="marca" [(ngModel)]="nuevoEquipo.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus"/>
+              <label for="marca" class="font-semibold">Marca *</label>
+              <input pInputText id="marca" name="marca" [(ngModel)]="nuevoEquipo.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus" required/>
             </div>
           </div>
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="modelo" class="font-semibold">Modelo</label>
-              <input pInputText id="modelo" name="modelo" [(ngModel)]="nuevoEquipo.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23"/>
+              <label for="modelo" class="font-semibold">Modelo *</label>
+              <input pInputText id="modelo" name="modelo" [(ngModel)]="nuevoEquipo.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23" required/>
             </div>
           </div>
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="serie" class="font-semibold">No. de Serie</label>
-              <input pInputText id="serie" name="serie" [(ngModel)]="nuevoEquipo.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123"/>
+              <label for="serie" class="font-semibold">No. de Serie *</label>
+              <input pInputText id="serie" name="serie" [(ngModel)]="nuevoEquipo.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123" required/>
             </div>
           </div>
         </div>
@@ -263,8 +294,8 @@
               <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
             </h6>
             <div class="field mb-3">
-              <label for="ubicacion" class="font-semibold">Ubicación</label>
-              <input pInputText id="ubicacion" name="ubicacion" [(ngModel)]="nuevoEquipo.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A"/>
+              <label for="ubicacion" class="font-semibold">Ubicación *</label>
+              <input pInputText id="ubicacion" name="ubicacion" [(ngModel)]="nuevoEquipo.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A" required/>
               <small class="text-500">Ubicación física del equipo</small>
             </div>
             <div class="field mb-3">
@@ -351,9 +382,18 @@
           </div>
           <div class="col-12 md:col-6">
             <div class="field">
-              <label for="editCodigoInacif" class="font-semibold">Código INACIF</label>
-              <input pInputText id="editCodigoInacif" name="editCodigoInacif" [(ngModel)]="equipoEditando.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001"/>
+              <label for="editCodigoInacif" class="font-semibold">Código INACIF *</label>
+              <input pInputText id="editCodigoInacif" name="editCodigoInacif" [(ngModel)]="equipoEditando.codigoInacif" maxlength="50" class="w-full" placeholder="Ej: LAB-001" required/>
               <small class="text-500">Código interno de identificación</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="field">
+              <label for="editArea" class="font-semibold">Área / Laboratorio *</label>
+              <p-dropdown id="editArea" name="editArea" [(ngModel)]="equipoEditando.idArea" [options]="areas" 
+                          optionLabel="nombre" optionValue="idArea" placeholder="Seleccione un área" 
+                          [showClear]="false" class="w-full" required [disabled]="areas.length === 0"></p-dropdown>
+              <small class="text-500">Área o laboratorio donde se encuentra el equipo</small>
             </div>
           </div>
         </div>
@@ -367,20 +407,20 @@
         <div class="grid">
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="editMarca" class="font-semibold">Marca</label>
-              <input pInputText id="editMarca" name="editMarca" [(ngModel)]="equipoEditando.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus"/>
+              <label for="editMarca" class="font-semibold">Marca *</label>
+              <input pInputText id="editMarca" name="editMarca" [(ngModel)]="equipoEditando.marca" maxlength="50" class="w-full" placeholder="Ej: Olympus" required/>
             </div>
           </div>
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="editModelo" class="font-semibold">Modelo</label>
-              <input pInputText id="editModelo" name="editModelo" [(ngModel)]="equipoEditando.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23"/>
+              <label for="editModelo" class="font-semibold">Modelo *</label>
+              <input pInputText id="editModelo" name="editModelo" [(ngModel)]="equipoEditando.modelo" maxlength="50" class="w-full" placeholder="Ej: CX23" required/>
             </div>
           </div>
           <div class="col-12 md:col-4">
             <div class="field">
-              <label for="editSerie" class="font-semibold">No. de Serie</label>
-              <input pInputText id="editSerie" name="editSerie" [(ngModel)]="equipoEditando.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123"/>
+              <label for="editSerie" class="font-semibold">No. de Serie *</label>
+              <input pInputText id="editSerie" name="editSerie" [(ngModel)]="equipoEditando.numeroSerie" maxlength="50" class="w-full" placeholder="Ej: 2024-ABC-123" required/>
             </div>
           </div>
         </div>
@@ -431,8 +471,8 @@
               <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
             </h6>
             <div class="field mb-3">
-              <label for="editUbicacion" class="font-semibold">Ubicación</label>
-              <input pInputText id="editUbicacion" name="editUbicacion" [(ngModel)]="equipoEditando.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A"/>
+              <label for="editUbicacion" class="font-semibold">Ubicación *</label>
+              <input pInputText id="editUbicacion" name="editUbicacion" [(ngModel)]="equipoEditando.ubicacion" maxlength="100" class="w-full" placeholder="Ej: Laboratorio 3, Edificio A" required/>
               <small class="text-500">Ubicación física del equipo</small>
             </div>
             <div class="field mb-3">

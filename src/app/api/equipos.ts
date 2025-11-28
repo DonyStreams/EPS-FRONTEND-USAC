@@ -15,5 +15,6 @@ export interface Equipo {
     condicionesOperacion?: string;
     descripcion?: string;
     estado?: boolean | string;
-    area?: string;
+    idArea?: number;        // ID del área
+    areaNombre?: string;    // Nombre del área (para mostrar)
 }

@@ -42,4 +42,10 @@ export class HistorialEquiposService {
     delete(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/${id}`);
     }
+
+    deleteMultiple(ids: number[]): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/batch`, {
+            body: { ids }
+        });
+    }
 }

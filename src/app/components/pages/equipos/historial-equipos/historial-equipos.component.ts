@@ -1,23 +1,37 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { HistorialEquipo, HistorialEquiposService } from 'src/app/service/historial-equipos.service';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 
 @Component({
     selector: 'app-historial-equipos',
     templateUrl: './historial-equipos.component.html',
-    styleUrls: ['./historial-equipos.component.scss']
+    styleUrls: ['./historial-equipos.component.scss'],
+    providers: [ConfirmationService, MessageService]
 })
 export class HistorialEquiposComponent implements OnInit {
     historial: HistorialEquipo[] = [];
+    registrosSeleccionados: HistorialEquipo[] = [];
     loading: boolean = false;
+    equipoIdFiltro: number | null = null;
+    equipoNombreFiltro: string | null = null;
 
     constructor(
         private historialService: HistorialEquiposService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private confirmationService: ConfirmationService,
+        private route: ActivatedRoute
     ) { }
 
     ngOnInit() {
-        this.loadHistorial();
+        // Obtener parámetros de la URL
+        this.route.queryParams.subscribe(params => {
+            if (params['equipoId']) {
+                this.equipoIdFiltro = +params['equipoId'];
+                this.equipoNombreFiltro = params['equipoNombre'] || null;
+            }
+            this.loadHistorial();
+        });
     }
 
     loadHistorial() {
@@ -27,8 +41,18 @@ export class HistorialEquiposComponent implements OnInit {
                 console.log('📋 Datos del historial recibidos:', data);
                 if (data && data.length > 0) {
                     console.log('Ejemplo de registro:', data[0]);
+                    console.log('Tipo de cambio del primer registro:', data[0].tipoCambio);
+                    console.log('Tipo de tipoCambio:', typeof data[0].tipoCambio);
                 }
-                this.historial = data;
+                
+                // Filtrar por equipo si hay un filtro activo
+                if (this.equipoIdFiltro) {
+                    this.historial = data.filter(h => h.idEquipo === this.equipoIdFiltro);
+                    console.log(`🔍 Filtrado ${this.historial.length} registros para equipo ID ${this.equipoIdFiltro}`);
+                } else {
+                    this.historial = data;
+                }
+                
                 this.loading = false;
             },
             error: (error) => {
@@ -101,6 +125,7 @@ export class HistorialEquiposComponent implements OnInit {
     }
 
     getTipoCambioLabel(tipoCambio: string | undefined): string {
+        console.log('getTipoCambioLabel llamado con:', tipoCambio);
         if (!tipoCambio) return 'General';
         
         const labels: { [key: string]: string } = {
@@ -114,7 +139,9 @@ export class HistorialEquiposComponent implements OnInit {
             'REPARACION': 'Reparación'
         };
         
-        return labels[tipoCambio] || tipoCambio;
+        const label = labels[tipoCambio] || tipoCambio;
+        console.log('Retornando label:', label);
+        return label;
     }
 
     getTipoCambioSeverity(tipoCambio: string | undefined): string {
@@ -149,5 +176,60 @@ export class HistorialEquiposComponent implements OnInit {
         };
         
         return icons[tipoCambio] || 'pi pi-circle';
+    }
+
+    limpiarFiltro() {
+        this.equipoIdFiltro = null;
+        this.equipoNombreFiltro = null;
+        this.loadHistorial();
+    }
+
+    eliminarSeleccionados() {
+        if (!this.registrosSeleccionados || this.registrosSeleccionados.length === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Selecciona al menos un registro para eliminar'
+            });
+            return;
+        }
+
+        this.confirmationService.confirm({
+            message: `¿Estás seguro de que deseas eliminar ${this.registrosSeleccionados.length} registro(s) del historial?`,
+            header: 'Confirmar Eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.procesarEliminacionMasiva();
+            }
+        });
+    }
+
+    private procesarEliminacionMasiva() {
+        this.loading = true;
+        const idsAEliminar = this.registrosSeleccionados.map(r => r.idHistorial!);
+        
+        // Llamar al servicio para eliminar múltiples registros
+        this.historialService.deleteMultiple(idsAEliminar).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: `${this.registrosSeleccionados.length} registro(s) eliminado(s) correctamente`
+                });
+                
+                // Limpiar selección y recargar
+                this.registrosSeleccionados = [];
+                this.loadHistorial();
+            },
+            error: (error) => {
+                console.error('Error al eliminar registros:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al eliminar los registros seleccionados'
+                });
+                this.loading = false;
+            }
+        });
     }
 }

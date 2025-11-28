@@ -81,9 +81,7 @@ export interface EstadisticasProgramaciones {
 })
 export class ProgramacionesService {
 
-    private apiUrl = environment.production ? 
-        'http://localhost:8081/MantenimientosBackend/api' : 
-        'http://localhost:8081/MantenimientosBackend/api';
+    private apiUrl = environment.apiUrl;
 
     constructor(private http: HttpClient) {}
 

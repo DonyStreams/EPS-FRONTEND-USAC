@@ -6,6 +6,20 @@
         </div>
     </div>
 
+    <!-- Banner de filtro activo -->
+    <div *ngIf="equipoIdFiltro" class="surface-100 border-round p-3 mb-3">
+        <div class="flex align-items-center justify-content-between">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-filter text-primary text-xl"></i>
+                <div>
+                    <div class="font-semibold text-900">Filtrado por equipo:</div>
+                    <div class="text-600">{{ equipoNombreFiltro }} (ID: {{ equipoIdFiltro }})</div>
+                </div>
+            </div>
+            <button pButton label="Ver Todo" icon="pi pi-times" class="p-button-text" (click)="limpiarFiltro()"></button>
+        </div>
+    </div>
+
     <p-table 
         #dt
         [value]="historial" 
@@ -18,7 +32,9 @@
         [globalFilterFields]="['equipoNombre', 'equipoNumeroSerie', 'descripcion']"
         styleClass="p-datatable-sm"
         [rowHover]="true"
-        responsiveLayout="scroll">
+        responsiveLayout="scroll"
+        [(selection)]="registrosSeleccionados"
+        dataKey="idHistorial">
         
         <ng-template pTemplate="caption">
             <div class="flex justify-content-between align-items-center">
@@ -34,6 +50,14 @@
                 <div class="flex gap-2">
                     <button 
                         pButton 
+                        label="Eliminar Seleccionados" 
+                        icon="pi pi-trash" 
+                        class="p-button-danger"
+                        [disabled]="!registrosSeleccionados || registrosSeleccionados.length === 0"
+                        (click)="eliminarSeleccionados()">
+                    </button>
+                    <button 
+                        pButton 
                         label="Recargar" 
                         icon="pi pi-refresh" 
                         class="p-button-outlined"
@@ -44,6 +68,9 @@
 
         <ng-template pTemplate="header">
             <tr>
+                <th style="width: 3rem">
+                    <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                </th>
                 <th pSortableColumn="fechaRegistro" style="width: 160px">
                     Fecha/Hora <p-sortIcon field="fechaRegistro"></p-sortIcon>
                 </th>
@@ -65,6 +92,9 @@
 
         <ng-template pTemplate="body" let-registro>
             <tr>
+                <td>
+                    <p-tableCheckbox [value]="registro"></p-tableCheckbox>
+                </td>
                 <td>
                     <div class="text-sm">
                         <i class="pi pi-clock text-500 mr-1"></i>
@@ -126,3 +156,6 @@
         </ng-template>
     </p-table>
 </div>
+
+<p-confirmDialog></p-confirmDialog>
+<p-toast></p-toast>

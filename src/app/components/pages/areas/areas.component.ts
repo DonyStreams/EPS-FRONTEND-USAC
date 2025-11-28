@@ -38,17 +38,12 @@ export class AreasComponent implements OnInit {
         private messageService: MessageService
     ) {
         this.areaForm = this.fb.group({
-            codigoArea: ['', [
-                Validators.required, 
-                Validators.maxLength(20),
-                Validators.pattern(/^[A-Z0-9_-]+$/) // Solo letras mayúsculas, números, guiones y guiones bajos
-            ]],
             nombre: ['', [
                 Validators.required, 
                 Validators.maxLength(100),
                 Validators.minLength(3)
             ]],
-            tipoArea: ['OPERATIVA', [Validators.required]],
+            tipoArea: ['LABORATORIO', [Validators.required]],
             estado: [true]
         });
     }
@@ -102,33 +97,9 @@ export class AreasComponent implements OnInit {
         this.displayDialog = true;
     }
 
-    // Método para convertir código a mayúsculas automáticamente
-    onCodigoInput(event: any): void {
-        const value = event.target.value.toUpperCase();
-        this.areaForm.get('codigoArea')?.setValue(value);
-    }
-
-    // Validación de código único
-    isCodigoUnico(codigo: string): boolean {
-        if (this.isEditing && this.selectedArea?.codigoArea === codigo) {
-            return true; // Es el mismo código del registro actual
-        }
-        return !this.areas.some(a => a.codigoArea === codigo);
-    }
-
     saveArea(): void {
         if (this.areaForm.valid) {
             const formData = this.areaForm.value;
-            
-            // Validar código único
-            if (!this.isCodigoUnico(formData.codigoArea)) {
-                this.messageService.add({
-                    severity: 'warn',
-                    summary: 'Advertencia',
-                    detail: 'Ya existe un área con este código'
-                });
-                return;
-            }
             
             if (this.isEditing && this.selectedArea) {
                 this.areasService.update(this.selectedArea.idArea!, formData).subscribe({

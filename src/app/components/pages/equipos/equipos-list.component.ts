@@ -1,11 +1,15 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { EquiposService } from '../../../service/equipos.service';
 import { FtpService } from '../../../service/ftp.service';
 import { KeycloakService } from '../../../service/keycloak.service';
+import { ExcelService } from '../../../service/excel.service';
+import { AreasService, Area } from '../../../service/areas.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
 import { environment } from '../../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
 
 interface EstadoOption {
   label: string;
@@ -55,14 +59,10 @@ export class EquiposListComponent implements OnInit {
     condicionesOperacion: '',
     descripcion: '',
     estado: true,
-    area: ''
+    idArea: undefined
   };
 
-  areas = [
-    // Debes cargar estas áreas desde tu servicio real
-    { id: 1, nombre: 'Laboratorio' },
-    { id: 2, nombre: 'Química' }
-  ];
+  areas: Area[] = [];
 
   previewUrl: string | null = null;
   mensaje: string | null = null;
@@ -79,7 +79,11 @@ export class EquiposListComponent implements OnInit {
     private equiposService: EquiposService, 
     private ftpService: FtpService,
     private keycloakService: KeycloakService,
-    private http: HttpClient
+    private http: HttpClient,
+    private messageService: MessageService,
+    private router: Router,
+    private excelService: ExcelService,
+    private areasService: AreasService
   ) {}
 
   // Métodos de permisos usando Keycloak
@@ -124,10 +128,22 @@ export class EquiposListComponent implements OnInit {
 
   ngOnInit() {
     this.cargarEquipos();
+    this.cargarAreas();
   }
 
   cargarEquipos() {
     this.equiposService.getEquipos(this.filtro).subscribe(data => this.equipos = data);
+  }
+
+  cargarAreas() {
+    this.areasService.getAll().subscribe({
+      next: (areas) => {
+        this.areas = areas;
+      },
+      error: (error) => {
+        console.error('Error al cargar áreas:', error);
+      }
+    });
   }
 
   aplicarFiltro() {
@@ -166,7 +182,7 @@ export class EquiposListComponent implements OnInit {
       condicionesOperacion: '',
       descripcion: '',
       estado: true,
-      area: ''
+      idArea: undefined
     };
     this.previewUrl = null;
     this.errorImagen = null;
@@ -217,9 +233,14 @@ export class EquiposListComponent implements OnInit {
         this.mensaje = 'Equipo registrado correctamente.';
         setTimeout(() => this.mensaje = null, 3500);
       },
-      error: () => {
+      error: (error) => {
         this.mensaje = null;
-        alert('Error al registrar el equipo');
+        if (error.status === 409) {
+          // Error 409 = Conflict (código duplicado)
+          alert('Error: Ya existe un equipo con ese código INACIF. Por favor, use un código diferente.');
+        } else {
+          alert('Error al registrar el equipo');
+        }
       }
     });
   }
@@ -349,12 +370,32 @@ export class EquiposListComponent implements OnInit {
           this.fileUploadEdit.clear();
         }
         
-        this.mensaje = 'Equipo actualizado correctamente.';
-        setTimeout(() => this.mensaje = null, 3500);
+        // Mostrar notificación de éxito
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Equipo actualizado correctamente',
+          life: 3000
+        });
       },
-      error: () => {
-        this.mensaje = null;
-        alert('Error al actualizar el equipo');
+      error: (error) => {
+        console.error('Error al actualizar equipo:', error);
+        if (error.status === 409) {
+          // Error 409 = Conflict (código duplicado)
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Código Duplicado',
+            detail: 'Ya existe un equipo con ese código INACIF. Use un código diferente.',
+            life: 5000
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar el equipo',
+            life: 3000
+          });
+        }
       }
     });
   }
@@ -428,10 +469,38 @@ export class EquiposListComponent implements OnInit {
     this.errorImagenEdit = null;
   }
 
-  descargarFicha(equipo: Equipo) {
-    // Aquí irá la lógica para generar y descargar el PDF
-    // Por ahora solo muestra un mensaje
-    alert('Funcionalidad de descarga de ficha en PDF próximamente.');
+  verHistorial(equipo: Equipo) {
+    // Navegar al historial con el ID del equipo como parámetro de consulta
+    this.router.navigate(['/administracion/equipos/historial'], { 
+      queryParams: { equipoId: equipo.idEquipo, equipoNombre: equipo.nombre } 
+    });
+  }
+
+  verMantenimientos(equipo: Equipo) {
+    // Navegar a programaciones filtrado por equipo
+    this.router.navigate(['/administracion/programaciones'], { 
+      queryParams: { equipoId: equipo.idEquipo, equipoNombre: equipo.nombre } 
+    });
+  }
+
+  async descargarFicha(equipo: Equipo) {
+    try {
+      await this.excelService.generarFichaTecnica(equipo);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Éxito',
+        detail: 'Ficha técnica descargada correctamente',
+        life: 3000
+      });
+    } catch (error) {
+      console.error('Error al generar ficha:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo generar la ficha técnica',
+        life: 3000
+      });
+    }
   }
 
   async eliminarSeleccionados() {

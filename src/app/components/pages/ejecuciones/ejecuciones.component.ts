@@ -4,6 +4,7 @@ import { Table } from 'primeng/table';
 import { EjecucionesService, EjecucionMantenimiento, GuardarEjecucionRequest, CambioEstadoRequest } from '../../../service/ejecuciones.service';
 import { ContratosService, Contrato } from '../../../service/contratos.service';
 import { EvidenciasService, Evidencia, UploadProgress } from '../../../service/evidencias.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-ejecuciones',
@@ -640,7 +641,7 @@ export class EjecucionesComponent implements OnInit {
     viewEvidencia(evidencia: Evidencia) {
         // Para ver imágenes, abrimos en nueva pestaña
         if (this.ejecucionEvidenciasId && evidencia.nombreArchivo) {
-            const url = `http://localhost:8081/MantenimientosBackend/api/ejecuciones-mantenimiento/${this.ejecucionEvidenciasId}/evidencias/download/${evidencia.nombreArchivo}`;
+            const url = `${environment.apiUrl}/ejecuciones-mantenimiento/${this.ejecucionEvidenciasId}/evidencias/download/${evidencia.nombreArchivo}`;
             window.open(url, '_blank');
         }
     }

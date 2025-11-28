@@ -3,6 +3,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { Table } from 'primeng/table';
 import { HttpClient } from '@angular/common/http';
 import { ProgramacionesService } from '../../../service/programaciones.service';
+import { environment } from '../../../../environments/environment';
 
 // Interfaces
 export interface ProgramacionMantenimiento {
@@ -74,7 +75,7 @@ export interface Contrato {
 export class ProgramacionesComponent implements OnInit {
 
     // URLs del backend
-    private readonly API_URL = 'http://localhost:8081/MantenimientosBackend/api';
+    private readonly API_URL = environment.apiUrl;
 
     // Datos principales
     programaciones: ProgramacionMantenimiento[] = [];
