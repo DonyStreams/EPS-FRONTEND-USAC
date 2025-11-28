@@ -23,6 +23,8 @@ interface EstadoOption {
 export class EquiposListComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
   @ViewChild('fileUploadEdit') fileUploadEdit!: FileUpload;
+  @ViewChild('formEquipo') formEquipo: any;
+  @ViewChild('formEditarEquipo') formEditarEquipo: any;
   
   equipos: Equipo[] = [];
   equiposSeleccionados: Equipo[] = [];
@@ -136,7 +138,8 @@ export class EquiposListComponent implements OnInit {
   }
 
   cargarAreas() {
-    this.areasService.getAll().subscribe({
+    // Usar el método getActivos() que ya filtra por áreas activas
+    this.areasService.getActivos().subscribe({
       next: (areas) => {
         this.areas = areas;
       },
@@ -191,6 +194,11 @@ export class EquiposListComponent implements OnInit {
     // Resetear el componente fileUpload
     if (this.fileUpload) {
       this.fileUpload.clear();
+    }
+    
+    // Resetear el estado del formulario para que no muestre errores de validación
+    if (this.formEquipo) {
+      this.formEquipo.resetForm();
     }
   }
 
@@ -266,6 +274,11 @@ export class EquiposListComponent implements OnInit {
     // Resetear el componente fileUpload de edición
     if (this.fileUploadEdit) {
       this.fileUploadEdit.clear();
+    }
+    
+    // Resetear el estado del formulario de edición
+    if (this.formEditarEquipo) {
+      this.formEditarEquipo.resetForm();
     }
   }
 

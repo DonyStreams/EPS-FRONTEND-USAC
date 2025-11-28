@@ -1,0 +1,132 @@
+<div class="card">
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h4 class="m-0 text-900">
+            <i class="pi pi-chart-bar mr-2 text-primary"></i>
+            Reportes del Sistema
+        </h4>
+        <p class="text-600 mt-1 mb-0">Genere reportes personalizados en PDF o Excel</p>
+    </div>
+
+    <!-- FILTROS GLOBALES -->
+    <div class="surface-section border-round p-4 mb-4">
+        <h6 class="text-primary mb-3">
+            <i class="pi pi-filter mr-2"></i>
+            Filtros Generales
+        </h6>
+        
+        <div class="grid">
+            <div class="col-12 md:col-4">
+                <label for="fechaInicio" class="block text-900 font-medium mb-2">Fecha Inicio</label>
+                <p-calendar [(ngModel)]="fechaInicio" dateFormat="dd/mm/yy" 
+                            [showIcon]="true" inputId="fechaInicio" 
+                            placeholder="Seleccione fecha"
+                            class="w-full"></p-calendar>
+            </div>
+            <div class="col-12 md:col-4">
+                <label for="fechaFin" class="block text-900 font-medium mb-2">Fecha Fin</label>
+                <p-calendar [(ngModel)]="fechaFin" dateFormat="dd/mm/yy" 
+                            [showIcon]="true" inputId="fechaFin" 
+                            placeholder="Seleccione fecha"
+                            class="w-full"></p-calendar>
+            </div>
+            <div class="col-12 md:col-4">
+                <label for="area" class="block text-900 font-medium mb-2">Área (Opcional)</label>
+                <p-dropdown [(ngModel)]="areaSeleccionada" [options]="areas" 
+                            optionLabel="nombre" optionValue="idArea"
+                            placeholder="Todas las áreas" [showClear]="true"
+                            inputId="area" class="w-full"></p-dropdown>
+            </div>
+        </div>
+
+        <div class="flex justify-content-end mt-3">
+            <button pButton label="Limpiar Filtros" icon="pi pi-filter-slash" 
+                    class="p-button-outlined p-button-secondary"
+                    (click)="limpiarFiltros()"></button>
+        </div>
+    </div>
+
+    <!-- TIPOS DE REPORTES -->
+    <h6 class="text-primary mb-3">
+        <i class="pi pi-file mr-2"></i>
+        Seleccione el Tipo de Reporte
+    </h6>
+
+    <div class="grid">
+        <div *ngFor="let tipo of tiposReportes" class="col-12 md:col-6 lg:col-4">
+            <div class="surface-card border-1 surface-border border-round p-4 cursor-pointer hover:surface-hover transition-colors transition-duration-150"
+                 [class.border-primary]="reporteSeleccionado === tipo.id"
+                 [class.shadow-3]="reporteSeleccionado === tipo.id"
+                 [class.opacity-50]="!esReporteDisponible(tipo.id)"
+                 [class.cursor-not-allowed]="!esReporteDisponible(tipo.id)"
+                 (click)="seleccionarReporte(tipo.id)">
+                
+                <div class="flex align-items-center mb-3">
+                    <div class="flex align-items-center justify-content-center border-circle p-3 mr-3"
+                         [ngClass]="'bg-' + tipo.color + '-100'">
+                        <i [class]="'pi ' + tipo.icon + ' text-' + tipo.color + '-500 text-2xl'"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h6 class="m-0 font-semibold">{{ tipo.nombre }}</h6>
+                        <span *ngIf="!esReporteDisponible(tipo.id)" 
+                              class="text-xs bg-orange-100 text-orange-700 px-2 py-1 border-round">
+                            En desarrollo
+                        </span>
+                    </div>
+                    <i *ngIf="reporteSeleccionado === tipo.id && esReporteDisponible(tipo.id)" 
+                       class="pi pi-check-circle text-primary text-xl"></i>
+                </div>
+                
+                <p class="text-600 text-sm m-0 line-height-3">{{ tipo.descripcion }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTONES DE GENERACIÓN -->
+    <div *ngIf="reporteSeleccionado" class="surface-100 border-round p-4 mt-4">
+        <div class="flex flex-column md:flex-row align-items-center justify-content-between gap-3">
+            <div>
+                <h6 class="m-0 mb-2">
+                    <i class="pi pi-download text-primary mr-2"></i>
+                    Generar Reporte
+                </h6>
+                <p class="text-600 text-sm m-0">Seleccione el formato de descarga</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <button pButton label="Descargar TXT" icon="pi pi-file" 
+                        class="p-button-danger"
+                        [loading]="generando"
+                        [disabled]="!reporteSeleccionado || !esReporteDisponible(reporteSeleccionado)"
+                        (click)="generarReporte('pdf')"
+                        pTooltip="Reporte en formato texto plano"></button>
+                <button pButton label="Descargar CSV" icon="pi pi-file-excel" 
+                        class="p-button-success"
+                        [loading]="generando"
+                        [disabled]="!reporteSeleccionado || !esReporteDisponible(reporteSeleccionado)"
+                        (click)="generarReporte('excel')"
+                        pTooltip="Reporte en formato CSV (compatible con Excel)"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENSAJE INFORMATIVO -->
+    <div class="mt-4 p-3 surface-50 border-round">
+        <div class="flex align-items-start gap-2">
+            <i class="pi pi-info-circle text-primary mt-1"></i>
+            <div>
+                <p class="font-semibold m-0 mb-2">Información sobre los reportes:</p>
+                <ul class="m-0 pl-3 text-sm text-600">
+                    <li>Los reportes en <strong>TXT</strong> son ideales para visualización rápida (texto plano)</li>
+                    <li>Los reportes en <strong>CSV</strong> se pueden abrir en Excel para análisis de datos</li>
+                    <li>Use los filtros de fecha para limitar el rango de información</li>
+                    <li>El filtro de área es opcional y aplica donde corresponda</li>
+                    <li>Los reportes se generan con la información actual del sistema</li>
+                    <li class="text-orange-600"><strong>Nota:</strong> Los reportes PDF avanzados estarán disponibles en próxima actualización</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p-toast></p-toast>
