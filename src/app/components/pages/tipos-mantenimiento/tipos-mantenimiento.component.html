@@ -1,161 +1,265 @@
-<div class="card">
-    <h5>Tipos de Mantenimiento</h5>
-    
-    <!-- Estadísticas -->
-    <div class="grid mb-3">
-        <div class="col-12 md:col-4">
-            <div class="card bg-blue-100 border-left-3 border-blue-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-blue-600 font-medium">Total</span>
-                        <div class="text-2xl font-bold text-blue-900">{{ totalTipos }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-blue-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-list text-white text-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 md:col-4">
-            <div class="card bg-green-100 border-left-3 border-green-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-green-600 font-medium">Activos</span>
-                        <div class="text-2xl font-bold text-green-900">{{ tiposActivos }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-green-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-check-circle text-white text-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 md:col-4">
-            <div class="card bg-red-100 border-left-3 border-red-500">
-                <div class="flex justify-content-between">
-                    <div>
-                        <span class="text-red-600 font-medium">Inactivos</span>
-                        <div class="text-2xl font-bold text-red-900">{{ tiposInactivos }}</div>
-                    </div>
-                    <div class="flex align-items-center justify-content-center bg-red-500 border-circle" style="width:3rem;height:3rem">
-                        <i class="pi pi-times-circle text-white text-xl"></i>
-                    </div>
+<div class="grid">
+    <!-- Título y descripción -->
+    <div class="col-12">
+        <div class="card">
+            <div class="flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h4 class="m-0 flex align-items-center gap-2">
+                        <i class="pi pi-wrench text-primary"></i>
+                        Tipos de Mantenimiento
+                    </h4>
+                    <p class="text-500 mt-1 mb-0">Gestione los tipos de mantenimiento: preventivo, correctivo, calibración, etc.</p>
                 </div>
             </div>
         </div>
     </div>
     
-    <p-toolbar styleClass="mb-4">
-        <ng-template pTemplate="left">
-            <button pButton pRipple label="Nuevo Tipo" icon="pi pi-plus" class="p-button-success mr-2" (click)="showCreateDialog()"></button>
-            <button pButton pRipple label="Exportar CSV" icon="pi pi-download" class="p-button-help" (click)="exportToCsv()"></button>
-        </ng-template>
-    </p-toolbar>
-
-    <p-table [value]="tipos" [loading]="loading" styleClass="p-datatable-gridlines" [paginator]="true" [rows]="10" 
-             responsiveLayout="scroll" [globalFilterFields]="['codigo','nombre']" #dt>
-        
-        <ng-template pTemplate="caption">
-            <div class="flex">
-                <span class="p-input-icon-left ml-auto">
-                    <i class="pi pi-search"></i>
-                    <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
-                           placeholder="Buscar por código o nombre..." />
-                </span>
-            </div>
-        </ng-template>
-
-        <ng-template pTemplate="header">
-            <tr>
-                <th pSortableColumn="codigo">Código <p-sortIcon field="codigo"></p-sortIcon></th>
-                <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
-                <th>Estado</th>
-                <th pSortableColumn="fechaCreacion">Fecha Creación <p-sortIcon field="fechaCreacion"></p-sortIcon></th>
-                <th pSortableColumn="fechaModificacion">Fecha Modificación <p-sortIcon field="fechaModificacion"></p-sortIcon></th>
-                <th>Acciones</th>
-            </tr>
-        </ng-template>
-        
-        <ng-template pTemplate="body" let-tipo>
-            <tr>
-                <td>
-                    <span class="p-column-title">Código</span>
-                    <span class="font-bold">{{ tipo.codigo }}</span>
-                </td>
-                <td>
-                    <span class="p-column-title">Nombre</span>
-                    {{ tipo.nombre }}
-                </td>
-                <td>
-                    <span class="p-column-title">Estado</span>
-                    <p-tag [value]="tipo.estado ? 'Activo' : 'Inactivo'" 
-                           [severity]="tipo.estado ? 'success' : 'danger'"></p-tag>
-                </td>
-                <td>
-                    <span class="p-column-title">Fecha Creación</span>
-                    {{ formatDate(tipo.fechaCreacion) }}
-                </td>
-                <td>
-                    <span class="p-column-title">Fecha Modificación</span>
-                    <span [class]="tipo.fechaModificacion ? '' : 'text-muted'">
-                        {{ tipo.fechaModificacion ? formatDate(tipo.fechaModificacion) : '-' }}
-                    </span>
-                </td>
-                <td>
-                    <div class="flex">
-                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2" 
-                                (click)="editTipo(tipo)" pTooltip="Editar"></button>
-                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" 
-                                (click)="deleteTipo(tipo)" pTooltip="Eliminar"></button>
-                    </div>
-                </td>
-            </tr>
-        </ng-template>
-    </p-table>
-</div>
-
-<!-- Diálogo para crear/editar tipo -->
-<p-dialog header="{{ isEditing ? 'Editar' : 'Nuevo' }} Tipo de Mantenimiento" 
-          [(visible)]="displayDialog" 
-          [modal]="true" 
-          [responsive]="true" 
-          [style]="{width: '450px'}"
-          (onHide)="hideDialog()">
-    
-    <form [formGroup]="tipoForm" (ngSubmit)="saveTipo()">
-        <div class="grid p-fluid">
-            <div class="col-12">
-                <label for="codigo" class="block text-900 font-medium mb-2">Código *</label>
-                <input id="codigo" type="text" pInputText formControlName="codigo" 
-                       placeholder="Ej: PREV, CORR, CALIB" maxlength="20" 
-                       (input)="onCodigoInput($event)"
-                       [class.ng-invalid]="tipoForm.get('codigo')?.invalid && tipoForm.get('codigo')?.touched" />
-                <small class="p-error" *ngIf="getFieldError('codigo')">
-                    {{ getFieldError('codigo') }}
-                </small>
-            </div>
-
-            <div class="col-12">
-                <label for="nombre" class="block text-900 font-medium mb-2">Nombre *</label>
-                <input id="nombre" type="text" pInputText formControlName="nombre" 
-                       placeholder="Ej: Mantenimiento Preventivo" maxlength="50" 
-                       [class.ng-invalid]="tipoForm.get('nombre')?.invalid && tipoForm.get('nombre')?.touched" />
-                <small class="p-error" *ngIf="getFieldError('nombre')">
-                    {{ getFieldError('nombre') }}
-                </small>
-            </div>
-
-            <div class="col-12">
-                <div class="field-checkbox">
-                    <p-checkbox formControlName="estado" binary="true" inputId="estado"></p-checkbox>
-                    <label for="estado" class="ml-2">Activo</label>
+    <!-- Estadísticas -->
+    <div class="col-12 md:col-4">
+        <div class="surface-card shadow-1 border-round p-3">
+            <div class="flex align-items-center">
+                <div class="bg-blue-100 border-circle p-3 mr-3">
+                    <i class="pi pi-list text-blue-500 text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-600 text-sm">Total Tipos</span>
+                    <div class="text-900 font-bold text-2xl">{{ totalTipos }}</div>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
+    
+    <div class="col-12 md:col-4">
+        <div class="surface-card shadow-1 border-round p-3">
+            <div class="flex align-items-center">
+                <div class="bg-green-100 border-circle p-3 mr-3">
+                    <i class="pi pi-check-circle text-green-500 text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-600 text-sm">Activos</span>
+                    <div class="text-900 font-bold text-2xl">{{ tiposActivos }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 md:col-4">
+        <div class="surface-card shadow-1 border-round p-3">
+            <div class="flex align-items-center">
+                <div class="bg-red-100 border-circle p-3 mr-3">
+                    <i class="pi pi-times-circle text-red-500 text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-600 text-sm">Inactivos</span>
+                    <div class="text-900 font-bold text-2xl">{{ tiposInactivos }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla principal -->
+    <div class="col-12">
+        <div class="card">
+            <!-- Barra de acciones moderna -->
+            <div class="surface-ground border-round p-3 mb-4">
+                <div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3">
+                    <div class="flex gap-2">
+                        <button pButton pRipple label="Nuevo Tipo" icon="pi pi-plus" 
+                                class="p-button-success"
+                                (click)="showCreateDialog()"></button>
+                    </div>
+                    
+                    <span class="p-input-icon-left w-full md:w-auto">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" 
+                               (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                               placeholder="Buscar tipo..." 
+                               class="w-full md:w-20rem" />
+                    </span>
+                </div>
+            </div>
+
+            <!-- Tabla mejorada -->
+            <p-table [value]="tipos" 
+                     [loading]="loading" 
+                     [paginator]="true" 
+                     [rows]="10" 
+                     [rowsPerPageOptions]="[10,20,30]"
+                     [showCurrentPageReport]="true"
+                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tipos"
+                     [globalFilterFields]="['nombre']" 
+                     [rowHover]="true"
+                     styleClass="p-datatable-sm"
+                     #dt>
+
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="idTipo" style="width: 8%">
+                            ID <p-sortIcon field="idTipo"></p-sortIcon>
+                        </th>
+                        <th pSortableColumn="nombre">
+                            Nombre <p-sortIcon field="nombre"></p-sortIcon>
+                        </th>
+                        <th style="width: 15%">Estado</th>
+                        <th style="width: 12rem">Acciones</th>
+                    </tr>
+                </ng-template>
+                
+                <ng-template pTemplate="body" let-tipo>
+                    <tr>
+                        <td>
+                            <span class="font-bold text-purple-500">#{{ tipo.idTipo }}</span>
+                        </td>
+                        <td>
+                            <div class="flex align-items-center">
+                                <i class="pi pi-wrench mr-2 text-500"></i>
+                                <span class="font-medium">{{ tipo.nombre }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <p-tag [value]="tipo.estado ? 'Activo' : 'Inactivo'" 
+                                   [severity]="tipo.estado ? 'success' : 'danger'"
+                                   [rounded]="true"></p-tag>
+                        </td>
+                        <td>
+                            <div class="flex gap-1">
+                                <button pButton pRipple 
+                                        icon="pi pi-pencil" 
+                                        class="p-button-rounded p-button-text p-button-warning" 
+                                        (click)="editTipo(tipo)" 
+                                        pTooltip="Editar"
+                                        tooltipPosition="top"></button>
+                                <button pButton pRipple 
+                                        icon="pi pi-trash" 
+                                        class="p-button-rounded p-button-text p-button-danger" 
+                                        (click)="deleteTipo(tipo)" 
+                                        pTooltip="Eliminar"
+                                        tooltipPosition="top"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4" class="text-center p-5">
+                            <div class="flex flex-column align-items-center">
+                                <i class="pi pi-inbox text-4xl text-400 mb-3"></i>
+                                <span class="text-600 text-lg">No hay tipos de mantenimiento registrados</span>
+                                <button pButton pRipple label="Crear Primer Tipo" icon="pi pi-plus" 
+                                        class="p-button-sm mt-3"
+                                        (click)="showCreateDialog()"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Diálogo para crear/editar tipo -->
+<p-dialog [header]="isEditing ? 'Editar Tipo de Mantenimiento' : 'Nuevo Tipo de Mantenimiento'" 
+          [(visible)]="displayDialog" 
+          [modal]="true"
+          [style]="{width: '550px'}"
+          [maximizable]="false"
+          [draggable]="false"
+          [resizable]="false"
+          styleClass="p-fluid"
+          (onHide)="hideDialog()">
+    
+    <ng-template pTemplate="content">
+        <form [formGroup]="tipoForm">
+            <!-- Información general -->
+            <div class="surface-section px-3 py-2 mb-4 border-round">
+                <div class="flex align-items-center mb-2">
+                    <i class="pi pi-info-circle text-primary mr-2"></i>
+                    <span class="font-semibold text-900">Información del Tipo</span>
+                </div>
+                <p class="text-600 text-sm m-0">
+                    Define un tipo de mantenimiento que se podrá asignar a equipos.
+                </p>
+            </div>
+
+            <div class="grid">
+                <!-- Nombre -->
+                <div class="col-12">
+                    <label for="nombre" class="block font-medium mb-2">
+                        Nombre <span class="text-red-500">*</span>
+                    </label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-wrench"></i>
+                        </span>
+                        <input id="nombre" 
+                               type="text" 
+                               pInputText 
+                               formControlName="nombre" 
+                               placeholder="Mantenimiento Preventivo" 
+                               maxlength="50" 
+                               [class.ng-invalid]="tipoForm.get('nombre')?.invalid && tipoForm.get('nombre')?.touched" />
+                    </div>
+                    <small class="block mt-1 text-500">
+                        <i class="pi pi-info-circle text-xs mr-1"></i>
+                        El código se generará automáticamente
+                    </small>
+                    <small class="block p-error mt-1" *ngIf="getFieldError('nombre')">
+                        <i class="pi pi-times-circle mr-1"></i>
+                        {{ getFieldError('nombre') }}
+                    </small>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-12">
+                    <div class="surface-50 border-round p-3">
+                        <div class="flex align-items-center">
+                            <p-checkbox formControlName="estado" 
+                                       binary="true" 
+                                       inputId="estado"
+                                       styleClass="mr-2"></p-checkbox>
+                            <label for="estado" class="cursor-pointer flex-1">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-check-circle text-green-500 mr-2" *ngIf="tipoForm.get('estado')?.value"></i>
+                                    <i class="pi pi-times-circle text-red-500 mr-2" *ngIf="!tipoForm.get('estado')?.value"></i>
+                                    <div>
+                                        <div class="font-semibold" [class.text-green-700]="tipoForm.get('estado')?.value" [class.text-500]="!tipoForm.get('estado')?.value">
+                                            {{ tipoForm.get('estado')?.value ? 'Tipo Activo' : 'Tipo Inactivo' }}
+                                        </div>
+                                        <div class="text-sm text-600">
+                                            {{ tipoForm.get('estado')?.value ? 'Disponible para asignar a equipos' : 'No se podrá asignar a equipos' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </ng-template>
 
     <ng-template pTemplate="footer">
-        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
-        <button pButton type="submit" label="Guardar" icon="pi pi-check" [disabled]="tipoForm.invalid" (click)="saveTipo()"></button>
+        <div class="flex justify-content-between align-items-center w-full">
+            <small class="text-500">
+                <i class="pi pi-info-circle mr-1"></i>
+                Los campos con * son obligatorios
+            </small>
+            <div class="flex gap-2">
+                <button pButton 
+                        type="button" 
+                        label="Cancelar" 
+                        icon="pi pi-times" 
+                        class="p-button-text p-button-secondary" 
+                        (click)="hideDialog()"></button>
+                <button pButton 
+                        type="submit" 
+                        [label]="isEditing ? 'Actualizar' : 'Crear'" 
+                        [icon]="isEditing ? 'pi pi-check' : 'pi pi-plus'" 
+                        [disabled]="tipoForm.invalid" 
+                        (click)="saveTipo()"></button>
+            </div>
+        </div>
     </ng-template>
 </p-dialog>
 

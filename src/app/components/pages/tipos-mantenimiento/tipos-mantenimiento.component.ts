@@ -30,11 +30,6 @@ export class TiposMantenimientoComponent implements OnInit {
         private messageService: MessageService
     ) {
         this.tipoForm = this.fb.group({
-            codigo: ['', [
-                Validators.required, 
-                Validators.maxLength(20),
-                Validators.pattern(/^[A-Z0-9_-]+$/) // Solo letras mayúsculas, números, guiones y guiones bajos
-            ]],
             nombre: ['', [
                 Validators.required, 
                 Validators.maxLength(50),
@@ -85,40 +80,15 @@ export class TiposMantenimientoComponent implements OnInit {
         this.isEditing = true;
         this.selectedTipo = tipo;
         this.tipoForm.patchValue({
-            codigo: tipo.codigo,
             nombre: tipo.nombre,
             estado: tipo.estado
         });
         this.displayDialog = true;
     }
 
-    // Método para convertir código a mayúsculas automáticamente
-    onCodigoInput(event: any): void {
-        const value = event.target.value.toUpperCase();
-        this.tipoForm.get('codigo')?.setValue(value);
-    }
-
-    // Validación de código único
-    isCodigoUnico(codigo: string): boolean {
-        if (this.isEditing && this.selectedTipo?.codigo === codigo) {
-            return true; // Es el mismo código del registro actual
-        }
-        return !this.tipos.some(t => t.codigo === codigo);
-    }
-
     saveTipo(): void {
         if (this.tipoForm.valid) {
             const formData = this.tipoForm.value;
-            
-            // Validar código único
-            if (!this.isCodigoUnico(formData.codigo)) {
-                this.messageService.add({
-                    severity: 'warn',
-                    summary: 'Advertencia',
-                    detail: 'Ya existe un tipo de mantenimiento con este código'
-                });
-                return;
-            }
             
             if (this.isEditing && this.selectedTipo) {
                 this.tiposService.update(this.selectedTipo.idTipo!, formData).subscribe({

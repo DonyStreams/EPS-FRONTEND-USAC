@@ -158,4 +158,14 @@ export class ArchivosService {
     getUrlDescarga(nombreArchivo: string): string {
         return `${this.apiUrl}/download/${nombreArchivo}`;
     }
+
+    /**
+     * Elimina un archivo del servidor
+     */
+    eliminarArchivo(nombreSistema: string): Observable<any> {
+        console.log('🗑️ Eliminando archivo:', nombreSistema);
+        // Codificar el nombre del archivo para manejar caracteres especiales
+        const encodedFileName = encodeURIComponent(nombreSistema);
+        return this.http.delete(`${this.apiUrl}/delete/${encodedFileName}`);
+    }
 }

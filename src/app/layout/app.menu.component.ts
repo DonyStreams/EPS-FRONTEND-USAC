@@ -35,8 +35,8 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Mantenimientos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/administracion/mantenimientos'] },
                     { label: 'Programaciones', icon: 'pi pi-fw pi-clock', routerLink: ['/administracion/programaciones'] },
                     { label: 'Ejecuciones', icon: 'pi pi-fw pi-check-circle', routerLink: ['/administracion/ejecuciones'] },
-                    { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/administracion/tipos-mantenimiento'] },
-                    { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/administracion/proveedores'] }
+                    { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/administracion/tipos-mantenimiento'] }
+                   
                 ]
             },
             {
@@ -52,14 +52,8 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-file',
                 items: [
                     { label: 'Contratos', icon: 'pi pi-fw pi-file', routerLink: ['/administracion/contratos'] },
-                    { label: 'Gestión de Archivos', icon: 'pi pi-fw pi-folder', routerLink: ['/administracion/contratos/archivos'] }
-                ]
-            },
-            {
-                label: 'Reportes',
-                icon: 'pi pi-fw pi-chart-bar',
-                items: [
-                    { label: 'Reportes Técnicos', icon: 'pi pi-fw pi-chart-line', routerLink: ['/administracion/reportes'] }
+                    { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/administracion/proveedores'] }
+                    //{ label: 'Gestión de Archivos', icon: 'pi pi-fw pi-folder', routerLink: ['/administracion/contratos/archivos'] }
                 ]
             },
             {
@@ -75,6 +69,13 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-bell',
                 items: [
                     { label: 'Panel de Notificaciones', icon: 'pi pi-fw pi-bell', routerLink: ['/administracion/notificaciones'] }
+                ]
+            },
+            {
+                label: 'Reportes',
+                icon: 'pi pi-fw pi-chart-bar',
+                items: [
+                    { label: 'Reportes Técnicos', icon: 'pi pi-fw pi-chart-line', routerLink: ['/administracion/reportes'] }
                 ]
             }
         ];

@@ -261,11 +261,28 @@ export class GestionArchivosComponent implements OnInit {
     }
 
     eliminarArchivo(archivo: ArchivoContrato): void {
-        // TODO: Implementar endpoint de eliminación en el backend
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Funcionalidad pendiente',
-            detail: 'La eliminación de archivos se implementará próximamente'
+        this.archivosService.eliminarArchivo(archivo.nombreSistema).subscribe({
+            next: (response) => {
+                console.log('✅ Archivo eliminado:', response);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Archivo eliminado',
+                    detail: `${archivo.nombreOriginal} eliminado correctamente`
+                });
+                
+                // Recargar la lista de archivos
+                if (this.selectedContrato && this.selectedContrato.id) {
+                    this.loadArchivosContrato(this.selectedContrato.id);
+                }
+            },
+            error: (error) => {
+                console.error('❌ Error al eliminar archivo:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: `No se pudo eliminar el archivo: ${error.error?.error || error.message || 'Error desconocido'}`
+                });
+            }
         });
     }
 

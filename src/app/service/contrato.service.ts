@@ -9,7 +9,6 @@ export interface Contrato {
     fechaInicio?: Date;
     fechaFin?: Date;
     descripcion: string;
-    frecuencia: string;
     estado: boolean;
     estadoDescriptivo?: string;
     proveedor?: string; // Opcional para creación

@@ -457,6 +457,29 @@ export class ProgramacionesComponent implements OnInit {
     }
 
     /**
+     * Establece una frecuencia predefinida y recalcula la próxima fecha
+     */
+    setFrecuencia(dias: number): void {
+        this.programacion.frecuenciaDias = dias;
+        this.calcularProximaFecha();
+        
+        const labels: { [key: number]: string } = {
+            30: 'Mensual',
+            60: 'Bimestral',
+            90: 'Trimestral',
+            180: 'Semestral',
+            365: 'Anual'
+        };
+        
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Frecuencia establecida',
+            detail: `${labels[dias]} (${dias} días)`,
+            life: 2000
+        });
+    }
+
+    /**
      * Alternar estado activa/inactiva
      */
     toggleActiva(programacion: ProgramacionMantenimiento): void {

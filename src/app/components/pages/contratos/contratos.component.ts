@@ -29,16 +29,6 @@ export class ContratosComponent implements OnInit {
     private isClearing: boolean = false;
     private lastClearTime: number = 0;
     
-    // Opciones de frecuencia
-    frecuenciaOptions = [
-        { label: 'Mensual', value: 'mensual' },
-        { label: 'Bimestral', value: 'bimestral' },
-        { label: 'Trimestral', value: 'trimestral' },
-        { label: 'Semestral', value: 'semestral' },
-        { label: 'Anual', value: 'anual' },
-        { label: 'A Demanda', value: 'a_demanda' }
-    ];
-    
     // Estadísticas
     stats: EstadisticasContratos = {
         total: 0,
@@ -74,11 +64,54 @@ export class ContratosComponent implements OnInit {
         return this.fb.group({
             fechaInicio: ['', Validators.required],
             fechaFin: ['', Validators.required],
-            descripcion: ['', [Validators.required, Validators.minLength(10)]],
-            frecuencia: ['', Validators.required],
+            descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
             idProveedor: ['', Validators.required],
             estado: [true]
-        });
+        }, { validators: this.fechaValidator });
+    }
+
+    // Validador personalizado para fechas
+    fechaValidator(group: FormGroup): {[key: string]: any} | null {
+        const fechaInicio = group.get('fechaInicio')?.value;
+        const fechaFin = group.get('fechaFin')?.value;
+        
+        if (fechaInicio && fechaFin) {
+            const inicio = new Date(fechaInicio);
+            const fin = new Date(fechaFin);
+            
+            // Verificar que la fecha de inicio no sea mayor que la de fin
+            if (inicio > fin) {
+                return { fechasInvalidas: true };
+            }
+            
+            // Opcional: Verificar que el contrato tenga al menos 1 día de duración
+            const unDia = 24 * 60 * 60 * 1000; // milisegundos en un día
+            if ((fin.getTime() - inicio.getTime()) < unDia) {
+                return { duracionMinima: true };
+            }
+        }
+        
+        return null;
+    }
+    
+    // Helper para obtener mensajes de error de validación
+    getFormError(field: string): string | null {
+        const control = this.contratoForm.get(field);
+        if (control?.errors && control.touched) {
+            if (control.errors['required']) return 'Este campo es requerido';
+            if (control.errors['minlength']) return `Mínimo ${control.errors['minlength'].requiredLength} caracteres`;
+            if (control.errors['maxlength']) return `Máximo ${control.errors['maxlength'].requiredLength} caracteres`;
+        }
+        return null;
+    }
+    
+    getFechasError(): string | null {
+        const errors = this.contratoForm.errors;
+        if (errors && (this.contratoForm.get('fechaInicio')?.touched || this.contratoForm.get('fechaFin')?.touched)) {
+            if (errors['fechasInvalidas']) return 'La fecha de inicio no puede ser mayor que la fecha de fin';
+            if (errors['duracionMinima']) return 'El contrato debe tener al menos 1 día de duración';
+        }
+        return null;
     }
     
     // 🔄 MÉTODOS DE CARGA DE DATOS
@@ -160,7 +193,8 @@ export class ContratosComponent implements OnInit {
         this.selectedContrato = null;
         this.isEditing = false;
         this.contratoForm.reset();
-        this.contratoForm.patchValue({ estado: true });
+        this.contratoForm.patchValue({ estado: false }); // Inicia como inactivo por defecto
+        this.uploadedFiles = []; // Limpiar archivos
         this.displayDialog = true;
     }
     
@@ -171,11 +205,128 @@ export class ContratosComponent implements OnInit {
             fechaInicio: new Date(contrato.fechaInicio),
             fechaFin: new Date(contrato.fechaFin),
             descripcion: contrato.descripcion,
-            frecuencia: contrato.frecuencia,
             idProveedor: contrato.idProveedor,
             estado: contrato.estado
         });
+        this.uploadedFiles = []; // Limpiar archivos nuevos
+        
+        // Cargar archivos existentes del contrato
+        if (contrato.id) {
+            this.loadArchivosContrato(contrato.id);
+        }
+        
         this.displayDialog = true;
+    }
+    
+    // Cargar archivos de un contrato específico
+    loadArchivosContrato(contratoId: number): void {
+        this.archivosService.getListaArchivosPorContrato(contratoId).subscribe({
+            next: (response: any) => {
+                if (this.selectedContrato) {
+                    this.selectedContrato.archivos = response.archivos.map((archivo: any) => ({
+                        ...archivo,
+                        iconoCss: this.archivosService.getIconoArchivo(archivo.nombreOriginal),
+                        tamanoFormateado: this.archivosService.formatearTamano(archivo.tamano)
+                    }));
+                }
+                console.log('✅ Archivos del contrato cargados:', response.archivos.length);
+            },
+            error: (error) => {
+                console.error('❌ Error al cargar archivos del contrato:', error);
+            }
+        });
+    }
+    
+    // Subir archivos al contrato
+    subirArchivosContrato(contratoId: number): void {
+        let archivosSubidos = 0;
+        let errores = 0;
+        const totalArchivos = this.uploadedFiles.length;
+
+        this.uploadedFiles.forEach((file) => {
+            // Validar archivo
+            if (!this.archivosService.esArchivoValidoContrato(file)) {
+                errores++;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Archivo no válido',
+                    detail: `${file.name}: Solo se permiten archivos PDF, DOC y DOCX`
+                });
+                
+                if (archivosSubidos + errores === totalArchivos) {
+                    this.finalizarGuardadoConArchivos(archivosSubidos, errores);
+                }
+                return;
+            }
+
+            // Validar tamaño
+            if (!this.archivosService.validarTamano(file, 10)) {
+                errores++;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Archivo muy grande',
+                    detail: `${file.name}: El archivo debe ser menor a 10MB`
+                });
+                
+                if (archivosSubidos + errores === totalArchivos) {
+                    this.finalizarGuardadoConArchivos(archivosSubidos, errores);
+                }
+                return;
+            }
+
+            // Subir archivo
+            this.archivosService.subirArchivo(file, contratoId).subscribe({
+                next: (response: ArchivoResponse) => {
+                    console.log('✅ Archivo subido:', response);
+                    archivosSubidos++;
+                    
+                    if (archivosSubidos + errores === totalArchivos) {
+                        this.finalizarGuardadoConArchivos(archivosSubidos, errores);
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error al subir archivo:', error);
+                    errores++;
+                    
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error al subir archivo',
+                        detail: `${file.name}: ${error.error?.error || error.message || 'Error desconocido'}`
+                    });
+                    
+                    if (archivosSubidos + errores === totalArchivos) {
+                        this.finalizarGuardadoConArchivos(archivosSubidos, errores);
+                    }
+                }
+            });
+        });
+    }
+    
+    finalizarGuardadoConArchivos(exitosos: number, errores: number): void {
+        if (exitosos > 0 && errores === 0) {
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `Contrato guardado y ${exitosos} archivo(s) subido(s) correctamente`
+            });
+        } else if (exitosos > 0 && errores > 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Parcialmente completado',
+                detail: `Contrato guardado. ${exitosos} archivo(s) subido(s), ${errores} error(es)`
+            });
+        } else if (errores > 0) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error en archivos',
+                detail: `Contrato guardado pero no se pudieron subir los archivos`
+            });
+        }
+        
+        this.displayDialog = false;
+        this.uploadedFiles = [];
+        this.loadContratos();
+        this.loadStats();
     }
     
     saveContrato(): void {
@@ -189,9 +340,8 @@ export class ContratosComponent implements OnInit {
             // Convertir fechas a formato ISO string para el backend
             const contratoData = {
                 descripcion: formValue.descripcion,
-                frecuencia: formValue.frecuencia,
                 idProveedor: formValue.idProveedor,
-                estado: formValue.estado !== undefined ? formValue.estado : true,
+                estado: formValue.estado === true ? true : false,  // Asegurar que sea booleano explícito
                 fechaInicio: formValue.fechaInicio ? this.formatDateForBackend(formValue.fechaInicio) : null,
                 fechaFin: formValue.fechaFin ? this.formatDateForBackend(formValue.fechaFin) : null
                 // NO enviamos 'proveedor' - el backend lo resolverá con idProveedor
@@ -206,14 +356,20 @@ export class ContratosComponent implements OnInit {
                 this.contratoService.update(this.selectedContrato.id!, contratoData as any).subscribe({
                     next: (contrato) => {
                         console.log('✅ Contrato actualizado:', contrato);
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Contrato actualizado correctamente'
-                        });
-                        this.displayDialog = false;
-                        this.loadContratos();
-                        this.loadStats();
+                        
+                        // Subir archivos nuevos si hay
+                        if (this.uploadedFiles.length > 0) {
+                            this.subirArchivosContrato(this.selectedContrato!.id!);
+                        } else {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Éxito',
+                                detail: 'Contrato actualizado correctamente'
+                            });
+                            this.displayDialog = false;
+                            this.loadContratos();
+                            this.loadStats();
+                        }
                     },
                     error: (error) => {
                         console.error('❌ Error al actualizar contrato:', error);
@@ -229,14 +385,20 @@ export class ContratosComponent implements OnInit {
                 this.contratoService.create(contratoData as any).subscribe({
                     next: (contrato) => {
                         console.log('✅ Contrato creado:', contrato);
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Contrato creado correctamente'
-                        });
-                        this.displayDialog = false;
-                        this.loadContratos();
-                        this.loadStats();
+                        
+                        // Subir archivos si hay
+                        if (this.uploadedFiles.length > 0 && contrato.id) {
+                            this.subirArchivosContrato(contrato.id);
+                        } else {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Éxito',
+                                detail: 'Contrato creado correctamente'
+                            });
+                            this.displayDialog = false;
+                            this.loadContratos();
+                            this.loadStats();
+                        }
                     },
                     error: (error) => {
                         console.error('❌ Error al crear contrato:', error);
@@ -258,6 +420,11 @@ export class ContratosComponent implements OnInit {
     }
     
     // 📎 MÉTODOS DE ARCHIVOS
+    
+    verArchivos(contrato: Contrato): void {
+        console.log('👁️ Ver archivos del contrato:', contrato.id);
+        this.openFileDialog(contrato);
+    }
     
     openFileDialog(contrato: Contrato): void {
         console.log('📂 Abriendo modal de archivos para contrato:', contrato.id);
@@ -356,18 +523,27 @@ export class ContratosComponent implements OnInit {
         // Limpiar nuestro array
         this.uploadedFiles = [];
         
-        // Limpiar el componente p-fileUpload sin disparar eventos
+        // Limpiar el componente p-fileUpload completamente
         if (this.fileUpload) {
-            // Acceder directamente al input y limpiarlo
-            const input = this.fileUpload.basicFileInput?.nativeElement;
-            if (input) {
-                input.value = '';
-            }
-            
-            // Limpiar el array interno del componente si existe
+            // Limpiar el array interno del componente
             if (this.fileUpload.files) {
                 this.fileUpload.files = [];
             }
+            
+            // Acceder al input file y limpiarlo (modo básico)
+            if (this.fileUpload.basicFileInput?.nativeElement) {
+                this.fileUpload.basicFileInput.nativeElement.value = '';
+            }
+            
+            // Forzar actualización del componente
+            this.fileUpload.cd?.detectChanges();
+            
+            // Limpiar también el label si existe
+            setTimeout(() => {
+                if (this.fileUpload.basicFileInput?.nativeElement) {
+                    this.fileUpload.basicFileInput.nativeElement.value = null;
+                }
+            }, 100);
         }
         
         this.messageService.add({
@@ -512,7 +688,8 @@ export class ContratosComponent implements OnInit {
     downloadFile(archivo: any): void {
         console.log('📥 Descargando archivo:', archivo);
         
-        this.archivosService.descargarArchivo(archivo.nombre).subscribe({
+        // Usar nombreSistema que es el nombre real del archivo en el servidor
+        this.archivosService.descargarArchivo(archivo.nombreSistema).subscribe({
             next: (blob: Blob) => {
                 // Crear URL temporal para el blob
                 const url = window.URL.createObjectURL(blob);
@@ -520,16 +697,18 @@ export class ContratosComponent implements OnInit {
                 // Crear elemento <a> temporal para descargar
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = archivo.nombreOriginal || archivo.nombre;
+                link.download = archivo.nombreOriginal; // Usar el nombre original del archivo
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 
                 // Limpiar URL temporal
                 window.URL.revokeObjectURL(url);
                 
                 this.messageService.add({
                     severity: 'success',
-                    summary: 'Descarga completada',
-                    detail: `${archivo.nombreOriginal || archivo.nombre} descargado correctamente`
+                    summary: 'Descarga exitosa',
+                    detail: `Archivo ${archivo.nombreOriginal} descargado correctamente`
                 });
             },
             error: (error) => {
@@ -537,7 +716,7 @@ export class ContratosComponent implements OnInit {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error de descarga',
-                    detail: `No se pudo descargar ${archivo.nombreOriginal || archivo.nombre}`
+                    detail: `No se pudo descargar el archivo ${archivo.nombreOriginal}`
                 });
             }
         });
@@ -577,16 +756,35 @@ export class ContratosComponent implements OnInit {
     
     deleteFile(archivo: any): void {
         this.confirmationService.confirm({
-            message: '¿Está seguro de eliminar este archivo?',
+            message: `¿Está seguro de eliminar el archivo "${archivo.nombreOriginal}"?`,
             header: 'Confirmar eliminación',
             icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, eliminar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-danger',
             accept: () => {
-                // TODO: Implementar eliminación de archivos
-                console.log('Eliminando archivo:', archivo);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Archivo eliminado correctamente'
+                this.archivosService.eliminarArchivo(archivo.nombreSistema).subscribe({
+                    next: (response) => {
+                        console.log('✅ Archivo eliminado:', response);
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Archivo eliminado',
+                            detail: `${archivo.nombreOriginal} eliminado correctamente`
+                        });
+                        
+                        // Recargar archivos del contrato
+                        if (this.selectedContrato && this.selectedContrato.id) {
+                            this.loadArchivosContrato(this.selectedContrato.id);
+                        }
+                    },
+                    error: (error) => {
+                        console.error('❌ Error al eliminar archivo:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: `No se pudo eliminar el archivo: ${error.error?.error || error.message || 'Error desconocido'}`
+                        });
+                    }
                 });
             }
         });
@@ -663,7 +861,8 @@ export class ContratosComponent implements OnInit {
     }
     
     /**
-     * Formatea una fecha para enviar al backend (YYYY-MM-DDTHH:MM:SS)
+     * Formatea una fecha para enviar al backend
+     * Formato: YYYY-MM-DDTHH:mm:ss (con hora para compatibilidad con Java Date)
      */
     formatDateForBackend(dateValue: Date | string | null | undefined): string | null {
         if (!dateValue) return null;
@@ -672,12 +871,13 @@ export class ContratosComponent implements OnInit {
             const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
             if (isNaN(date.getTime())) return null;
             
-            // Usar la fecha local sin conversión de zona horaria
+            // Obtener la fecha seleccionada
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             
-            // Agregar hora por defecto al mediodía para evitar problemas de zona horaria
+            // Agregar hora fija al mediodía para evitar problemas de zona horaria
+            // Docker ya está configurado con TZ=America/Guatemala
             return `${year}-${month}-${day}T12:00:00`;
         } catch (error) {
             console.warn('Error formatting date for backend:', dateValue, error);
@@ -716,7 +916,6 @@ export class ContratosComponent implements OnInit {
                 fechaInicio: new Date('2024-01-01'),
                 fechaFin: new Date('2024-12-31'),
                 descripcion: 'Mantenimiento preventivo de equipos de laboratorio',
-                frecuencia: 'mensual',
                 estado: true,
                 estadoDescriptivo: 'Vigente',
                 proveedor: 'TecnoLab S.A.',
@@ -732,7 +931,6 @@ export class ContratosComponent implements OnInit {
                 fechaInicio: new Date('2024-06-01'),
                 fechaFin: new Date('2024-11-30'),
                 descripcion: 'Calibración de equipos de medición',
-                frecuencia: 'semestral',
                 estado: true,
                 estadoDescriptivo: 'Próximo a vencer',
                 proveedor: 'Calibraciones Exactas',
@@ -752,7 +950,6 @@ export class ContratosComponent implements OnInit {
             'ID': contrato.id || '',
             'Proveedor': contrato.proveedor || '',
             'Descripción': contrato.descripcion || '',
-            'Frecuencia': contrato.frecuencia || '',
             'Fecha Inicio': this.formatDate(contrato.fechaInicio),
             'Fecha Fin': this.formatDate(contrato.fechaFin),
             'Estado': contrato.estadoDescriptivo || '',
