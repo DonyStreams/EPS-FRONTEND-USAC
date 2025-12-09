@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -76,6 +76,17 @@ export interface ComentarioTicketResponse {
     tipoComentario: string; // nombre del tipo de comentario
 }
 
+export interface EvidenciaTicket {
+    id: number;
+    nombreArchivo?: string;
+    nombreOriginal?: string;
+    tipoArchivo?: string;
+    tamanio?: number;
+    descripcion?: string;
+    archivoUrl: string;
+    fechaCreacion?: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -136,8 +147,8 @@ export class TicketsService {
     }
 
     // Servicios para evidencias
-    getEvidencias(ticketId: number): Observable<{evidencias: any[], success: boolean}> {
-        return this.http.get<{evidencias: any[], success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias`);
+    getEvidencias(ticketId: number): Observable<{evidencias: EvidenciaTicket[], success: boolean}> {
+        return this.http.get<{evidencias: EvidenciaTicket[], success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias`);
     }
 
     addEvidencia(ticketId: number, evidencia: {archivoUrl: string, descripcion?: string}): Observable<{message: string, success: boolean}> {
@@ -146,5 +157,19 @@ export class TicketsService {
 
     deleteEvidencia(ticketId: number, evidenciaId: number): Observable<{message: string, success: boolean}> {
         return this.http.delete<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/evidencias/${evidenciaId}`);
+    }
+
+    uploadEvidenciaArchivo(ticketId: number, file: File, descripcion?: string): Observable<any> {
+        let headers = new HttpHeaders({ 'X-Filename': file.name });
+        if (descripcion && descripcion.trim().length > 0) {
+            headers = headers.set('X-Descripcion', encodeURIComponent(descripcion.trim()));
+        }
+        return this.http.post(`${this.apiUrl}/${ticketId}/evidencias/upload`, file, { headers });
+    }
+
+    downloadEvidencia(ticketId: number, nombreArchivo: string): Observable<Blob> {
+        return this.http.get<Blob>(`${this.apiUrl}/${ticketId}/evidencias/download/${nombreArchivo}`, {
+            responseType: 'blob' as 'json'
+        });
     }
 }

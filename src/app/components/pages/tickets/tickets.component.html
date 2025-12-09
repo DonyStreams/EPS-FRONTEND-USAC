@@ -5,96 +5,52 @@
             <h5>Gestión de Tickets de Soporte</h5>
             <p class="text-600 line-height-3 m-0 mb-3">Administre tickets de fallas, mantenimientos correctivos y seguimiento de equipos del laboratorio.</p>
             
-            <!-- Estadísticas modernas -->
+            <!-- Estadísticas principales -->
             <div class="grid mb-3">
                 <div class="col-12 md:col-3">
-                    <div class="card bg-blue-100 border-left-3 border-blue-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-blue-600 font-medium">Total Tickets</span>
-                                <div class="text-2xl font-bold text-blue-900">{{statsTickets.total}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-blue-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-ticket text-white text-xl"></i>
-                            </div>
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center justify-content-between">
+                        <div class="bg-blue-100 border-circle p-3 mr-3">
+                            <i class="pi pi-ticket text-blue-500 text-2xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-600 text-sm">Total Tickets</span>
+                            <div class="text-900 font-bold text-2xl">{{statsTickets.total}}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 md:col-3">
-                    <div class="card bg-orange-100 border-left-3 border-orange-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-orange-600 font-medium">Abiertos</span>
-                                <div class="text-2xl font-bold text-orange-900">{{statsTickets.abiertos}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-orange-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-folder-open text-white text-xl"></i>
-                            </div>
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center justify-content-between">
+                        <div class="bg-orange-100 border-circle p-3 mr-3">
+                            <i class="pi pi-folder-open text-orange-500 text-2xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-600 text-sm">Tickets Abiertos</span>
+                            <div class="text-900 font-bold text-2xl">{{statsTickets.abiertos}}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 md:col-3">
-                    <div class="card bg-cyan-100 border-left-3 border-cyan-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-cyan-600 font-medium">Asignados</span>
-                                <div class="text-2xl font-bold text-cyan-900">{{statsTickets.asignados}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-cyan-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-user text-white text-xl"></i>
-                            </div>
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center justify-content-between">
+                        <div class="bg-purple-100 border-circle p-3 mr-3">
+                            <i class="pi pi-cog text-purple-500 text-2xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-600 text-sm">En Proceso</span>
+                            <div class="text-900 font-bold text-2xl">{{statsTickets.enProceso}}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 md:col-3">
-                    <div class="card bg-purple-100 border-left-3 border-purple-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-purple-600 font-medium">En Proceso</span>
-                                <div class="text-2xl font-bold text-purple-900">{{statsTickets.enProceso}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-purple-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-cog text-white text-xl"></i>
-                            </div>
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center justify-content-between">
+                        <div class="bg-green-100 border-circle p-3 mr-3">
+                            <i class="pi pi-check-circle text-green-500 text-2xl"></i>
                         </div>
-                    </div>
-                </div>
-                <div class="col-12 md:col-3">
-                    <div class="card bg-green-100 border-left-3 border-green-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-green-600 font-medium">Resueltos</span>
-                                <div class="text-2xl font-bold text-green-900">{{statsTickets.resueltos}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-green-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-check-circle text-white text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 md:col-3">
-                    <div class="card bg-gray-100 border-left-3 border-gray-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-gray-600 font-medium">Cerrados</span>
-                                <div class="text-2xl font-bold text-gray-900">{{statsTickets.cerrados}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-gray-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-lock text-white text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 md:col-3">
-                    <div class="card bg-red-100 border-left-3 border-red-500">
-                        <div class="flex justify-content-between">
-                            <div>
-                                <span class="text-red-600 font-medium">Prioridad Alta</span>
-                                <div class="text-2xl font-bold text-red-900">{{statsTickets.prioridadAlta}}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-red-500 border-circle" style="width:3rem;height:3rem">
-                                <i class="pi pi-exclamation-triangle text-white text-xl"></i>
-                            </div>
+                        <div class="text-right">
+                            <span class="text-600 text-sm">Tickets Resueltos</span>
+                            <div class="text-900 font-bold text-2xl">{{statsTickets.resueltos}}</div>
+                            <small class="text-red-500 font-semibold" *ngIf="statsTickets.prioridadAlta > 0">
+                                <i class="pi pi-exclamation-triangle mr-1"></i>{{ statsTickets.prioridadAlta }} alta prioridad
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -105,10 +61,6 @@
                 <ng-template pTemplate="left">
                     <button pButton pRipple label="Nuevo Ticket" icon="pi pi-plus" 
                             class="p-button-success mr-2" (click)="abrirNuevoTicket()"></button>
-                </ng-template>
-                <ng-template pTemplate="right">
-                    <button pButton pRipple label="Exportar CSV" icon="pi pi-download" 
-                            class="p-button-help" (click)="exportCSV()"></button>
                 </ng-template>
             </p-toolbar>
 
@@ -223,35 +175,48 @@
                         [filter]="true"
                         filterBy="nombre,codigoInacif"
                         [showClear]="true"
+                        class="w-full"
                         required>
                         <ng-template pTemplate="selectedItem" let-selectedEquipo>
                             <div class="flex align-items-center" *ngIf="selectedEquipo">
-                                <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
+                                <div>{{selectedEquipo.nombre}} - {{selectedEquipo.codigoInacif}}</div>
                             </div>
                         </ng-template>
                         <ng-template pTemplate="item" let-equipo>
                             <div class="flex align-items-center">
                                 <div>
                                     <div class="font-bold">{{equipo.nombre}}</div>
-                                    <div class="text-sm text-gray-500">Código: {{equipo.codigoInacif}}</div>
+                                    <div class="text-sm text-gray-500">{{equipo.codigoInacif}} - {{equipo.ubicacion}}</div>
                                 </div>
                             </div>
                         </ng-template>
                     </p-dropdown>
+                    <small class="text-500">Equipo relacionado con el ticket</small>
                 </div>
                 <div class="field">
-                    <label for="usuarioCreador">Usuario Creador</label>
+                    <label>Usuario Creador</label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-user"></i>
+                        </span>
+                        <input type="text" pInputText [value]="usuarioActual?.nombreCompleto || 'Usuario actual'" disabled />
+                    </div>
+                    <small class="text-500">Se asigna automáticamente al usuario autenticado.</small>
+                </div>
+                <div class="field">
+                    <label for="usuarioAsignado">Asignar a</label>
                     <p-dropdown 
-                        id="usuarioCreador"
-                        [(ngModel)]="nuevoTicket.usuarioCreadorId" 
+                        id="usuarioAsignado"
+                        [(ngModel)]="nuevoTicket.usuarioAsignadoId" 
                         [options]="usuarios" 
                         optionLabel="nombreCompleto"
                         optionValue="id"
-                        placeholder="Seleccionar usuario"
+                        placeholder="Seleccionar responsable"
                         [filter]="true"
+                        appendTo="body"
                         filterBy="nombreCompleto,correo"
                         [showClear]="true"
-                        required>
+                        class="w-full">
                         <ng-template pTemplate="selectedItem" let-selectedUsuario>
                             <div class="flex align-items-center" *ngIf="selectedUsuario">
                                 <div>{{selectedUsuario.nombreCompleto}}</div>
@@ -266,6 +231,7 @@
                             </div>
                         </ng-template>
                     </p-dropdown>
+                    <small class="text-500">Seleccione el técnico responsable (opcional)</small>
                 </div>
             </ng-template>
 
@@ -291,6 +257,19 @@
                     <p-dropdown id="editPrioridad" [(ngModel)]="ticketEditando.prioridad" [options]="prioridades" placeholder="Seleccionar prioridad"></p-dropdown>
                 </div>
                 <div class="field">
+                    <label>Usuario Creador</label>
+                    <div class="p-inputgroup">
+                        <span class="p-inputgroup-addon">
+                            <i class="pi pi-user"></i>
+                        </span>
+                        <input 
+                            pInputText 
+                            [value]="ticketEditando.usuarioCreador || ticket.usuarioCreador || usuarioActual?.nombreCompleto"
+                            readonly
+                            class="w-full surface-100 text-900 font-semibold" />
+                    </div>
+                </div>
+                <div class="field">
                     <label for="editEquipo">Equipo</label>
                     <p-dropdown 
                         id="editEquipo"
@@ -300,7 +279,8 @@
                         placeholder="Seleccionar equipo"
                         [filter]="true"
                         filterBy="nombre,codigoInacif"
-                        [showClear]="true">
+                        [showClear]="true"
+                        class="w-full">
                         <ng-template pTemplate="selectedItem" let-selectedEquipo>
                             <div class="flex align-items-center" *ngIf="selectedEquipo">
                                 <div>{{selectedEquipo.nombre}} ({{selectedEquipo.codigoInacif}})</div>
@@ -315,6 +295,37 @@
                             </div>
                         </ng-template>
                     </p-dropdown>
+                    <small class="text-500">Equipo relacionado con el ticket</small>
+                </div>
+                <div class="field">
+                    <label for="editUsuarioAsignado">Asignado a</label>
+                    <p-dropdown 
+                        id="editUsuarioAsignado"
+                        [(ngModel)]="ticketEditando.usuarioAsignadoId" 
+                        [options]="usuarios" 
+                        optionLabel="nombreCompleto"
+                        optionValue="id"
+                        placeholder="Seleccionar responsable"
+                        [filter]="true"
+                        appendTo="body"
+                        filterBy="nombreCompleto,correo"
+                        [showClear]="true"
+                        class="w-full">
+                        <ng-template pTemplate="selectedItem" let-selectedUsuario>
+                            <div class="flex align-items-center" *ngIf="selectedUsuario">
+                                <div>{{selectedUsuario.nombreCompleto}}</div>
+                            </div>
+                        </ng-template>
+                        <ng-template pTemplate="item" let-usuario>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{usuario.nombreCompleto}}</div>
+                                    <div class="text-sm text-gray-500">{{usuario.correo}}</div>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                    <small class="text-500">Seleccione el técnico responsable</small>
                 </div>
             </ng-template>
 
@@ -657,28 +668,80 @@
         </p-dialog>
 
         <!-- DIALOG PARA SUBIR EVIDENCIA -->
-        <p-dialog [(visible)]="dialogEvidencia" [style]="{width: '450px'}" header="📎 Subir Evidencia" [modal]="true" class="p-fluid">
+        <p-dialog [(visible)]="dialogEvidencia" [style]="{width: '600px'}" header="📎 Adjuntar Evidencias al Ticket" [modal]="true" class="p-fluid">
             <ng-template pTemplate="content">
-                <div class="field">
-                    <label for="archivoUrl">URL del Archivo *</label>
-                    <input 
-                        type="text" 
-                        pInputText 
-                        id="archivoUrl" 
-                        [(ngModel)]="nuevaEvidencia.archivoUrl" 
-                        placeholder="https://ejemplo.com/archivo.pdf"
-                        required>
-                    <small class="text-500">Ingresa la URL pública del archivo</small>
+                <div class="surface-card border-1 surface-border border-round p-3">
+                    <div class="flex align-items-center justify-content-between mb-3">
+                        <div class="flex align-items-center gap-2">
+                            <i class="pi pi-paperclip text-xl text-primary"></i>
+                            <h6 class="m-0">Archivos a Subir</h6>
+                        </div>
+                        <p-tag [value]="archivosEvidenciaSeleccionados.length.toString()" 
+                               [severity]="archivosEvidenciaSeleccionados.length > 0 ? 'success' : 'secondary'"
+                               [rounded]="true"></p-tag>
+                    </div>
+                    
+                    <p class="text-sm text-600 mb-3">
+                        <i class="pi pi-info-circle mr-1"></i>
+                        Adjunte archivos de evidencia (PDF, DOC, DOCX, XLS, XLSX, imágenes - máx. 10MB cada uno)
+                    </p>
+
+                    <!-- Upload de archivos en modo básico -->
+                    <p-fileUpload #fileUploadEvidencia
+                                  name="files" 
+                                  [multiple]="true" 
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
+                                  [maxFileSize]="10485760" 
+                                  (onSelect)="onArchivoSeleccionado($event)"
+                                  (onRemove)="onArchivoEliminado($event)"
+                                  [showUploadButton]="false" 
+                                  [showCancelButton]="false"
+                                  [auto]="false"
+                                  mode="basic"
+                                  chooseLabel="Seleccionar Archivos"
+                                  chooseIcon="pi pi-plus">
+                    </p-fileUpload>
+                    
+                    <!-- Lista de archivos seleccionados -->
+                    <div *ngIf="archivosEvidenciaSeleccionados.length > 0" class="mt-3">
+                        <div class="flex align-items-center justify-content-between mb-2">
+                            <span class="font-semibold text-sm">Archivos seleccionados:</span>
+                            <button pButton pRipple 
+                                    label="Limpiar todo" 
+                                    icon="pi pi-times" 
+                                    class="p-button-text p-button-sm p-button-danger"
+                                    (click)="limpiarArchivosEvidencia()"></button>
+                        </div>
+                        
+                        <div *ngFor="let file of archivosEvidenciaSeleccionados; let i = index" 
+                             class="flex align-items-center justify-content-between p-2 mb-2 surface-50 border-round">
+                            <div class="flex align-items-center gap-2 flex-1">
+                                <i [class]="obtenerIconoArchivo(file.name)" class="text-2xl"></i>
+                                <div class="flex-1">
+                                    <div class="font-medium text-sm">{{file.name}}</div>
+                                    <div class="text-xs text-500">{{formatearTamano(file.size)}}</div>
+                                </div>
+                            </div>
+                            <button pButton pRipple 
+                                    icon="pi pi-times" 
+                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                    (click)="eliminarArchivoSeleccionado(i)"
+                                    pTooltip="Eliminar"></button>
+                        </div>
+                    </div>
                 </div>
-                <div class="field">
-                    <label for="descripcionEvidencia">Descripción</label>
+
+                <div class="field mt-3">
+                    <label for="descripcionEvidencia">Descripción (opcional)</label>
                     <textarea 
                         pInputTextarea 
                         id="descripcionEvidencia" 
-                        [(ngModel)]="nuevaEvidencia.descripcion" 
+                        [(ngModel)]="descripcionEvidencia" 
                         rows="3" 
-                        placeholder="Descripción opcional de la evidencia"></textarea>
+                        placeholder="Añada una descripción general para estos archivos"></textarea>
                 </div>
+
+                <p-progressBar *ngIf="subiendoEvidencias" mode="indeterminate" styleClass="mt-2"></p-progressBar>
             </ng-template>
 
             <ng-template pTemplate="footer">
@@ -688,16 +751,17 @@
                     label="Cancelar" 
                     icon="pi pi-times" 
                     class="p-button-text"
-                    (click)="dialogEvidencia = false">
+                    (click)="dialogEvidencia = false"
+                    [disabled]="subiendoEvidencias">
                 </button>
                 <button 
                     pButton 
                     pRipple 
-                    label="Subir" 
+                    label="Subir Evidencias" 
                     icon="pi pi-upload" 
-                    class="p-button-primary"
+                    class="p-button-success"
                     (click)="subirEvidencia()"
-                    [disabled]="!nuevaEvidencia.archivoUrl || nuevaEvidencia.archivoUrl.trim().length === 0">
+                    [disabled]="subiendoEvidencias || archivosEvidenciaSeleccionados.length === 0">
                 </button>
             </ng-template>
         </p-dialog>

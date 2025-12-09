@@ -17,4 +17,6 @@ export interface Equipo {
     estado?: boolean | string;
     idArea?: number;        // ID del área
     areaNombre?: string;    // Nombre del área (para mostrar)
+    idCategoria?: number;   // ID de la categoría
+    categoriaNombre?: string; // Nombre de la categoría
 }

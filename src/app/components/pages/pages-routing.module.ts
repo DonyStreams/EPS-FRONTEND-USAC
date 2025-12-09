@@ -26,6 +26,7 @@ import { RouterModule } from '@angular/router';
         
         // Administración
         { path: 'areas', loadChildren: () => import('./areas/areas.module').then(m => m.AreasModule) },
+        { path: 'categorias-equipos', loadChildren: () => import('./categorias-equipo/categorias-equipo.module').then(m => m.CategoriasEquipoModule) },
         { path: 'usuarios', loadChildren: () => import('./usuarios/usuarios.module').then(m => m.UsuariosModule) },
         
         // Notificaciones

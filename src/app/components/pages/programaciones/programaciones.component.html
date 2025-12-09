@@ -244,31 +244,45 @@
 
             <!-- Contrato -->
             <div class="field col-12">
-                <label for="contrato" class="font-medium">Contrato Vigente <span class="text-red-500">*</span></label>
+                <label for="contrato" class="font-medium">
+                    Contrato <span class="text-red-500">*</span>
+                    <span *ngIf="isEditing && contratosDisponibles.length > 0 && contratosDisponibles[0].noVigente" 
+                          class="ml-2 text-orange-500 text-sm">
+                        <i class="pi pi-exclamation-triangle"></i> El contrato actual ya no está vigente
+                    </span>
+                </label>
                 <p-dropdown id="contrato" [(ngModel)]="programacion.contratoId" [options]="contratosDisponibles"
                     optionLabel="descripcionCompleta" optionValue="idContrato" placeholder="Seleccionar contrato"
                     [filter]="true" filterBy="descripcion,proveedorNombre" [showClear]="true" required
                     styleClass="w-full">
                     <ng-template pTemplate="selectedItem" let-selectedContrato>
                         <div class="flex align-items-center" *ngIf="selectedContrato">
-                            <i class="pi pi-file-o mr-2 text-blue-500"></i>
+                            <i class="pi mr-2" [ngClass]="selectedContrato.noVigente ? 'pi-exclamation-triangle text-orange-500' : 'pi-file-o text-blue-500'"></i>
                             <div>
-                                <span class="font-bold">{{selectedContrato.descripcion}}</span>
+                                <span class="font-bold" [ngClass]="{'text-orange-600': selectedContrato.noVigente}">
+                                    {{selectedContrato.descripcion}}
+                                </span>
                                 <span class="text-500 mx-2">|</span>
                                 <span class="text-sm">{{selectedContrato.proveedorNombre}}</span>
+                                <p-tag *ngIf="selectedContrato.noVigente" value="NO VIGENTE" severity="warning" class="ml-2"></p-tag>
                             </div>
                         </div>
                     </ng-template>
                     <ng-template pTemplate="item" let-contrato>
-                        <div class="flex align-items-center border-bottom-1 surface-border pb-2">
+                        <div class="flex align-items-center border-bottom-1 surface-border pb-2" 
+                             [ngClass]="{'surface-200': contrato.noVigente}">
                             <div class="flex-1">
-                                <div class="font-bold text-900">{{contrato.descripcion}}</div>
-                                <div class="text-sm text-600 mb-1"><i
-                                        class="pi pi-building mr-1"></i>{{contrato.proveedorNombre}}</div>
+                                <div class="flex align-items-center gap-2">
+                                    <span class="font-bold" [ngClass]="contrato.noVigente ? 'text-orange-600' : 'text-900'">
+                                        {{contrato.descripcion}}
+                                    </span>
+                                    <p-tag *ngIf="contrato.noVigente" value="NO VIGENTE" severity="warning" [style]="{fontSize: '0.7rem'}"></p-tag>
+                                    <p-tag *ngIf="contrato.esContratoActual && !contrato.noVigente" value="ACTUAL" severity="success" [style]="{fontSize: '0.7rem'}"></p-tag>
+                                </div>
+                                <div class="text-sm text-600 mb-1"><i class="pi pi-building mr-1"></i>{{contrato.proveedorNombre}}</div>
                                 <div class="text-xs text-500">
                                     <i class="pi pi-calendar mr-1"></i>
-                                    {{contrato.fechaInicio | date:'dd/MM/yyyy'}} - {{contrato.fechaFin |
-                                    date:'dd/MM/yyyy'}}
+                                    {{contrato.fechaInicio | date:'dd/MM/yyyy'}} - {{contrato.fechaFin | date:'dd/MM/yyyy'}}
                                 </div>
                             </div>
                         </div>
@@ -277,6 +291,10 @@
                 <small class="text-500"
                     *ngIf="contratosDisponibles.length === 0 && programacion.equipoId && programacion.tipoMantenimientoId">
                     No hay contratos vigentes que cubran este equipo y tipo de mantenimiento
+                </small>
+                <small class="text-orange-500" *ngIf="isEditing && contratosDisponibles.length > 0 && contratosDisponibles[0].noVigente">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    Se recomienda seleccionar un contrato vigente para continuar recibiendo servicios de mantenimiento.
                 </small>
             </div>
         </div>
@@ -383,37 +401,71 @@
 </p-dialog>
 
 <!-- Diálogo de detalle -->
-<p-dialog header="Detalle de Programación" [(visible)]="displayDetailDialog" [modal]="true" [style]="{width: '600px'}"
+<p-dialog header="Detalle de Programación" [(visible)]="displayDetailDialog" [modal]="true" [style]="{width: '650px'}"
     class="p-fluid">
 
-    <ng-template pTemplate="content" *ngIf="selectedProgramacion">
-        <div class="grid">
+    <ng-template pTemplate="content">
+        <div class="grid" *ngIf="selectedProgramacion">
             <div class="col-12 md:col-6">
-                <h6 class="text-primary">Información del Equipo</h6>
-                <p><strong>Nombre:</strong> {{selectedProgramacion.equipo?.nombre}}</p>
-                <p><strong>Código:</strong> {{selectedProgramacion.equipo?.codigoInacif}}</p>
-                <p><strong>Ubicación:</strong> {{selectedProgramacion.equipo?.ubicacion}}</p>
+                <div class="surface-card p-3 border-round shadow-1 mb-3">
+                    <h6 class="text-primary flex align-items-center mb-3">
+                        <i class="pi pi-cog mr-2"></i>Información del Equipo
+                    </h6>
+                    <p class="mb-2"><strong>Nombre:</strong> {{selectedProgramacion.equipo?.nombre || 'N/A'}}</p>
+                    <p class="mb-2"><strong>Código:</strong> {{selectedProgramacion.equipo?.codigoInacif || 'N/A'}}</p>
+                    <p class="mb-0"><strong>Ubicación:</strong> {{selectedProgramacion.equipo?.ubicacion || 'N/A'}}</p>
+                </div>
             </div>
             <div class="col-12 md:col-6">
-                <h6 class="text-primary">Información del Contrato</h6>
-                <p><strong>Descripción:</strong> {{selectedProgramacion.contrato?.descripcion}}</p>
-                <p><strong>Proveedor:</strong> {{selectedProgramacion.contrato?.proveedor?.nombre}}</p>
-                <p><strong>Vigencia:</strong> {{selectedProgramacion.contrato?.fechaInicio | date:'dd/MM/yyyy'}} -
-                    {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yyyy'}}</p>
+                <div class="surface-card p-3 border-round shadow-1 mb-3">
+                    <h6 class="text-primary flex align-items-center mb-3">
+                        <i class="pi pi-file mr-2"></i>Información del Contrato
+                    </h6>
+                    <p class="mb-2"><strong>Descripción:</strong> {{selectedProgramacion.contrato?.descripcion || 'N/A'}}</p>
+                    <p class="mb-2"><strong>Proveedor:</strong> {{selectedProgramacion.contrato?.proveedor?.nombre || 'N/A'}}</p>
+                    <p class="mb-0"><strong>Vigencia:</strong> 
+                        <span *ngIf="selectedProgramacion.contrato?.fechaInicio">
+                            {{selectedProgramacion.contrato?.fechaInicio | date:'dd/MM/yyyy'}} - {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yyyy'}}
+                        </span>
+                        <span *ngIf="!selectedProgramacion.contrato?.fechaInicio">N/A</span>
+                    </p>
+                </div>
             </div>
             <div class="col-12">
-                <h6 class="text-primary">Programación</h6>
-                <p><strong>Tipo:</strong> {{selectedProgramacion.tipoMantenimiento?.nombre}}</p>
-                <p><strong>Frecuencia:</strong> {{selectedProgramacion.frecuenciaDias}} días</p>
-                <p><strong>Último mantenimiento:</strong> {{selectedProgramacion.fechaUltimoMantenimiento |
-                    date:'dd/MM/yyyy'}}</p>
-                <p><strong>Próximo mantenimiento:</strong> {{selectedProgramacion.fechaProximoMantenimiento |
-                    date:'dd/MM/yyyy'}}</p>
-                <p><strong>Días de alerta:</strong> {{selectedProgramacion.diasAlertaPrevia}} días</p>
-                <p><strong>Estado:</strong> {{selectedProgramacion.activa ? 'Activa' : 'Inactiva'}}</p>
-                <p *ngIf="selectedProgramacion.observaciones"><strong>Observaciones:</strong>
-                    {{selectedProgramacion.observaciones}}</p>
+                <div class="surface-card p-3 border-round shadow-1">
+                    <h6 class="text-primary flex align-items-center mb-3">
+                        <i class="pi pi-calendar mr-2"></i>Datos de Programación
+                    </h6>
+                    <div class="grid">
+                        <div class="col-12 md:col-6">
+                            <p class="mb-2"><strong>Tipo:</strong> {{selectedProgramacion.tipoMantenimiento?.nombre || 'N/A'}}</p>
+                            <p class="mb-2"><strong>Frecuencia:</strong> {{selectedProgramacion.frecuenciaDias}} días</p>
+                            <p class="mb-2"><strong>Días de alerta:</strong> {{selectedProgramacion.diasAlertaPrevia}} días</p>
+                        </div>
+                        <div class="col-12 md:col-6">
+                            <p class="mb-2"><strong>Último mantenimiento:</strong> 
+                                <span *ngIf="selectedProgramacion.fechaUltimoMantenimiento">{{selectedProgramacion.fechaUltimoMantenimiento | date:'dd/MM/yyyy'}}</span>
+                                <span *ngIf="!selectedProgramacion.fechaUltimoMantenimiento">No registrado</span>
+                            </p>
+                            <p class="mb-2"><strong>Próximo mantenimiento:</strong> 
+                                <span *ngIf="selectedProgramacion.fechaProximoMantenimiento">{{selectedProgramacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}</span>
+                                <span *ngIf="!selectedProgramacion.fechaProximoMantenimiento">No programado</span>
+                            </p>
+                            <p class="mb-2"><strong>Estado:</strong> 
+                                <p-tag [value]="selectedProgramacion.activa ? 'Activa' : 'Inactiva'" 
+                                       [severity]="selectedProgramacion.activa ? 'success' : 'danger'"></p-tag>
+                            </p>
+                        </div>
+                        <div class="col-12" *ngIf="selectedProgramacion.observaciones">
+                            <p class="mb-0"><strong>Observaciones:</strong> {{selectedProgramacion.observaciones}}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+        <div *ngIf="!selectedProgramacion" class="text-center p-4">
+            <i class="pi pi-info-circle text-4xl text-500 mb-3"></i>
+            <p class="text-500">No hay información disponible</p>
         </div>
     </ng-template>
 

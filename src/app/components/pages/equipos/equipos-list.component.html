@@ -116,9 +116,14 @@
     <ng-template pTemplate="body" let-equipo>
       <tr>
         <td>
-          <div class="flex align-items-center">
-            <i class="pi pi-desktop text-primary mr-2"></i>
-            <span class="font-semibold">{{ equipo.nombre }}</span>
+          <div class="flex flex-column">
+            <div class="flex align-items-center">
+              <i class="pi pi-desktop text-primary mr-2"></i>
+              <span class="font-semibold">{{ equipo.nombre }}</span>
+            </div>
+            <div *ngIf="equipo.categoriaNombre" class="mt-1">
+              <p-tag severity="info" value="{{ equipo.categoriaNombre }}" icon="pi pi-tags"></p-tag>
+            </div>
           </div>
         </td>
         <td>
@@ -211,6 +216,31 @@
                         <div>Debes crear al menos un área antes de registrar equipos.</div>
                         <a routerLink="/administracion/areas" class="text-primary font-semibold">
                           <i class="pi pi-arrow-right mr-1"></i>Ir a Gestión de Áreas
+                        </a>
+                      </div>
+                    </div>
+                  </ng-template>
+                </p-message>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="field">
+              <label for="categoria" class="font-semibold">Categoría de equipo</label>
+              <p-dropdown id="categoria" name="categoria" [(ngModel)]="nuevoEquipo.idCategoria" [options]="categorias"
+                          optionLabel="nombre" optionValue="id" placeholder="Seleccione una categoría"
+                          [showClear]="true" class="w-full" [disabled]="categorias.length === 0"></p-dropdown>
+              <small class="text-500">Clasificación jerárquica para agrupar los equipos</small>
+              <div *ngIf="categorias.length === 0" class="mt-2">
+                <p-message severity="warn" styleClass="w-full">
+                  <ng-template pTemplate>
+                    <div class="flex align-items-center">
+                      <i class="pi pi-tags mr-2"></i>
+                      <div>
+                        <div class="font-semibold">No hay categorías registradas</div>
+                        <div>Este campo es opcional; puedes crearlas en Gestión de Categorías.</div>
+                        <a routerLink="/administracion/categorias-equipos" class="text-primary font-semibold">
+                          <i class="pi pi-arrow-right mr-1"></i>Ir a Categorías de Equipo
                         </a>
                       </div>
                     </div>
@@ -394,6 +424,15 @@
                           optionLabel="nombre" optionValue="idArea" placeholder="Seleccione un área" 
                           [showClear]="false" class="w-full" required [disabled]="areas.length === 0"></p-dropdown>
               <small class="text-500">Área o laboratorio donde se encuentra el equipo</small>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="field">
+              <label for="editCategoria" class="font-semibold">Categoría de equipo</label>
+              <p-dropdown id="editCategoria" name="editCategoria" [(ngModel)]="equipoEditando.idCategoria" [options]="categorias"
+                          optionLabel="nombre" optionValue="id" placeholder="Seleccione una categoría"
+                          [showClear]="true" class="w-full" [disabled]="categorias.length === 0"></p-dropdown>
+              <small class="text-500">Clasificación jerárquica para agrupar los equipos</small>
             </div>
           </div>
         </div>

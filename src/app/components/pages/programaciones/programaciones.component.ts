@@ -59,12 +59,16 @@ export interface Contrato {
     idContrato: number;
     descripcion: string;
     descripcionCompleta?: string;
+    proveedorNombre?: string;
     fechaInicio: Date;
     fechaFin: Date;
-    estado: string;
+    estado?: string;
     proveedor?: {
         nombre?: string;
     };
+    // Propiedades para edición
+    esContratoActual?: boolean;
+    noVigente?: boolean;
 }
 
 @Component({
@@ -136,15 +140,43 @@ export class ProgramacionesComponent implements OnInit {
     loadProgramaciones(): void {
         this.loading = true;
 
-        this.http.get<ProgramacionMantenimiento[]>(`${this.API_URL}/programaciones`).subscribe({
+        this.http.get<any[]>(`${this.API_URL}/programaciones`).subscribe({
             next: (data) => {
-                console.log('📋 Programaciones cargadas:', data);
-                // Convertir las fechas del formato backend a Date
+                console.log('📋 Programaciones cargadas (raw):', data);
+                
+                // Convertir las fechas del formato backend a Date y asegurar estructura
                 this.programaciones = data.map(prog => ({
-                    ...prog,
+                    idProgramacion: prog.idProgramacion,
+                    equipoId: prog.equipo?.idEquipo || prog.equipoId,
+                    tipoMantenimientoId: prog.tipoMantenimiento?.idTipo || prog.tipoMantenimientoId,
+                    contratoId: prog.contrato?.idContrato || prog.contratoId,
+                    frecuenciaDias: prog.frecuenciaDias,
+                    diasAlertaPrevia: prog.diasAlertaPrevia,
+                    activa: prog.activa,
+                    observaciones: prog.observaciones,
                     fechaUltimoMantenimiento: this.parseBackendDate(prog.fechaUltimoMantenimiento),
-                    fechaProximoMantenimiento: this.parseBackendDate(prog.fechaProximoMantenimiento)
+                    fechaProximoMantenimiento: this.parseBackendDate(prog.fechaProximoMantenimiento),
+                    // Mantener objetos anidados para mostrar en tabla y detalle
+                    equipo: prog.equipo || {
+                        idEquipo: prog.equipoId,
+                        nombre: prog.equipoNombre,
+                        codigoInacif: prog.equipoCodigo,
+                        ubicacion: prog.equipoUbicacion
+                    },
+                    tipoMantenimiento: prog.tipoMantenimiento || {
+                        idTipo: prog.tipoMantenimientoId,
+                        nombre: prog.tipoMantenimientoNombre
+                    },
+                    contrato: prog.contrato || {
+                        idContrato: prog.contratoId,
+                        descripcion: prog.contratoDescripcion,
+                        proveedor: {
+                            nombre: prog.proveedorNombre
+                        }
+                    }
                 }));
+                
+                console.log('📋 Programaciones procesadas:', this.programaciones);
                 this.calculateStats();
                 this.loading = false;
             },
@@ -248,11 +280,15 @@ export class ProgramacionesComponent implements OnInit {
      */
     loadContratosDisponibles(): void {
         if (!this.programacion.equipoId || !this.programacion.tipoMantenimientoId) {
-            this.contratosDisponibles = [];
+            console.log('⚠️ No hay equipoId o tipoMantenimientoId, cargando todos los contratos...');
+            this.loadAllContratos();
             return;
         }
 
         console.log('🔍 Buscando contratos para equipoId:', this.programacion.equipoId, 'tipoId:', this.programacion.tipoMantenimientoId);
+
+        // Guardar el contratoId actual para asegurarse de que esté en la lista
+        const contratoIdActual = this.programacion.contratoId;
 
         // Usar el servicio de programaciones que ya corregimos
         this.programacionesService.getContratosDisponibles(
@@ -262,18 +298,21 @@ export class ProgramacionesComponent implements OnInit {
             next: (data) => {
                 this.contratosDisponibles = data.map(contrato => ({
                     ...contrato,
-                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`
+                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`,
+                    proveedorNombre: contrato.proveedor?.nombre || 'Sin proveedor'
                 }));
                 console.log('✅ Contratos vigentes obtenidos:', this.contratosDisponibles);
+                
+                // Si el contrato actual no está en la lista, cargarlo
+                if (contratoIdActual && !this.contratosDisponibles.find(c => c.idContrato === contratoIdActual)) {
+                    console.log('⚠️ Contrato actual no está en la lista, cargando todos...');
+                    this.loadAllContratos();
+                }
             },
             error: (error) => {
                 console.error('❌ Error cargando contratos vigentes:', error);
-                this.messageService.add({
-                    severity: 'warn',
-                    summary: 'Advertencia',
-                    detail: 'Error al cargar contratos vigentes. Puede que no haya contratos disponibles.'
-                });
-                this.contratosDisponibles = [];
+                // Si falla, cargar todos los contratos como fallback
+                this.loadAllContratos();
             }
         });
     }
@@ -319,17 +358,122 @@ export class ProgramacionesComponent implements OnInit {
      * Abre el diálogo para editar programación
      */
     editProgramacion(programacion: ProgramacionMantenimiento): void {
-        this.programacion = { ...programacion };
+        console.log('📝 Editando programación:', programacion);
+        
+        // Extraer los IDs de los objetos anidados para los dropdowns
+        this.programacion = {
+            ...programacion,
+            equipoId: programacion.equipo?.idEquipo || programacion.equipoId || 0,
+            tipoMantenimientoId: programacion.tipoMantenimiento?.idTipo || programacion.tipoMantenimientoId || 0,
+            contratoId: programacion.contrato?.idContrato || programacion.contratoId || 0,
+            frecuenciaDias: programacion.frecuenciaDias || 30,
+            diasAlertaPrevia: programacion.diasAlertaPrevia || 7,
+            activa: programacion.activa !== undefined ? programacion.activa : true,
+            observaciones: programacion.observaciones || '',
+            fechaUltimoMantenimiento: this.parseBackendDate(programacion.fechaUltimoMantenimiento),
+            fechaProximoMantenimiento: this.parseBackendDate(programacion.fechaProximoMantenimiento)
+        };
+        
+        console.log('📋 Programación preparada para edición:', this.programacion);
+        
         this.isEditing = true;
         this.displayDialog = true;
-        this.loadContratosDisponibles();
+        
+        // Cargar contratos incluyendo el contrato actual (aunque no esté vigente)
+        this.loadContratosParaEdicion(programacion);
+    }
+
+    /**
+     * Carga contratos para edición, incluyendo el contrato actual aunque no esté vigente
+     */
+    loadContratosParaEdicion(programacion: ProgramacionMantenimiento): void {
+        const contratoActual = programacion.contrato;
+        const contratoIdActual = contratoActual?.idContrato || programacion.contratoId;
+        
+        console.log('🔍 Cargando contratos para edición. Contrato actual:', contratoIdActual);
+
+        // Primero cargar contratos vigentes
+        this.programacionesService.getContratosDisponibles(
+            this.programacion.equipoId,
+            this.programacion.tipoMantenimientoId
+        ).subscribe({
+            next: (data) => {
+                this.contratosDisponibles = data.map(contrato => ({
+                    ...contrato,
+                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`,
+                    proveedorNombre: contrato.proveedor?.nombre || 'Sin proveedor',
+                    esContratoActual: false,
+                    noVigente: false
+                }));
+                
+                // Verificar si el contrato actual está en la lista
+                const contratoEnLista = this.contratosDisponibles.find(c => c.idContrato === contratoIdActual);
+                
+                if (!contratoEnLista && contratoActual) {
+                    // El contrato actual NO está vigente, añadirlo a la lista marcado como no vigente
+                    console.log('⚠️ Contrato actual no vigente, añadiéndolo a la lista');
+                    
+                    const contratoNoVigente: any = {
+                        idContrato: contratoActual.idContrato,
+                        descripcion: contratoActual.descripcion || 'Contrato anterior',
+                        descripcionCompleta: `⚠️ ${contratoActual.descripcion || 'Contrato anterior'} - ${contratoActual.proveedor?.nombre || 'Sin proveedor'} (NO VIGENTE)`,
+                        proveedorNombre: contratoActual.proveedor?.nombre || 'Sin proveedor',
+                        fechaInicio: contratoActual.fechaInicio,
+                        fechaFin: contratoActual.fechaFin,
+                        proveedor: contratoActual.proveedor,
+                        esContratoActual: true,
+                        noVigente: true
+                    };
+                    
+                    // Añadir al inicio de la lista
+                    this.contratosDisponibles.unshift(contratoNoVigente);
+                    
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Contrato no vigente',
+                        detail: 'El contrato asignado ya no está vigente. Considere seleccionar uno nuevo.',
+                        life: 5000
+                    });
+                } else if (contratoEnLista) {
+                    // Marcar el contrato actual
+                    contratoEnLista.esContratoActual = true;
+                }
+                
+                console.log('✅ Contratos disponibles para edición:', this.contratosDisponibles);
+                this.cdr.detectChanges();
+            },
+            error: (error) => {
+                console.error('❌ Error cargando contratos:', error);
+                // Si falla, al menos mostrar el contrato actual
+                if (contratoActual) {
+                    this.contratosDisponibles = [{
+                        idContrato: contratoActual.idContrato,
+                        descripcion: contratoActual.descripcion || 'Contrato actual',
+                        descripcionCompleta: `${contratoActual.descripcion || 'Contrato actual'} - ${contratoActual.proveedor?.nombre || 'Sin proveedor'}`,
+                        proveedorNombre: contratoActual.proveedor?.nombre || 'Sin proveedor',
+                        fechaInicio: contratoActual.fechaInicio,
+                        fechaFin: contratoActual.fechaFin,
+                        proveedor: contratoActual.proveedor,
+                        esContratoActual: true,
+                        noVigente: true
+                    } as any];
+                } else {
+                    this.loadAllContratos();
+                }
+            }
+        });
     }
 
     /**
      * Muestra el detalle de una programación
      */
     verDetalle(programacion: ProgramacionMantenimiento): void {
-        this.selectedProgramacion = programacion;
+        console.log('👁️ Ver detalle de programación:', programacion);
+        this.selectedProgramacion = {
+            ...programacion,
+            fechaUltimoMantenimiento: this.parseBackendDate(programacion.fechaUltimoMantenimiento),
+            fechaProximoMantenimiento: this.parseBackendDate(programacion.fechaProximoMantenimiento)
+        };
         this.displayDetailDialog = true;
     }
 

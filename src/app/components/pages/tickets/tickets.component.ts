@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { TicketsService, Ticket, ComentarioTicketResponse } from '../../../service/tickets.service';
+import { TicketsService, Ticket, ComentarioTicketResponse, EvidenciaTicket } from '../../../service/tickets.service';
 import { EquiposService } from '../../../service/equipos.service';
 import { UsuariosService, Usuario } from '../../../service/usuarios.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 import { Equipo } from '../../../api/equipos';
+import { FileUpload } from 'primeng/fileupload';
 
 @Component({
     selector: 'app-tickets',
@@ -11,6 +13,8 @@ import { Equipo } from '../../../api/equipos';
     styleUrls: ['./tickets.component.scss']
 })
 export class TicketsComponent implements OnInit {
+
+    @ViewChild('fileUploadEvidencia') fileUploadEvidencia?: FileUpload;
 
     // Datos principales
     tickets: Ticket[] = [];
@@ -53,6 +57,7 @@ export class TicketsComponent implements OnInit {
     // Listas para dropdowns
     equipos: Equipo[] = [];
     usuarios: Usuario[] = [];
+    usuarioActual?: Usuario;
     
     // Funcionalidad de comentarios y estados
     nuevoComentario: string = '';
@@ -61,9 +66,11 @@ export class TicketsComponent implements OnInit {
     tiposComentario: string[] = ['Técnico', 'Seguimiento', 'Alerta', 'Resolución', 'General'];
     
     // Funcionalidad de evidencias
-    evidencias: any[] = [];
+    evidencias: Array<EvidenciaTicket & { iconoCss?: string; tamanoFormateado?: string }> = [];
     dialogEvidencia: boolean = false;
-    nuevaEvidencia: any = { archivoUrl: '', descripcion: '' };
+    archivosEvidenciaSeleccionados: File[] = [];
+    descripcionEvidencia: string = '';
+    subiendoEvidencias: boolean = false;
     
     // Controles de la vista
     mostrarTicketsAbiertos: boolean = false;
@@ -83,6 +90,7 @@ export class TicketsComponent implements OnInit {
         private ticketsService: TicketsService,
         private equiposService: EquiposService,
         private usuariosService: UsuariosService,
+        public keycloakService: KeycloakService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
     ) {}
@@ -166,6 +174,7 @@ export class TicketsComponent implements OnInit {
             next: (usuarios: Usuario[]) => {
                 this.usuarios = usuarios || [];
                 console.log('✅ Usuarios cargados:', this.usuarios.length);
+                this.establecerUsuarioActual();
             },
             error: (error) => {
                 console.error('❌ Error al cargar usuarios:', error);
@@ -179,11 +188,43 @@ export class TicketsComponent implements OnInit {
         });
     }
 
+    private establecerUsuarioActual(): void {
+        const keycloakId = this.keycloakService.getUserId();
+        if (!keycloakId) {
+            return;
+        }
+
+        if (this.usuarios.length) {
+            this.usuarioActual = this.usuarios.find(u => u.keycloakId === keycloakId);
+        }
+
+        if (this.usuarioActual) {
+            this.sincronizarUsuarioCreador();
+        } else {
+            this.usuariosService.getByKeycloakId(keycloakId).subscribe({
+                next: (usuario) => {
+                    this.usuarioActual = usuario;
+                    this.sincronizarUsuarioCreador();
+                },
+                error: (error) => {
+                    console.error('❌ No se pudo obtener usuario por Keycloak:', error);
+                }
+            });
+        }
+    }
+
+    private sincronizarUsuarioCreador(): void {
+        if (this.usuarioActual) {
+            this.nuevoTicket.usuarioCreadorId = this.usuarioActual.id;
+        }
+    }
+
     /**
      * Abre el diálogo para crear nuevo ticket
      */
     abrirNuevoTicket(): void {
         this.nuevoTicket = this.inicializarTicket();
+        this.sincronizarUsuarioCreador();
         this.dialogNuevoTicket = true;
     }
 
@@ -191,11 +232,30 @@ export class TicketsComponent implements OnInit {
      * Guarda un nuevo ticket
      */
     guardarNuevoTicket(): void {
-        if (!this.validarTicket(this.nuevoTicket)) {
+        if (!this.nuevoTicket.usuarioCreadorId && this.usuarioActual) {
+            this.nuevoTicket.usuarioCreadorId = this.usuarioActual.id;
+        }
+        const payload: Partial<Ticket> = {
+            ...this.nuevoTicket,
+            equipoId: this.nuevoTicket.equipoId ? Number(this.nuevoTicket.equipoId) : undefined,
+            usuarioCreadorId: this.nuevoTicket.usuarioCreadorId ? Number(this.nuevoTicket.usuarioCreadorId) : undefined,
+            usuarioAsignadoId: this.nuevoTicket.usuarioAsignadoId ? Number(this.nuevoTicket.usuarioAsignadoId) : undefined
+        };
+
+        if (!payload.usuarioCreadorId) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Usuario no identificado',
+                detail: 'No se pudo obtener el usuario autenticado. Intente recargar o inicie sesión nuevamente.'
+            });
             return;
         }
 
-        this.ticketsService.create(this.nuevoTicket).subscribe({
+        if (!this.validarTicket(payload)) {
+            return;
+        }
+
+        this.ticketsService.create(payload).subscribe({
             next: (response: {message: string, success: boolean}) => {
                 if (response.success) {
                     this.messageService.add({
@@ -463,8 +523,9 @@ export class TicketsComponent implements OnInit {
             descripcion: '',
             prioridad: 'Media',
             estado: 'Abierto',
-            equipoId: 1, // Temporal - necesitará selector de equipos
-            usuarioCreadorId: 1 // Temporal - vendrá del usuario logueado
+            equipoId: undefined,
+            usuarioCreadorId: undefined,
+            usuarioAsignadoId: undefined
         };
     }
 
@@ -608,6 +669,29 @@ export class TicketsComponent implements OnInit {
      */
     private abrirModalEdicion(ticket: Ticket): void {
         this.ticketEditando = { ...ticket };
+        const asignadoId = ticket.usuarioAsignadoId
+            || (ticket as any).usuario_asignado_id
+            || ticket.usuarioAsignado?.id
+            || (ticket as any).usuarioAsignadoId;
+        this.ticketEditando.usuarioAsignadoId = asignadoId ?? undefined;
+        const asignadoNombre = ticket.usuarioAsignado?.nombreCompleto
+            || (ticket as any).usuarioAsignado
+            || (ticket as any).usuario_asignado;
+        if (asignadoNombre) {
+            const usuarioEncontrado = this.usuarios.find(u => u.id === asignadoId);
+            if (!usuarioEncontrado && asignadoId) {
+                this.usuariosService.getById(asignadoId).subscribe({
+                    next: (usuario) => {
+                        if (!this.usuarios.find(u => u.id === usuario.id)) {
+                            this.usuarios.push(usuario);
+                        }
+                    },
+                    error: () => {
+                        console.warn('⚠️ No se pudo obtener el usuario asignado con ID:', asignadoId);
+                    }
+                });
+            }
+        }
         
         console.log('📦 Equipos disponibles al abrir modal:', this.equipos);
         console.log('📋 Todas las propiedades del ticket:', Object.keys(ticket));
@@ -665,10 +749,16 @@ export class TicketsComponent implements OnInit {
             this.ticketEditando.equipoId = this.equipoSeleccionado.idEquipo;
         }
 
-        console.log('💾 Guardando edición de ticket:', this.ticketEditando);
+        const payload: Partial<Ticket> = {
+            ...this.ticketEditando,
+            equipoId: this.ticketEditando.equipoId ? Number(this.ticketEditando.equipoId) : undefined,
+            usuarioAsignadoId: this.ticketEditando.usuarioAsignadoId ? Number(this.ticketEditando.usuarioAsignadoId) : undefined
+        };
+
+        console.log('💾 Guardando edición de ticket:', payload);
         console.log('🎯 Equipo seleccionado:', this.equipoSeleccionado);
 
-        this.ticketsService.update(this.ticketEditando.id, this.ticketEditando as Ticket).subscribe({
+        this.ticketsService.update(payload.id!, payload as Ticket).subscribe({
             next: (ticketActualizado) => {
                 console.log('✅ Ticket actualizado:', ticketActualizado);
                 this.messageService.add({
@@ -886,7 +976,12 @@ export class TicketsComponent implements OnInit {
     cargarEvidencias(ticketId: number): void {
         this.ticketsService.getEvidencias(ticketId).subscribe({
             next: (response: any) => {
-                this.evidencias = response.evidencias || [];
+                const evidencias: EvidenciaTicket[] = response.evidencias || [];
+                this.evidencias = evidencias.map(ev => ({
+                    ...ev,
+                    iconoCss: this.obtenerIconoArchivo(ev.nombreOriginal || ev.nombreArchivo),
+                    tamanoFormateado: this.formatearTamano(ev.tamanio)
+                }));
                 console.log('📎 Evidencias cargadas:', this.evidencias.length);
             },
             error: (error) => {
@@ -904,7 +999,15 @@ export class TicketsComponent implements OnInit {
      * Muestra el dialog para subir evidencia
      */
     mostrarDialogEvidencia(): void {
-        this.nuevaEvidencia = { archivoUrl: '', descripcion: '' };
+        if (!this.ticketSeleccionado?.id) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Ticket no seleccionado',
+                detail: 'Abra un ticket para adjuntar evidencias'
+            });
+            return;
+        }
+        this.limpiarEstadoModalEvidencias();
         this.dialogEvidencia = true;
     }
 
@@ -912,40 +1015,104 @@ export class TicketsComponent implements OnInit {
      * Sube una nueva evidencia al ticket
      */
     subirEvidencia(): void {
-        if (!this.ticketSeleccionado?.id || !this.nuevaEvidencia.archivoUrl) {
+        if (!this.ticketSeleccionado?.id) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Advertencia',
-                detail: 'Debe ingresar la URL del archivo'
+                detail: 'Debe seleccionar un ticket primero'
             });
             return;
         }
 
-        this.ticketsService.addEvidencia(this.ticketSeleccionado.id, this.nuevaEvidencia).subscribe({
-            next: () => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Evidencia subida correctamente'
-                });
-                this.dialogEvidencia = false;
-                this.cargarEvidencias(this.ticketSeleccionado!.id!);
-            },
-            error: (error) => {
-                console.error('❌ Error al subir evidencia:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo subir la evidencia'
-                });
-            }
+        if (this.archivosEvidenciaSeleccionados.length === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Seleccione al menos un archivo'
+            });
+            return;
+        }
+
+        const ticketId = this.ticketSeleccionado.id;
+        const descripcion = this.descripcionEvidencia?.trim() || '';
+        let archivosSubidos = 0;
+        let errores = 0;
+
+        this.subiendoEvidencias = true;
+
+        this.archivosEvidenciaSeleccionados.forEach((file, index) => {
+            this.ticketsService.uploadEvidenciaArchivo(ticketId, file, descripcion).subscribe({
+                next: (response) => {
+                    console.log('✅ Archivo subido:', response);
+                    archivosSubidos++;
+                    
+                    if (archivosSubidos + errores === this.archivosEvidenciaSeleccionados.length) {
+                        this.mostrarResumenSubidaEvidencias(archivosSubidos, errores);
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error al subir evidencia:', error);
+                    errores++;
+                    
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error al subir archivo',
+                        detail: `${file.name}: ${error.error?.error || error.message || 'Error desconocido'}`
+                    });
+                    
+                    if (archivosSubidos + errores === this.archivosEvidenciaSeleccionados.length) {
+                        this.mostrarResumenSubidaEvidencias(archivosSubidos, errores);
+                    }
+                }
+            });
         });
+    }
+
+    private mostrarResumenSubidaEvidencias(exitosos: number, errores: number): void {
+        this.subiendoEvidencias = false;
+        
+        if (exitosos > 0 && errores === 0) {
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `${exitosos} archivo(s) subido(s) correctamente`
+            });
+            
+            this.limpiarEstadoModalEvidencias();
+            this.cargarEvidencias(this.ticketSeleccionado!.id!);
+            
+        } else if (exitosos > 0 && errores > 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Parcialmente completado',
+                detail: `${exitosos} archivo(s) subido(s), ${errores} error(es)`
+            });
+            this.cargarEvidencias(this.ticketSeleccionado!.id!);
+        } else if (errores > 0) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: `No se pudo subir ningún archivo (${errores} error(es))`
+            });
+        }
+    }
+
+    private limpiarEstadoModalEvidencias(): void {
+        this.archivosEvidenciaSeleccionados = [];
+        this.descripcionEvidencia = '';
+        this.dialogEvidencia = false;
+        if (this.fileUploadEvidencia) {
+            this.fileUploadEvidencia.clear();
+        }
     }
 
     /**
      * Elimina una evidencia del ticket
      */
     eliminarEvidencia(evidencia: any): void {
+        if (!this.ticketSeleccionado?.id) {
+            return;
+        }
         this.confirmationService.confirm({
             message: '¿Está seguro de eliminar esta evidencia?',
             header: 'Confirmar',
@@ -971,5 +1138,96 @@ export class TicketsComponent implements OnInit {
                 });
             }
         });
+    }
+
+    onArchivoSeleccionado(event: any): void {
+        // Cuando se seleccionan archivos, reemplazar el array completo
+        this.archivosEvidenciaSeleccionados = event.currentFiles || event.files || [];
+        console.log('📎 Archivos seleccionados:', this.archivosEvidenciaSeleccionados.length);
+    }
+
+    onArchivoEliminado(event: any): void {
+        // Cuando se remueven archivos desde el componente
+        this.archivosEvidenciaSeleccionados = event.currentFiles || event.files || [];
+        console.log('📎 Archivos actualizados:', this.archivosEvidenciaSeleccionados.length);
+    }
+
+    eliminarArchivoSeleccionado(index: number): void {
+        this.archivosEvidenciaSeleccionados.splice(index, 1);
+        if (this.fileUploadEvidencia) {
+            this.fileUploadEvidencia.files = [...this.archivosEvidenciaSeleccionados];
+        }
+    }
+
+    limpiarArchivosEvidencia(): void {
+        this.archivosEvidenciaSeleccionados = [];
+        if (this.fileUploadEvidencia) {
+            this.fileUploadEvidencia.clear();
+        }
+    }
+
+    descargarEvidencia(evidencia: EvidenciaTicket): void {
+        if (!this.ticketSeleccionado?.id) {
+            return;
+        }
+
+        if (!evidencia.nombreArchivo) {
+            window.open(evidencia.archivoUrl, '_blank');
+            return;
+        }
+
+        this.ticketsService.downloadEvidencia(this.ticketSeleccionado.id, evidencia.nombreArchivo).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = evidencia.nombreOriginal || evidencia.nombreArchivo;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            },
+            error: (error) => {
+                console.error('❌ Error al descargar evidencia:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo descargar la evidencia'
+                });
+            }
+        });
+    }
+
+    private obtenerIconoArchivo(nombre?: string): string {
+        if (!nombre) {
+            return 'pi pi-file text-gray-500';
+        }
+        const ext = nombre.toLowerCase().split('.').pop();
+        switch (ext) {
+            case 'pdf':
+                return 'pi pi-file-pdf text-red-500';
+            case 'doc':
+            case 'docx':
+                return 'pi pi-file-word text-blue-500';
+            case 'xls':
+            case 'xlsx':
+                return 'pi pi-file-excel text-green-500';
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'gif':
+            case 'webp':
+                return 'pi pi-image text-purple-500';
+            default:
+                return 'pi pi-file text-gray-500';
+        }
+    }
+
+    private formatearTamano(tamano?: number): string {
+        if (!tamano) {
+            return '0 Bytes';
+        }
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(tamano) / Math.log(k));
+        return `${(tamano / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
     }
 }

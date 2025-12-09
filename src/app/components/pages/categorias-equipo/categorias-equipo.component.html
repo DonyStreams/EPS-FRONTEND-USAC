@@ -1,0 +1,171 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <div class="grid">
+                <div class="col-12 md:col-3">
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center">
+                        <div class="bg-blue-100 border-circle p-3 mr-3">
+                            <i class="pi pi-tags text-blue-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-600 text-sm">Categorías totales</span>
+                            <div class="text-900 font-bold text-2xl">{{ stats.total }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center">
+                        <div class="bg-green-100 border-circle p-3 mr-3">
+                            <i class="pi pi-check-circle text-green-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-600 text-sm">Categorías activas</span>
+                            <div class="text-900 font-bold text-2xl">{{ stats.activas }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center">
+                        <div class="bg-orange-100 border-circle p-3 mr-3">
+                            <i class="pi pi-exclamation-circle text-orange-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-600 text-sm">Categorías inactivas</span>
+                            <div class="text-900 font-bold text-2xl">{{ stats.inactivas }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 md:col-3">
+                    <div class="surface-card shadow-1 border-round p-3 flex align-items-center">
+                        <div class="bg-primary-100 border-circle p-3 mr-3">
+                            <i class="pi pi-sitemap text-primary text-2xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-600 text-sm">Categorías raíz</span>
+                            <div class="text-900 font-bold text-2xl">{{ stats.sinPadre }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 xl:col-8">
+        <div class="card">
+            <div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3 mb-3">
+                <div>
+                    <h5 class="m-0">Catálogo de categorías</h5>
+                    <span class="text-600 text-sm">Organiza tus equipos por jerarquías</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="p-input-icon-left">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" placeholder="Buscar" [(ngModel)]="searchValue"
+                               (input)="dt.filterGlobal(searchValue, 'contains')" />
+                    </span>
+                    <button pButton type="button" icon="pi pi-refresh" class="p-button-rounded p-button-text" tooltip="Recargar" (click)="loadCategorias(); loadTree()"></button>
+                    <button pButton type="button" label="Nueva categoría" icon="pi pi-plus" (click)="showCreateDialog()"></button>
+                </div>
+            </div>
+
+            <p-table #dt [value]="categorias" [loading]="loading" [rows]="10" [paginator]="true"
+                     [rowsPerPageOptions]="[10,20,50]"
+                     [globalFilterFields]="['nombre','padreNombre','descripcion']" [filterDelay]="300">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
+                        <th pSortableColumn="padreNombre">Padre <p-sortIcon field="padreNombre"></p-sortIcon></th>
+                        <th>Total equipos</th>
+                        <th>Estado</th>
+                        <th>Actualización</th>
+                        <th style="width: 8rem">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-categoria>
+                    <tr>
+                        <td>
+                            <div class="font-semibold">{{ categoria.nombre }}</div>
+                            <small class="text-600" *ngIf="categoria.descripcion">{{ categoria.descripcion }}</small>
+                        </td>
+                        <td>
+                            <span class="text-sm">{{ categoria.padreNombre || getParentName(categoria.idPadre) }}</span>
+                        </td>
+                        <td>
+                            <span class="font-semibold">{{ categoria.totalEquipos || 0 }}</span>
+                        </td>
+                        <td>
+                            <p-tag [value]="categoria.estado ? 'Activa' : 'Inactiva'" [severity]="getEstadoSeverity(categoria.estado)"></p-tag>
+                        </td>
+                        <td>
+                            <small class="text-600">{{ formatDate(categoria.updatedAt || categoria.createdAt) }}</small>
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="editCategoria(categoria)" tooltip="Editar"></button>
+                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteCategoria(categoria)" tooltip="Eliminar"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6" class="text-center text-600">No se encontraron categorías</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+
+    <div class="col-12 xl:col-4">
+        <div class="card h-full">
+            <div class="flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h5 class="m-0">Jerarquía</h5>
+                    <span class="text-600 text-sm">Vista resumida en árbol</span>
+                </div>
+                <button pButton type="button" icon="pi pi-sync" class="p-button-text p-button-rounded" (click)="loadTree()" tooltip="Recargar árbol"></button>
+            </div>
+            <p-tree [value]="treeData" [loading]="treeLoading" [filter]="true" filterMode="strict" filterPlaceholder="Filtrar" class="w-full"></p-tree>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{ width: '450px' }" [breakpoints]="{ '960px': '90vw', '640px': '95vw' }" [closable]="false">
+    <ng-template pTemplate="header">
+        <span class="text-lg font-semibold">{{ isEditing ? 'Editar categoría' : 'Nueva categoría' }}</span>
+    </ng-template>
+
+    <form [formGroup]="categoriaForm" class="p-fluid grid">
+        <div class="col-12">
+            <label class="font-semibold">Nombre <span class="text-red-500">*</span></label>
+            <input pInputText formControlName="nombre" placeholder="Ej. Agitadores"/>
+            <small class="p-error" *ngIf="categoriaForm.get('nombre')?.invalid && categoriaForm.get('nombre')?.touched">
+                El nombre es obligatorio (3-120 caracteres)
+            </small>
+        </div>
+
+        <div class="col-12">
+            <label class="font-semibold">Descripción</label>
+            <textarea pInputTextarea formControlName="descripcion" rows="2" placeholder="Detalle opcional"></textarea>
+        </div>
+
+        <div class="col-12">
+            <label class="font-semibold">Categoría padre</label>
+            <p-dropdown formControlName="idPadre" [options]="parentOptions" optionLabel="nombre" optionValue="id"
+                        [showClear]="true" placeholder="Sin padre"></p-dropdown>
+        </div>
+
+        <div class="col-12">
+            <p-checkbox formControlName="estado" binary="true" inputId="estado"></p-checkbox>
+            <label class="ml-2" for="estado">Categoría activa</label>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Cancelar" class="p-button-text" (click)="displayDialog = false"></button>
+        <button pButton type="button" label="Guardar" (click)="saveCategoria()"></button>
+    </ng-template>
+</p-dialog>

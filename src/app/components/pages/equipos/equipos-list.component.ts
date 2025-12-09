@@ -5,6 +5,7 @@ import { FtpService } from '../../../service/ftp.service';
 import { KeycloakService } from '../../../service/keycloak.service';
 import { ExcelService } from '../../../service/excel.service';
 import { AreasService, Area } from '../../../service/areas.service';
+import { CategoriasEquipoService, CategoriaEquipo } from '../../../service/categorias-equipo.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
 import { environment } from '../../../../environments/environment';
@@ -61,10 +62,12 @@ export class EquiposListComponent implements OnInit {
     condicionesOperacion: '',
     descripcion: '',
     estado: true,
-    idArea: undefined
+    idArea: undefined,
+    idCategoria: undefined
   };
 
   areas: Area[] = [];
+  categorias: CategoriaEquipo[] = [];
 
   previewUrl: string | null = null;
   mensaje: string | null = null;
@@ -85,7 +88,8 @@ export class EquiposListComponent implements OnInit {
     private messageService: MessageService,
     private router: Router,
     private excelService: ExcelService,
-    private areasService: AreasService
+    private areasService: AreasService,
+    private categoriasService: CategoriasEquipoService
   ) {}
 
   // Métodos de permisos usando Keycloak
@@ -131,6 +135,7 @@ export class EquiposListComponent implements OnInit {
   ngOnInit() {
     this.cargarEquipos();
     this.cargarAreas();
+    this.cargarCategorias();
   }
 
   cargarEquipos() {
@@ -145,6 +150,17 @@ export class EquiposListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar áreas:', error);
+      }
+    });
+  }
+
+  cargarCategorias() {
+    this.categoriasService.getAll({ soloActivas: true }).subscribe({
+      next: (categorias) => {
+        this.categorias = categorias;
+      },
+      error: (error) => {
+        console.error('Error al cargar categorías:', error);
       }
     });
   }
@@ -185,7 +201,8 @@ export class EquiposListComponent implements OnInit {
       condicionesOperacion: '',
       descripcion: '',
       estado: true,
-      idArea: undefined
+      idArea: undefined,
+      idCategoria: undefined
     };
     this.previewUrl = null;
     this.errorImagen = null;
