@@ -109,7 +109,8 @@
                         <th pSortableColumn="fechaFin" style="width: 12%">
                             Fecha Fin <p-sortIcon field="fechaFin"></p-sortIcon>
                         </th>
-                        <th style="width: 12%">Estado</th>
+                        <th style="width: 8%">Estado</th>
+                        <th style="width: 12%">Vigencia</th>
                         <th style="width: 10%">Archivos</th>
                         <th style="width: 10rem">Acciones</th>
                     </tr>
@@ -144,8 +145,14 @@
                             </div>
                         </td>
                         <td>
-                            <p-tag [value]="contrato.estadoDescriptivo" 
-                                   [severity]="getSeverity(contrato.estadoDescriptivo)"
+                            <p-tag [value]="getEstadoLabel(contrato)"
+                                   [severity]="getEstadoSeverity(contrato.estado)"
+                                   [rounded]="true">
+                            </p-tag>
+                        </td>
+                        <td>
+                            <p-tag [value]="getVigenciaLabel(contrato)"
+                                   [severity]="getVigenciaSeverity(getVigenciaLabel(contrato))"
                                    [rounded]="true">
                             </p-tag>
                         </td>

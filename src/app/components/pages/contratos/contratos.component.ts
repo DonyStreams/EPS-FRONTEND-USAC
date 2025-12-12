@@ -906,6 +906,54 @@ export class ContratosComponent implements OnInit {
             default: return 'pi pi-info-circle';
         }
     }
+
+    /**
+     * Determina la etiqueta de vigencia basada en las fechas de inicio/fin.
+     * Lógica:
+     * - Si las fechas no son válidas -> '-'
+     * - Si hoy < fechaInicio -> 'No iniciado'
+     * - Si hoy > fechaFin -> 'Vencido'
+     * - Si fechaFin - hoy <= 30 días -> 'Próximo a vencer'
+     * - En cualquier otro caso -> 'Vigente'
+     */
+    getVigenciaLabel(contrato: any): string {
+        const inicio = this.parseDate(contrato.fechaInicio);
+        const fin = this.parseDate(contrato.fechaFin);
+        if (!inicio || !fin) return '-';
+
+        const hoy = new Date();
+        // normalizar horas para comparar por día
+        const hoyMs = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+        const inicioMs = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()).getTime();
+        const finMs = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate()).getTime();
+
+        const unDia = 24 * 60 * 60 * 1000;
+        const diasRestantes = Math.ceil((finMs - hoyMs) / unDia);
+
+        if (hoyMs < inicioMs) return 'No iniciado';
+        if (hoyMs > finMs) return 'Vencido';
+        if (diasRestantes <= 30) return 'Próximo a vencer';
+        return 'Vigente';
+    }
+
+    getVigenciaSeverity(vigenciaLabel: string): string {
+        switch (vigenciaLabel) {
+            case 'Vigente': return 'success';
+            case 'Próximo a vencer': return 'warning';
+            case 'Vencido': return 'danger';
+            case 'No iniciado': return 'info';
+            default: return 'secondary';
+        }
+    }
+
+    // Mostrar estado activo/inactivo separado de la vigencia basada en fechas
+    getEstadoLabel(contrato: any): string {
+        return contrato.estado === true || contrato.estado === 'true' ? 'Activo' : 'Inactivo';
+    }
+
+    getEstadoSeverity(estado: any): string {
+        return (estado === true || estado === 'true') ? 'success' : 'danger';
+    }
     
     // 🎭 DATOS MOCK (Temporales)
     
