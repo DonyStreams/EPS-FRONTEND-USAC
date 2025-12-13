@@ -188,12 +188,14 @@
 
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="8" class="text-center p-5">
+                        <td colspan="9" class="text-center p-5">
                             <div class="flex flex-column align-items-center">
-                                <i class="pi pi-inbox text-4xl text-400 mb-3"></i>
-                                <span class="text-600 text-lg">No hay contratos registrados</span>
-                                <button pButton pRipple label="Crear Primer Contrato" icon="pi pi-plus" 
-                                        class="p-button-sm mt-3"
+                                <i class="pi pi-file-excel text-5xl text-400 mb-3"></i>
+                                <span class="text-900 font-semibold text-xl mb-2">No hay contratos disponibles</span>
+                                <span class="text-600 text-base mb-1">No se encontraron contratos activos y vigentes en el sistema.</span>
+                                <span class="text-500 text-sm mb-3">Puede crear un nuevo contrato para comenzar a gestionar sus proveedores.</span>
+                                <button pButton pRipple label="Crear Nuevo Contrato" icon="pi pi-plus" 
+                                        class="p-button-success p-button-sm mt-2"
                                         (click)="openNew()"></button>
                             </div>
                         </td>
