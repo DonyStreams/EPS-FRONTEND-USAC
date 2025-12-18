@@ -35,6 +35,9 @@ import { RouterModule } from '@angular/router';
         // Programaciones (Nueva funcionalidad)
         { path: 'programaciones', loadChildren: () => import('./programaciones/programaciones.module').then(m => m.ProgramacionesModule) },
         
+        // Historial de Programaciones
+        { path: 'historial-programaciones', loadChildren: () => import('./historial-programaciones/historial-programaciones.module').then(m => m.HistorialProgramacionesModule) },
+        
         { path: '**', redirectTo: '/notfound' }
     ])],
     exports: [RouterModule]

@@ -61,6 +61,7 @@ export interface Contrato {
     idContrato: number;
     descripcion: string;
     descripcionCompleta?: string;
+    proveedorNombre?: string;
     fechaInicio: Date;
     fechaFin: Date;
     estado: string;
@@ -168,5 +169,40 @@ export class ProgramacionesService {
      */
     crearMantenimiento(programacionId: number): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/programaciones/${programacionId}/crear-mantenimiento`, {});
+    }
+
+    /**
+     * Descarta/Salta una programación vencida y avanza a la siguiente fecha
+     * Similar al comportamiento de "Descartar" en Outlook para eventos recurrentes
+     */
+    descartarProgramacion(programacionId: number, motivo?: string): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/programaciones/${programacionId}/descartar`, { motivo });
+    }
+
+    /**
+     * Obtiene el historial de una programación (ejecutados, saltados, reprogramados)
+     */
+    getHistorial(programacionId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/programaciones/${programacionId}/historial`);
+    }
+
+    /**
+     * Obtiene TODO el historial de programaciones (para vista de bitácora)
+     */
+    getHistorialCompleto(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/programaciones/bitacora/todos`);
+    }
+
+    /**
+     * Obtiene métricas de cumplimiento del mes actual
+     */
+    getMetricasCumplimiento(): Observable<{
+        total: number;
+        ejecutados: number;
+        saltados: number;
+        reprogramados: number;
+        porcentajeCumplimiento: number;
+    }> {
+        return this.http.get<any>(`${this.apiUrl}/programaciones/metricas`);
     }
 }

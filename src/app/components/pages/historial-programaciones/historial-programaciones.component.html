@@ -1,0 +1,214 @@
+<div class="card">
+    <div class="flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="m-0 mb-2">📋 Historial de Programaciones</h3>
+            <p class="text-600 m-0">Registro cronológico de eventos: ejecuciones, descartes y reprogramaciones</p>
+        </div>
+    </div>
+
+    <!-- Cards de métricas -->
+    <div class="grid mb-4">
+        <div class="col-12 md:col-3">
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="flex align-items-center justify-content-center bg-blue-100 border-round mr-3" style="width: 3rem; height: 3rem;">
+                        <i class="pi pi-history text-blue-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="block text-500 font-medium mb-1">Total Eventos</span>
+                        <div class="text-900 font-bold text-xl">{{ metricas.total }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-3">
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="flex align-items-center justify-content-center bg-green-100 border-round mr-3" style="width: 3rem; height: 3rem;">
+                        <i class="pi pi-check-circle text-green-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="block text-500 font-medium mb-1">Ejecutados</span>
+                        <div class="text-900 font-bold text-xl text-green-600">{{ metricas.ejecutados }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-3">
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="flex align-items-center justify-content-center bg-orange-100 border-round mr-3" style="width: 3rem; height: 3rem;">
+                        <i class="pi pi-forward text-orange-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="block text-500 font-medium mb-1">Descartados</span>
+                        <div class="text-900 font-bold text-xl text-orange-600">{{ metricas.saltados }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 md:col-3">
+            <div class="surface-card shadow-1 border-round p-3">
+                <div class="flex align-items-center">
+                    <div class="flex align-items-center justify-content-center border-round mr-3" 
+                         [ngClass]="metricas.porcentajeCumplimiento >= 80 ? 'bg-green-100' : metricas.porcentajeCumplimiento >= 50 ? 'bg-yellow-100' : 'bg-red-100'"
+                         style="width: 3rem; height: 3rem;">
+                        <i class="pi pi-chart-pie text-xl"
+                           [ngClass]="metricas.porcentajeCumplimiento >= 80 ? 'text-green-500' : metricas.porcentajeCumplimiento >= 50 ? 'text-yellow-500' : 'text-red-500'"></i>
+                    </div>
+                    <div>
+                        <span class="block text-500 font-medium mb-1">Cumplimiento</span>
+                        <div class="font-bold text-xl"
+                             [ngClass]="metricas.porcentajeCumplimiento >= 80 ? 'text-green-600' : metricas.porcentajeCumplimiento >= 50 ? 'text-yellow-600' : 'text-red-600'">
+                            {{ metricas.porcentajeCumplimiento }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Banner de filtro activo -->
+    <div *ngIf="programacionIdFiltro" class="surface-100 border-round p-3 mb-3">
+        <div class="flex align-items-center justify-content-between">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-filter text-primary text-xl"></i>
+                <div>
+                    <div class="font-semibold text-900">Filtrado por programación:</div>
+                    <div class="text-600">{{ equipoNombreFiltro }} (ID: {{ programacionIdFiltro }})</div>
+                </div>
+            </div>
+            <button pButton label="Ver Todo" icon="pi pi-times" class="p-button-text" (click)="limpiarFiltro()"></button>
+        </div>
+    </div>
+
+    <p-table 
+        #dt
+        [value]="historial" 
+        [loading]="loading"
+        [paginator]="true" 
+        [rows]="15" 
+        [rowsPerPageOptions]="[15, 25, 50, 100]"
+        [showCurrentPageReport]="true" 
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+        [globalFilterFields]="['equipoNombre', 'equipoSerie', 'tipoMantenimiento', 'motivo', 'usuarioNombre']"
+        styleClass="p-datatable-sm"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        dataKey="idHistorial">
+        
+        <ng-template pTemplate="caption">
+            <div class="flex justify-content-between align-items-center">
+                <span class="p-input-icon-left w-full md:w-20rem">
+                    <i class="pi pi-search"></i>
+                    <input 
+                        pInputText 
+                        type="text" 
+                        (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                        placeholder="Buscar en historial..."
+                        class="w-full" />
+                </span>
+                <button 
+                    pButton 
+                    label="Recargar" 
+                    icon="pi pi-refresh" 
+                    class="p-button-outlined"
+                    (click)="loadHistorial(); loadMetricas()"></button>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="fechaRegistro" style="width: 160px">
+                    Fecha <p-sortIcon field="fechaRegistro"></p-sortIcon>
+                </th>
+                <th pSortableColumn="tipoEvento" style="width: 130px">
+                    Evento <p-sortIcon field="tipoEvento"></p-sortIcon>
+                </th>
+                <th pSortableColumn="equipoNombre">
+                    Equipo <p-sortIcon field="equipoNombre"></p-sortIcon>
+                </th>
+                <th pSortableColumn="tipoMantenimiento" style="width: 150px">
+                    Tipo <p-sortIcon field="tipoMantenimiento"></p-sortIcon>
+                </th>
+                <th style="width: 200px">
+                    Fechas
+                </th>
+                <th pSortableColumn="motivo">
+                    Motivo
+                </th>
+                <th pSortableColumn="usuarioNombre" style="width: 150px">
+                    Usuario <p-sortIcon field="usuarioNombre"></p-sortIcon>
+                </th>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-registro>
+            <tr>
+                <td>
+                    <div class="text-sm">
+                        <i class="pi pi-clock text-500 mr-1"></i>
+                        {{ formatDate(registro.fechaRegistro) }}
+                    </div>
+                </td>
+                <td>
+                    <p-tag 
+                        [value]="getTipoEventoLabel(registro.tipoEvento)" 
+                        [severity]="getTipoEventoSeverity(registro.tipoEvento)"
+                        [icon]="getTipoEventoIcon(registro.tipoEvento)">
+                    </p-tag>
+                </td>
+                <td>
+                    <div class="flex align-items-center">
+                        <i class="pi pi-desktop text-primary mr-2"></i>
+                        <div>
+                            <div class="font-semibold">{{ registro.equipoNombre || 'Sin equipo' }}</div>
+                            <small class="text-500" *ngIf="registro.equipoSerie">
+                                S/N: {{ registro.equipoSerie }}
+                            </small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="text-600">{{ registro.tipoMantenimiento || 'N/A' }}</span>
+                </td>
+                <td>
+                    <div class="text-sm">
+                        <div class="flex align-items-center mb-1">
+                            <span class="text-500 mr-2">Original:</span>
+                            <span class="font-medium">{{ formatDateOnly(registro.fechaOriginal) }}</span>
+                        </div>
+                        <div class="flex align-items-center" *ngIf="registro.fechaNueva">
+                            <span class="text-500 mr-2">Nueva:</span>
+                            <span class="font-medium text-primary">{{ formatDateOnly(registro.fechaNueva) }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="white-space-normal text-600 text-sm">
+                        {{ registro.motivo || 'Sin motivo especificado' }}
+                    </div>
+                </td>
+                <td>
+                    <div class="flex align-items-center" *ngIf="registro.usuarioNombre">
+                        <i class="pi pi-user text-500 mr-2"></i>
+                        <span class="text-sm">{{ registro.usuarioNombre }}</span>
+                    </div>
+                    <span class="text-500 text-sm" *ngIf="!registro.usuarioNombre">Sistema</span>
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="7" class="text-center p-5">
+                    <div class="flex flex-column align-items-center">
+                        <i class="pi pi-inbox text-4xl text-300 mb-3"></i>
+                        <span class="text-600">No hay registros en el historial</span>
+                        <small class="text-400">Los eventos de programaciones aparecerán aquí</small>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

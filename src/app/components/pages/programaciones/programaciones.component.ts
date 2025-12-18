@@ -104,6 +104,20 @@ export class ProgramacionesComponent implements OnInit {
     equipos: Equipo[] = [];
     tiposMantenimiento: TipoMantenimiento[] = [];
     contratosDisponibles: Contrato[] = [];
+    
+    // Opciones de frecuencia para dropdown
+    frecuenciaOpciones = [
+        { label: 'Semanal (7 días)', value: 7 },
+        { label: 'Quincenal (15 días)', value: 15 },
+        { label: 'Mensual (30 días)', value: 30 },
+        { label: 'Bimestral (60 días)', value: 60 },
+        { label: 'Trimestral (90 días)', value: 90 },
+        { label: 'Cuatrimestral (120 días)', value: 120 },
+        { label: 'Semestral (180 días)', value: 180 },
+        { label: 'Anual (365 días)', value: 365 },
+        { label: 'Personalizado...', value: -1 }
+    ];
+    frecuenciaPersonalizada: boolean = false;
 
     constructor(
         private messageService: MessageService,
@@ -213,10 +227,10 @@ export class ProgramacionesComponent implements OnInit {
     }
 
     /**
-     * Carga los tipos de mantenimiento
+     * Carga los tipos de mantenimiento activos
      */
     loadTiposMantenimiento(): void {
-        this.http.get<TipoMantenimiento[]>(`${this.API_URL}/tipos-mantenimiento`).subscribe({
+        this.http.get<TipoMantenimiento[]>(`${this.API_URL}/tipos-mantenimiento/activos`).subscribe({
             next: (data) => {
                 this.tiposMantenimiento = data;
             },
@@ -244,18 +258,21 @@ export class ProgramacionesComponent implements OnInit {
                 console.log('📊 Cantidad de contratos:', data.length);
 
                 // Transformar los datos para que tengan la estructura correcta
-                this.contratosDisponibles = data.map(contrato => ({
-                    idContrato: contrato.idContrato,
-                    descripcion: contrato.descripcion,
-                    descripcionCompleta: contrato.descripcionCompleta || `${contrato.descripcion} - ${contrato.proveedorNombre}`,
-                    fechaInicio: new Date(contrato.fechaInicio),
-                    fechaFin: new Date(contrato.fechaFin),
-                    estado: contrato.estado,
-                    proveedorNombre: contrato.proveedorNombre,
-                    proveedor: {
-                        nombre: contrato.proveedorNombre
-                    }
-                }));
+                this.contratosDisponibles = data.map(contrato => {
+                    const nombreProveedor = contrato.proveedorNombre || contrato.proveedor?.nombre || 'Sin proveedor';
+                    return {
+                        idContrato: contrato.idContrato,
+                        descripcion: contrato.descripcion,
+                        descripcionCompleta: contrato.descripcionCompleta || `${contrato.descripcion} - ${nombreProveedor}`,
+                        fechaInicio: new Date(contrato.fechaInicio),
+                        fechaFin: new Date(contrato.fechaFin),
+                        estado: contrato.estado,
+                        proveedorNombre: nombreProveedor,
+                        proveedor: {
+                            nombre: nombreProveedor
+                        }
+                    };
+                });
 
                 console.log('📝 contratosDisponibles asignado:', this.contratosDisponibles);
                 console.log('📊 Cantidad en contratosDisponibles:', this.contratosDisponibles.length);
@@ -296,11 +313,18 @@ export class ProgramacionesComponent implements OnInit {
             this.programacion.tipoMantenimientoId
         ).subscribe({
             next: (data) => {
-                this.contratosDisponibles = data.map(contrato => ({
-                    ...contrato,
-                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`,
-                    proveedorNombre: contrato.proveedor?.nombre || 'Sin proveedor'
-                }));
+                // Mapear datos de forma consistente, manejando ambas estructuras posibles
+                this.contratosDisponibles = data.map((contrato: any) => {
+                    const nombreProveedor = contrato.proveedorNombre || contrato.proveedor?.nombre || 'Sin proveedor';
+                    return {
+                        ...contrato,
+                        descripcionCompleta: `${contrato.descripcion} - ${nombreProveedor}`,
+                        proveedorNombre: nombreProveedor,
+                        proveedor: {
+                            nombre: nombreProveedor
+                        }
+                    };
+                });
                 console.log('✅ Contratos vigentes obtenidos:', this.contratosDisponibles);
                 
                 // Si el contrato actual no está en la lista, cargarlo
@@ -347,6 +371,7 @@ export class ProgramacionesComponent implements OnInit {
     openNew(): void {
         this.programacion = this.initializeProgramacion();
         this.isEditing = false;
+        this.frecuenciaPersonalizada = false;
         this.displayDialog = true;
 
         // 🚨 CARGAR CONTRATOS CUANDO SE ABRE EL DIÁLOGO
@@ -376,6 +401,10 @@ export class ProgramacionesComponent implements OnInit {
         
         console.log('📋 Programación preparada para edición:', this.programacion);
         
+        // Detectar si la frecuencia es personalizada (no está en las opciones predefinidas)
+        const frecuenciasPredefinidas = [7, 15, 30, 60, 90, 120, 180, 365];
+        this.frecuenciaPersonalizada = !frecuenciasPredefinidas.includes(this.programacion.frecuenciaDias);
+        
         this.isEditing = true;
         this.displayDialog = true;
         
@@ -398,13 +427,19 @@ export class ProgramacionesComponent implements OnInit {
             this.programacion.tipoMantenimientoId
         ).subscribe({
             next: (data) => {
-                this.contratosDisponibles = data.map(contrato => ({
-                    ...contrato,
-                    descripcionCompleta: `${contrato.descripcion} - ${contrato.proveedor?.nombre || 'Sin proveedor'}`,
-                    proveedorNombre: contrato.proveedor?.nombre || 'Sin proveedor',
-                    esContratoActual: false,
-                    noVigente: false
-                }));
+                this.contratosDisponibles = data.map((contrato: any) => {
+                    const nombreProveedor = contrato.proveedorNombre || contrato.proveedor?.nombre || 'Sin proveedor';
+                    return {
+                        ...contrato,
+                        descripcionCompleta: `${contrato.descripcion} - ${nombreProveedor}`,
+                        proveedorNombre: nombreProveedor,
+                        proveedor: {
+                            nombre: nombreProveedor
+                        },
+                        esContratoActual: false,
+                        noVigente: false
+                    };
+                });
                 
                 // Verificar si el contrato actual está en la lista
                 const contratoEnLista = this.contratosDisponibles.find(c => c.idContrato === contratoIdActual);
@@ -413,14 +448,17 @@ export class ProgramacionesComponent implements OnInit {
                     // El contrato actual NO está vigente, añadirlo a la lista marcado como no vigente
                     console.log('⚠️ Contrato actual no vigente, añadiéndolo a la lista');
                     
+                    const nombreProveedorActual = (contratoActual as any).proveedorNombre || contratoActual.proveedor?.nombre || 'Sin proveedor';
                     const contratoNoVigente: any = {
                         idContrato: contratoActual.idContrato,
                         descripcion: contratoActual.descripcion || 'Contrato anterior',
-                        descripcionCompleta: `⚠️ ${contratoActual.descripcion || 'Contrato anterior'} - ${contratoActual.proveedor?.nombre || 'Sin proveedor'} (NO VIGENTE)`,
-                        proveedorNombre: contratoActual.proveedor?.nombre || 'Sin proveedor',
+                        descripcionCompleta: `⚠️ ${contratoActual.descripcion || 'Contrato anterior'} - ${nombreProveedorActual} (NO VIGENTE)`,
+                        proveedorNombre: nombreProveedorActual,
                         fechaInicio: contratoActual.fechaInicio,
                         fechaFin: contratoActual.fechaFin,
-                        proveedor: contratoActual.proveedor,
+                        proveedor: {
+                            nombre: nombreProveedorActual
+                        },
                         esContratoActual: true,
                         noVigente: true
                     };
@@ -601,26 +639,30 @@ export class ProgramacionesComponent implements OnInit {
     }
 
     /**
+     * Maneja el cambio de frecuencia desde el dropdown
+     */
+    onFrecuenciaChange(event: any): void {
+        const valor = event.value;
+        
+        if (valor === -1) {
+            // Seleccionó "Personalizado"
+            this.frecuenciaPersonalizada = true;
+            this.programacion.frecuenciaDias = 30; // Valor por defecto
+        } else {
+            this.frecuenciaPersonalizada = false;
+            this.programacion.frecuenciaDias = valor;
+        }
+        
+        this.calcularProximaFecha();
+    }
+
+    /**
      * Establece una frecuencia predefinida y recalcula la próxima fecha
      */
     setFrecuencia(dias: number): void {
         this.programacion.frecuenciaDias = dias;
+        this.frecuenciaPersonalizada = false;
         this.calcularProximaFecha();
-        
-        const labels: { [key: number]: string } = {
-            30: 'Mensual',
-            60: 'Bimestral',
-            90: 'Trimestral',
-            180: 'Semestral',
-            365: 'Anual'
-        };
-        
-        this.messageService.add({
-            severity: 'info',
-            summary: 'Frecuencia establecida',
-            detail: `${labels[dias]} (${dias} días)`,
-            life: 2000
-        });
     }
 
     /**
@@ -742,7 +784,64 @@ export class ProgramacionesComponent implements OnInit {
         });
     }
 
+    /**
+     * Descartar/Saltar una programación vencida y avanzar a la siguiente fecha.
+     * Similar al comportamiento de "Descartar" en Outlook para eventos recurrentes.
+     */
+    descartarProgramacion(programacion: ProgramacionMantenimiento): void {
+        if (!programacion.idProgramacion) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'La programación seleccionada no tiene un identificador válido'
+            });
+            return;
+        }
 
+        const fechaActual = programacion.fechaProximoMantenimiento 
+            ? new Date(programacion.fechaProximoMantenimiento).toLocaleDateString('es-GT')
+            : 'N/A';
+
+        this.confirmationService.confirm({
+            message: `<div class="mb-3">
+                <p><strong>Equipo:</strong> ${programacion.equipo?.nombre || 'N/A'}</p>
+                <p><strong>Fecha programada:</strong> ${fechaActual} <span class="text-red-500">(VENCIDA)</span></p>
+                <p class="mt-3">¿Descartar este mantenimiento y avanzar a la siguiente fecha según la frecuencia (${programacion.frecuenciaDias} días)?</p>
+                <p class="text-500 text-sm mt-2"><i class="pi pi-info-circle mr-1"></i>Esta acción quedará registrada en el historial.</p>
+            </div>`,
+            header: 'Descartar Mantenimiento Vencido',
+            icon: 'pi pi-forward',
+            acceptLabel: 'Descartar y Avanzar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.loading = true;
+                const motivo = 'Descartado manualmente - no se ejecutó en fecha programada';
+                
+                this.programacionesService.descartarProgramacion(programacion.idProgramacion!, motivo).subscribe({
+                    next: (response) => {
+                        const nuevaFecha = response.nuevaFechaProximo || 'próxima fecha';
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Programación Avanzada',
+                            detail: `Se descartó el mantenimiento vencido. Nueva fecha: ${nuevaFecha}`,
+                            life: 5000
+                        });
+                        this.loadProgramaciones();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error descartando programación:', error);
+                        this.loading = false;
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: error?.error || 'No se pudo descartar la programación'
+                        });
+                    }
+                });
+            }
+        });
+    }
 
     /**
      * Exportar a CSV
