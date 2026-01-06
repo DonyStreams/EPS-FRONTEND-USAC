@@ -97,8 +97,20 @@ export class ProgramacionesComponent implements OnInit {
     // Modal crear/editar
     displayDialog: boolean = false;
     displayDetailDialog: boolean = false;
+    displayReprogramarDialog: boolean = false;
     isEditing: boolean = false;
     programacion: ProgramacionMantenimiento = this.initializeProgramacion();
+    
+    // Variables para reprogramar
+    reprogramarData: {
+        programacion: ProgramacionMantenimiento | null;
+        nuevaFecha: Date | null;
+        motivo: string;
+    } = {
+        programacion: null,
+        nuevaFecha: null,
+        motivo: ''
+    };
 
     // Listas para dropdowns
     equipos: Equipo[] = [];
@@ -841,6 +853,84 @@ export class ProgramacionesComponent implements OnInit {
                 });
             }
         });
+    }
+
+    /**
+     * Abre el diálogo para reprogramar un mantenimiento
+     */
+    openReprogramarDialog(programacion: ProgramacionMantenimiento): void {
+        this.reprogramarData = {
+            programacion: programacion,
+            nuevaFecha: programacion.fechaProximoMantenimiento 
+                ? new Date(programacion.fechaProximoMantenimiento) 
+                : new Date(),
+            motivo: ''
+        };
+        this.displayReprogramarDialog = true;
+    }
+
+    /**
+     * Confirma la reprogramación del mantenimiento
+     */
+    confirmarReprogramacion(): void {
+        if (!this.reprogramarData.programacion || !this.reprogramarData.nuevaFecha) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Debe seleccionar una nueva fecha'
+            });
+            return;
+        }
+
+        if (!this.reprogramarData.motivo || this.reprogramarData.motivo.trim().length < 5) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Debe ingresar un motivo para la reprogramación (mínimo 5 caracteres)'
+            });
+            return;
+        }
+
+        this.loading = true;
+        const fechaFormateada = this.reprogramarData.nuevaFecha.toISOString().split('T')[0];
+
+        this.programacionesService.reprogramarProgramacion(
+            this.reprogramarData.programacion.idProgramacion!,
+            fechaFormateada,
+            this.reprogramarData.motivo
+        ).subscribe({
+            next: (response) => {
+                this.displayReprogramarDialog = false;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Reprogramado',
+                    detail: `Mantenimiento reprogramado para el ${response.nuevaFecha}`,
+                    life: 5000
+                });
+                this.loadProgramaciones();
+            },
+            error: (error) => {
+                console.error('❌ Error reprogramando:', error);
+                this.loading = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: error?.error || 'No se pudo reprogramar el mantenimiento'
+                });
+            }
+        });
+    }
+
+    /**
+     * Cancela la reprogramación
+     */
+    cancelarReprogramacion(): void {
+        this.displayReprogramarDialog = false;
+        this.reprogramarData = {
+            programacion: null,
+            nuevaFecha: null,
+            motivo: ''
+        };
     }
 
     /**

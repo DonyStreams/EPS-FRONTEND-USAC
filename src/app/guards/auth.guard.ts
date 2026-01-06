@@ -36,7 +36,7 @@ export class AuthGuard implements CanActivate {
       if (!hasRequiredRole) {
         console.warn('[AuthGuard] ❌ Acceso denegado. Roles requeridos:', requiredRoles);
         console.warn('[AuthGuard] 👤 Roles del usuario:', this.keycloakService.getUserRoles());
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/administracion/dashboard']);
         return false;
       }
     }

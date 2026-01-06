@@ -9,74 +9,11 @@
                 </div>
 
                 <div>
-                    <!-- Solo botón de Keycloak -->
                     <button pButton pRipple label="Iniciar Sesión con Keycloak" icon="pi pi-key" 
                             class="w-full p-3 text-xl" 
                             [disabled]="loading" [loading]="loading" (click)="loginWithKeycloak()"></button>
-                    
-                    <!-- Botones de testing (temporales) -->
-                    <div class="mt-4 p-3 surface-100 border-round">
-                        <div class="text-center mb-2">
-                            <strong>Panel de Testing</strong>
-                        </div>
-                        <div class="flex flex-column gap-2">
-                            <button pButton pRipple label="Verificar Estado de Autenticación" 
-                                    icon="pi pi-info-circle" 
-                                    class="p-button-sm p-button-info" 
-                                    (click)="checkAuthStatus()"></button>
-                            <button pButton pRipple label="Forzar Logout" 
-                                    icon="pi pi-sign-out" 
-                                    class="p-button-sm p-button-danger" 
-                                    (click)="forceLogout()"></button>
-                            <button pButton pRipple label="Probar Ruta Protegida" 
-                                    icon="pi pi-shield" 
-                                    class="p-button-sm p-button-warning" 
-                                    (click)="testProtectedRoute()"></button>
-                            
-                            <!-- 🆕 NUEVOS BOTONES FTP -->
-                            <div class="mt-3 p-2 surface-200 border-round">
-                                <div class="text-center mb-2">
-                                    <strong>🔧 Testing FTP</strong>
-                                </div>
-                                <div class="flex flex-column gap-2">
-                                    <button pButton pRipple label="Probar Conexión FTP" 
-                                            icon="pi pi-server" 
-                                            class="p-button-sm p-button-success" 
-                                            [loading]="testingFTP"
-                                            (click)="testFTPConnection()"></button>
-                                    <button pButton pRipple label="Probar Upload FTP" 
-                                            icon="pi pi-upload" 
-                                            class="p-button-sm p-button-help" 
-                                            [loading]="testingUpload"
-                                            (click)="testFTPUpload()"></button>
-                                </div>
-                            </div>
-
-                            <!-- 🆕 NUEVOS BOTONES IMÁGENES LOCAL -->
-                            <div class="mt-3 p-2 surface-300 border-round">
-                                <div class="text-center mb-2">
-                                    <strong>📸 Testing Imágenes Local</strong>
-                                </div>
-                                <div class="flex flex-column gap-2">
-                                    <button pButton pRipple label="Probar Sistema Imágenes" 
-                                            icon="pi pi-image" 
-                                            class="p-button-sm p-button-info" 
-                                            [loading]="testingImagenes"
-                                            (click)="testImageSystem()"></button>
-                                    <button pButton pRipple label="Subir Imagen Test" 
-                                            icon="pi pi-camera" 
-                                            class="p-button-sm p-button-secondary" 
-                                            [loading]="testingImageUpload"
-                                            (click)="testImageUpload()"></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- 🆕 Toast para mostrar mensajes -->
-<p-toast position="top-right"></p-toast>

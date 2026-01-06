@@ -168,6 +168,12 @@
                                     class="p-button-text p-button-success p-button-sm"
                                     (click)="crearMantenimiento(programacion)" pTooltip="Crear ejecución"
                                     [disabled]="!programacion.activa"></button>
+                                <!-- Botón Reprogramar: Cambiar fecha manualmente -->
+                                <button pButton pRipple icon="pi pi-calendar-times"
+                                    class="p-button-text p-button-help p-button-sm"
+                                    (click)="openReprogramarDialog(programacion)" 
+                                    pTooltip="Reprogramar a otra fecha"
+                                    *ngIf="programacion.activa"></button>
                                 <!-- Botón Descartar: Solo visible si está vencida -->
                                 <button pButton pRipple icon="pi pi-forward"
                                     class="p-button-text p-button-danger p-button-sm"
@@ -506,6 +512,76 @@
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Cerrar" icon="pi pi-times" class="p-button-text"
             (click)="displayDetailDialog = false"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo para Reprogramar -->
+<p-dialog header="Reprogramar Mantenimiento" [(visible)]="displayReprogramarDialog" [modal]="true"
+    [style]="{width: '500px'}" class="p-fluid">
+    
+    <ng-template pTemplate="content">
+        <div *ngIf="reprogramarData.programacion">
+            <!-- Info del equipo -->
+            <div class="surface-100 border-round p-3 mb-4">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-desktop text-primary"></i>
+                    <span class="font-semibold">{{reprogramarData.programacion.equipo?.nombre}}</span>
+                </div>
+                <div class="text-500 text-sm">
+                    Tipo: {{reprogramarData.programacion.tipoMantenimiento?.nombre}} | 
+                    Frecuencia: {{reprogramarData.programacion.frecuenciaDias}} días
+                </div>
+            </div>
+
+            <!-- Fecha actual -->
+            <div class="mb-4">
+                <label class="block text-500 mb-2">Fecha programada actual:</label>
+                <div class="font-semibold text-lg">
+                    {{reprogramarData.programacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}
+                </div>
+            </div>
+
+            <!-- Nueva fecha -->
+            <div class="field mb-4">
+                <label for="nuevaFecha" class="block font-medium mb-2">
+                    <i class="pi pi-calendar mr-1"></i>Nueva fecha *
+                </label>
+                <p-calendar 
+                    id="nuevaFecha"
+                    [(ngModel)]="reprogramarData.nuevaFecha" 
+                    [showIcon]="true"
+                    dateFormat="dd/mm/yy"
+                    [minDate]="reprogramarData.programacion.fechaProximoMantenimiento"
+                    [style]="{width: '100%'}"
+                    placeholder="Seleccione la nueva fecha">
+                    
+                </p-calendar>
+            </div>
+
+            <!-- Motivo -->
+            <div class="field">
+                <label for="motivoReprogramacion" class="block font-medium mb-2">
+                    <i class="pi pi-comment mr-1"></i>Motivo de la reprogramación *
+                </label>
+                <textarea 
+                    pInputTextarea 
+                    id="motivoReprogramacion"
+                    [(ngModel)]="reprogramarData.motivo" 
+                    rows="3"
+                    placeholder="Ej: Proveedor no disponible en fecha original, equipo en uso, etc."
+                    [style]="{width: '100%'}">
+                </textarea>
+                <small class="text-500">Mínimo 5 caracteres. Este registro quedará en el historial.</small>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
+            class="p-button-text" (click)="cancelarReprogramacion()"></button>
+        <button pButton pRipple label="Reprogramar" icon="pi pi-calendar-plus" 
+            class="p-button-help" (click)="confirmarReprogramacion()"
+            [loading]="loading"></button>
     </ng-template>
 </p-dialog>
 

@@ -180,6 +180,17 @@ export class ProgramacionesService {
     }
 
     /**
+     * Reprograma un mantenimiento a una fecha específica elegida por el usuario
+     * A diferencia de descartar, aquí el usuario elige la fecha manualmente
+     */
+    reprogramarProgramacion(programacionId: number, nuevaFecha: string, motivo?: string): Observable<any> {
+        return this.http.post<any>(`${this.apiUrl}/programaciones/${programacionId}/reprogramar`, { 
+            nuevaFecha, 
+            motivo 
+        });
+    }
+
+    /**
      * Obtiene el historial de una programación (ejecutados, saltados, reprogramados)
      */
     getHistorial(programacionId: number): Observable<any[]> {
