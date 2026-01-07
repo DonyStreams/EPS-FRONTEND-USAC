@@ -1,20 +1,21 @@
 // Estilos específicos para el componente de programaciones
+// Usa variables CSS de PrimeNG para compatibilidad con tema oscuro
 
 :host ::ng-deep {
     .p-datatable {
         .p-datatable-header {
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
+            background-color: var(--surface-card);
+            border: 1px solid var(--surface-border);
             border-bottom: none;
             border-radius: 12px 12px 0 0;
             padding: 1.5rem;
         }
 
         .p-datatable-thead>tr>th {
-            background-color: #f9fafb;
-            color: #374151;
+            background-color: var(--surface-ground);
+            color: var(--text-color);
             font-weight: 600;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--surface-border);
             padding: 1rem;
         }
 
@@ -23,7 +24,7 @@
 
             >td {
                 padding: 1rem;
-                border-bottom: 1px solid #f3f4f6;
+                border-bottom: 1px solid var(--surface-border);
             }
 
             &:last-child>td {
@@ -32,24 +33,24 @@
         }
 
         &.p-datatable-striped .p-datatable-tbody>tr:nth-child(even) {
-            background-color: #f9fafb;
+            background-color: var(--surface-ground);
         }
     }
 
     .p-toolbar {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
+        background: var(--surface-card);
+        border: 1px solid var(--surface-border);
         border-radius: 12px;
         padding: 1.25rem;
     }
 
     .p-dialog {
         .p-dialog-header {
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--surface-border);
         }
 
         .p-dialog-footer {
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid var(--surface-border);
         }
     }
 
@@ -91,10 +92,10 @@
 }
 
 .card {
-    background: #ffffff;
+    background: var(--surface-card);
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--surface-border);
     margin-bottom: 1.5rem;
     padding: 1.5rem;
     transition: transform 0.2s, box-shadow 0.2s;
@@ -128,6 +129,11 @@
 
 .fecha-normal {
     color: #10b981 !important;
+}
+
+// Texto secundario adaptable
+.text-gray-500 {
+    color: var(--text-color-secondary) !important;
 }
 
 // Responsive improvements

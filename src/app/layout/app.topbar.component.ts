@@ -150,6 +150,11 @@ export class AppTopBarComponent {
     items!: MenuItem[];
     userMenuItems: MenuItem[] = [];
     userMenuVisible: boolean = false;
+    isDarkMode: boolean = false;
+    
+    // Temas: light y dark
+    private lightTheme = 'lara-light-indigo';
+    private darkTheme = 'lara-dark-indigo';
 
     @ViewChild('menubutton') menuButton!: ElementRef;
 
@@ -163,11 +168,42 @@ export class AppTopBarComponent {
         private router: Router
     ) { 
         this.initUserMenu();
+        this.initDarkMode();
         
         // Cerrar menú cuando se hace clic fuera
         document.addEventListener('click', (event) => {
             this.userMenuVisible = false;
         });
+    }
+
+    initDarkMode() {
+        // Cargar preferencia guardada
+        const savedTheme = localStorage.getItem('darkMode');
+        this.isDarkMode = savedTheme === 'true';
+        
+        if (this.isDarkMode) {
+            this.applyTheme(this.darkTheme, 'dark');
+        }
+    }
+
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        
+        const theme = this.isDarkMode ? this.darkTheme : this.lightTheme;
+        const colorScheme = this.isDarkMode ? 'dark' : 'light';
+        
+        this.applyTheme(theme, colorScheme);
+        
+        // Guardar preferencia
+        localStorage.setItem('darkMode', String(this.isDarkMode));
+    }
+
+    private applyTheme(theme: string, colorScheme: string) {
+        this.layoutService.config.update((config) => ({
+            ...config,
+            theme: theme,
+            colorScheme: colorScheme,
+        }));
     }
 
     initUserMenu() {

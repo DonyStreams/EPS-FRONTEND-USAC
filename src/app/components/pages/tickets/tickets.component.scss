@@ -1,42 +1,43 @@
 /* Estilos para el componente de tickets */
+/* Compatible con tema oscuro usando variables CSS de PrimeNG */
 
 .ticket-priority {
     &.high {
-        color: #e74c3c;
+        color: var(--red-500);
     }
     
     &.medium {
-        color: #f39c12;
+        color: var(--orange-500);
     }
     
     &.low {
-        color: #27ae60;
+        color: var(--green-500);
     }
     
     &.critical {
-        color: #8e44ad;
+        color: var(--purple-500);
     }
 }
 
 .ticket-status {
     &.open {
-        color: #e74c3c;
+        color: var(--red-500);
     }
     
     &.assigned {
-        color: #f39c12;
+        color: var(--orange-500);
     }
     
     &.in-progress {
-        color: #3498db;
+        color: var(--blue-500);
     }
     
     &.resolved {
-        color: #27ae60;
+        color: var(--green-500);
     }
     
     &.closed {
-        color: #95a5a6;
+        color: var(--text-color-secondary);
     }
 }
 
@@ -54,13 +55,13 @@ textarea#comentarioTexto {
     min-height: 100px !important;
     
     &::placeholder {
-        color: #9ca3af !important;
+        color: var(--text-color-secondary) !important;
         font-style: italic;
     }
     
     &:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 59, 130, 246), 0.25) !important;
     }
 }
 
@@ -70,7 +71,7 @@ textarea#comentarioTexto {
 }
 
 .comment-item {
-    background-color: #f8f9fa;
+    background-color: var(--surface-100);
     
     .comment-content {
         margin-top: 0.5rem;
@@ -94,7 +95,7 @@ textarea#comentarioTexto {
 
 /* Loading state */
 .loading-skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--surface-200) 25%, var(--surface-300) 50%, var(--surface-200) 75%);
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
 }
@@ -114,12 +115,12 @@ textarea#comentarioTexto {
     padding: 0.5rem;
     
     &.p-button-info {
-        background-color: #3498db;
-        border-color: #3498db;
+        background-color: var(--blue-500);
+        border-color: var(--blue-500);
         
         &:hover {
-            background-color: #2980b9;
-            border-color: #2980b9;
+            background-color: var(--blue-600);
+            border-color: var(--blue-600);
         }
     }
 }
@@ -158,16 +159,16 @@ textarea#comentarioTexto {
         }
 
         &::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: var(--surface-100);
             border-radius: 10px;
         }
 
         &::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
+            background: var(--surface-300);
             border-radius: 10px;
             
             &:hover {
-                background: #a8a8a8;
+                background: var(--surface-400);
             }
         }
     }

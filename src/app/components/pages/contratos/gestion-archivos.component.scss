@@ -1,3 +1,5 @@
+/* Estilos para gestión de archivos - Compatible con tema oscuro */
+
 :host ::ng-deep {
     .p-fileupload-choose {
         margin-right: 0.5rem;
@@ -19,26 +21,27 @@
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1rem;
+    background: var(--surface-card);
 }
 
 .bg-blue-50 {
-    background-color: #f0f9ff;
-    border-left: 4px solid #3b82f6;
+    background-color: var(--blue-50);
+    border-left: 4px solid var(--blue-500);
 }
 
 .bg-green-50 {
-    background-color: #f0fdf4;
-    border-left: 4px solid #10b981;
+    background-color: var(--green-50);
+    border-left: 4px solid var(--green-500);
 }
 
 .text-gray-400 {
-    color: #9ca3af;
+    color: var(--text-color-secondary);
 }
 
 .text-gray-500 {
-    color: #6b7280;
+    color: var(--text-color-secondary);
 }
 
 .text-gray-600 {
-    color: #4b5563;
+    color: var(--text-color);
 }

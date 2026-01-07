@@ -12,7 +12,17 @@
         <i class="pi pi-ellipsis-v"></i>
     </button>
 
-    <div #topbarmenu class="layout-topbar-menu" [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">                
+    <div #topbarmenu class="layout-topbar-menu" [ngClass]="{'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible}">
+            <!-- Botón Dark Mode -->
+            <button class="p-link layout-topbar-button" 
+                    type="button" 
+                    (click)="toggleDarkMode()"
+                    [pTooltip]="isDarkMode ? 'Modo Claro' : 'Modo Oscuro'"
+                    tooltipPosition="bottom">
+                <i class="pi" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
+            </button>
+            
+            <!-- Botón Usuario -->
             <button class="p-link layout-topbar-button" 
                     #userMenuButton
                     type="button" 
