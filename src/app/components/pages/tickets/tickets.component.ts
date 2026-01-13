@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { TicketsService, Ticket, ComentarioTicketResponse, EvidenciaTicket } from '../../../service/tickets.service';
 import { EquiposService } from '../../../service/equipos.service';
@@ -92,7 +93,8 @@ export class TicketsComponent implements OnInit {
         private usuariosService: UsuariosService,
         public keycloakService: KeycloakService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService,
+        private route: ActivatedRoute
     ) {}
 
     ngOnInit() {
@@ -100,6 +102,16 @@ export class TicketsComponent implements OnInit {
         this.cargarDatos();
         this.cargarEquipos();
         this.cargarUsuarios();
+        
+        // Verificar si viene con parámetro para abrir nuevo ticket
+        this.route.queryParams.subscribe(params => {
+            if (params['action'] === 'nuevo') {
+                // Esperar un poco para que los datos se carguen
+                setTimeout(() => {
+                    this.abrirNuevoTicket();
+                }, 500);
+            }
+        });
     }
 
     /**

@@ -1,270 +1,661 @@
-<div class="card">
-    <h5>Ejecuciones de Mantenimiento</h5>
+<div class="grid">
+    <p-toast></p-toast>
+    <p-confirmDialog></p-confirmDialog>
     
-    <p-toolbar styleClass="mb-4">
-        <ng-template pTemplate="left">
-            <div class="flex align-items-center gap-2">
-                <h5 class="m-0">Ejecuciones de Mantenimiento</h5>
-                <p-tag value="Gestión" severity="info"></p-tag>
-            </div>
-        </ng-template>
-        <ng-template pTemplate="right">
-            <div class="flex gap-2">
-                <span class="p-input-icon-left">
-                    <i class="pi pi-search"></i>
-                    <input pInputText type="text" placeholder="Buscar equipo, proveedor, estado..." 
-                        (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
-                        class="w-full" />
-                </span>
-                <button pButton pRipple label="Ver Calendario" icon="pi pi-calendar" 
-                    class="p-button-outlined"
-                    routerLink="/administracion/mantenimientos"
-                    pTooltip="Ver ejecuciones en calendario"></button>
-            </div>
-        </ng-template>
-    </p-toolbar>
+    <!-- Título y descripción -->
+    <div class="col-12">
+        <div class="card">
+            <h5>Ejecuciones de Mantenimiento</h5>
+            <p class="text-600 line-height-3 m-0 mb-3">Gestione y dé seguimiento a las ejecuciones de mantenimientos 
+                programados, en proceso y completados.</p>
+        </div>
+    </div>
 
-    <p-table #dt [value]="ejecuciones" 
-        [loading]="loading" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10, 25, 50]"
-        [showCurrentPageReport]="true" currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-        [rowHover]="true" [globalFilterFields]="['equipoNombre', 'proveedorNombre', 'contratoDescripcion', 'estado']"
-        styleClass="p-datatable-sm">
-        
-        <ng-template pTemplate="header">
-            <tr>
-                <th pSortableColumn="fechaEjecucion" style="width: 200px">
-                    Fecha Programada <p-sortIcon field="fechaEjecucion"></p-sortIcon>
-                </th>
-                <th pSortableColumn="equipoNombre">
-                    Equipo <p-sortIcon field="equipoNombre"></p-sortIcon>
-                </th>
-                <th pSortableColumn="proveedorNombre">
-                    Proveedor <p-sortIcon field="proveedorNombre"></p-sortIcon>
-                </th>
-                <th pSortableColumn="estado" style="width: 150px">
-                    Estado <p-sortIcon field="estado"></p-sortIcon>
-                </th>
-                <th style="width: 200px">Acciones</th>
-            </tr>
-        </ng-template>
-        
-        <ng-template pTemplate="body" let-ejecucion>
-            <tr>
-                <td>{{ formatDate(ejecucion.fechaEjecucion) || 'Sin fecha' }}</td>
-                <td>
-                    <div class="font-medium">{{ ejecucion.equipoNombre || 'N/A' }}</div>
-                    <small class="text-500">{{ ejecucion.contratoDescripcion }}</small>
-                </td>
-                <td>{{ ejecucion.proveedorNombre || 'N/A' }}</td>
-                <td>
-                    <p-tag [value]="getEstadoLabel(ejecucion.estado)"
-                           [severity]="getEstadoSeverity(ejecucion.estado)"></p-tag>
-                </td>
-                <td>
-                    <div class="flex flex-nowrap gap-0">
-                        <button pButton pRipple icon="pi pi-pencil" 
-                            class="p-button-text p-button-success p-button-sm" 
-                            (click)="editEjecucion(ejecucion)"
-                            pTooltip="Editar"></button>
-                        <button pButton pRipple icon="pi pi-paperclip" 
-                            class="p-button-text p-button-help p-button-sm" 
-                            (click)="openEvidencias(ejecucion)"
-                            pTooltip="Evidencias"></button>
-                        <button *ngIf="puedeIniciar(ejecucion)"
-                            pButton pRipple icon="pi pi-play"
-                            class="p-button-text p-button-info p-button-sm"
-                            [loading]="accionLoadingId === ejecucion.idEjecucion"
-                            (click)="cambiarEstadoRapido(ejecucion, 'EN_PROCESO')"
-                            pTooltip="Iniciar"></button>
-                        <button *ngIf="puedeCompletar(ejecucion)"
-                            pButton pRipple icon="pi pi-check"
-                            class="p-button-text p-button-primary p-button-sm"
-                            [loading]="accionLoadingId === ejecucion.idEjecucion"
-                            (click)="cambiarEstadoRapido(ejecucion, 'COMPLETADO')"
-                            pTooltip="Completar"></button>
-                        <button *ngIf="!estaCompletadoOCancelado(ejecucion)" 
-                            pButton pRipple icon="pi pi-trash" 
-                            class="p-button-text p-button-danger p-button-sm" 
-                            (click)="deleteEjecucion(ejecucion)"
-                            pTooltip="Eliminar"></button>
-                        <button *ngIf="estaCompletadoOCancelado(ejecucion)" 
-                            pButton pRipple icon="pi pi-trash" 
-                            class="p-button-text p-button-danger p-button-sm" 
-                            (click)="deleteEjecucion(ejecucion)"
-                            pTooltip="Eliminar (finalizada)"></button>
-                    </div>
-                </td>
-            </tr>
-        </ng-template>
-        
-        <ng-template pTemplate="emptymessage">
-            <tr>
-                <td colspan="5" class="text-center p-5">
-                    <i class="pi pi-calendar-times text-5xl text-400 mb-3"></i>
-                    <p class="text-xl font-medium mt-0 mb-2">No hay ejecuciones registradas</p>
-                    <p class="text-600 mt-0 mb-3">Las ejecuciones se crean desde:</p>
-                    <div class="flex gap-2 justify-content-center">
-                        <button pButton pRipple label="Ir al Calendario" icon="pi pi-calendar" 
-                                class="p-button-sm"
-                                routerLink="/administracion/mantenimientos"></button>
-                        <button pButton pRipple label="Ver Programaciones" icon="pi pi-calendar-plus" 
-                                class="p-button-sm p-button-outlined"
-                                routerLink="/administracion/programaciones"></button>
-                    </div>
-                </td>
-            </tr>
-        </ng-template>
-    </p-table>
-
-    <!-- Nota informativa -->
-    <div class="mt-3 p-3 surface-50 border-round">
-        <div class="flex align-items-start gap-2">
-            <i class="pi pi-info-circle text-primary mt-1"></i>
-            <div>
-                <p class="font-semibold m-0 mb-2">¿Cómo crear ejecuciones?</p>
-                <ul class="m-0 pl-3 text-sm text-600">
-                    <li>Desde el <strong>Calendario</strong>: Click en una programación (evento morado) o en un día vacío</li>
-                    <li>Las ejecuciones se vinculan automáticamente con las <strong>Programaciones</strong> activas</li>
-                    <li>Puedes cambiar el estado rápidamente con los botones de acción</li>
-                </ul>
+    <!-- Estadísticas -->
+    <div class="col-12 md:col-3">
+        <div class="card bg-orange-100 border-left-3 border-orange-500 cursor-pointer" (click)="setFiltroEstado('PROGRAMADO')">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-orange-600 font-medium">Programados</span>
+                    <div class="text-2xl font-bold text-orange-900">{{countProgramados}}</div>
+                    <small *ngIf="countVencidas > 0" class="text-red-600 font-medium">
+                        <i class="pi pi-exclamation-triangle mr-1"></i>{{countVencidas}} vencidas
+                    </small>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-orange-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-calendar text-white text-xl"></i>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-blue-100 border-left-3 border-blue-500 cursor-pointer" (click)="setFiltroEstado('EN_PROCESO')">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-blue-600 font-medium">En Proceso</span>
+                    <div class="text-2xl font-bold text-blue-900">{{countEnProceso}}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-blue-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-spinner text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-green-100 border-left-3 border-green-500 cursor-pointer" (click)="setFiltroEstado('COMPLETADO')">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-green-600 font-medium">Completados</span>
+                    <div class="text-2xl font-bold text-green-900">{{countCompletados}}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-green-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-check-circle text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 md:col-3">
+        <div class="card bg-red-100 border-left-3 border-red-500 cursor-pointer" (click)="setFiltroEstado('CANCELADO')">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-red-600 font-medium">Cancelados</span>
+                    <div class="text-2xl font-bold text-red-900">{{countCancelados}}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-red-500 border-circle"
+                    style="width:3rem;height:3rem">
+                    <i class="pi pi-times-circle text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de ejecuciones -->
+    <div class="col-12">
+        <div class="card">
+            <!-- Barra de herramientas -->
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <p-dropdown [options]="estadosFiltro" 
+                                [(ngModel)]="filtroEstado"
+                                (onChange)="onFiltroEstadoChange()"
+                                placeholder="Filtrar por estado"
+                                styleClass="mr-2">
+                    </p-dropdown>
+                    <button pButton pRipple label="Limpiar filtro" icon="pi pi-filter-slash" 
+                        class="p-button-outlined p-button-secondary mr-2"
+                        (click)="setFiltroEstado('')"
+                        *ngIf="filtroEstado"></button>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Ver Calendario" icon="pi pi-calendar" class="p-button-outlined"
+                        routerLink="/administracion/mantenimientos"
+                        pTooltip="Ver programaciones en calendario"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table #dt [value]="ejecuciones" [loading]="loading" [paginator]="true" [rows]="10"
+                [rowsPerPageOptions]="[10,20,50]" [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ejecuciones"
+                [globalFilterFields]="['equipoNombre','proveedorNombre','contratoDescripcion','bitacora','estado']"
+                [rowHover]="true" dataKey="idEjecucion">
+
+                <ng-template pTemplate="caption">
+                    <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
+                        <h5 class="m-0">Registro de Ejecuciones</h5>
+                        <span class="block mt-2 md:mt-0 p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                                placeholder="Buscar..." class="w-full sm:w-auto" />
+                        </span>
+                    </div>
+                </ng-template>
+
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="fechaEjecucion">Fecha Programada <p-sortIcon field="fechaEjecucion"></p-sortIcon></th>
+                        <th pSortableColumn="equipoNombre">Equipo <p-sortIcon field="equipoNombre"></p-sortIcon></th>
+                        <th pSortableColumn="contratoDescripcion">Contrato <p-sortIcon field="contratoDescripcion"></p-sortIcon></th>
+                        <th pSortableColumn="proveedorNombre">Proveedor <p-sortIcon field="proveedorNombre"></p-sortIcon></th>
+                        <th>Fechas de Trabajo</th>
+                        <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
+                        <th style="width: 180px"></th>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="body" let-ejecucion>
+                    <tr [class.bg-green-50]="ejecucion.estado === 'COMPLETADO'"
+                        [class.bg-red-50]="ejecucion.estado === 'CANCELADO'"
+                        [class.bg-orange-50]="isVencida(ejecucion)">
+                        <!-- Fecha Programada -->
+                        <td>
+                            <div class="flex align-items-center gap-2">
+                                <div>
+                                    <div class="flex align-items-center gap-1">
+                                        <i class="pi pi-calendar text-primary"></i>
+                                        <span class="font-medium" [class.text-red-600]="isVencida(ejecucion)">
+                                            {{formatDate(ejecucion.fechaEjecucion)}}
+                                        </span>
+                                    </div>
+                                    <div class="flex align-items-center gap-1 mt-1">
+                                        <p-tag *ngIf="isVencida(ejecucion)" 
+                                               value="VENCIDA" severity="danger" 
+                                               styleClass="text-xs"></p-tag>
+                                        <span *ngIf="tieneProgramacion(ejecucion)" 
+                                              class="text-xs text-blue-500"
+                                              pTooltip="Creada desde programación automática">
+                                            <i class="pi pi-sync"></i> Programado
+                                        </span>
+                                        <span *ngIf="!tieneProgramacion(ejecucion)" 
+                                              class="text-xs text-gray-400"
+                                              pTooltip="Creada manualmente">
+                                            <i class="pi pi-user"></i> Manual
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Equipo -->
+                        <td>
+                            <div class="flex align-items-center">
+                                <div>
+                                    <div class="font-bold">{{ejecucion.equipoNombre || 'N/A'}}</div>
+                                    <div class="text-sm text-gray-500">{{ejecucion.equipoCodigo}}</div>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Contrato -->
+                        <td>
+                            <div>
+                                <div class="font-medium">{{ejecucion.contratoDescripcion || 'N/A'}}</div>
+                                <div class="text-sm text-gray-500" *ngIf="ejecucion.tipoMantenimiento">
+                                    <p-tag [value]="ejecucion.tipoMantenimiento" 
+                                           [severity]="getTipoSeverity(ejecucion.tipoMantenimiento)"
+                                           [rounded]="true" styleClass="text-xs"></p-tag>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Proveedor -->
+                        <td>
+                            <span class="text-700">{{ejecucion.proveedorNombre || 'N/A'}}</span>
+                        </td>
+                        
+                        <!-- Fechas de Trabajo -->
+                        <td>
+                            <div *ngIf="ejecucion.estado === 'PROGRAMADO'" class="text-orange-600">
+                                <i class="pi pi-clock mr-1"></i>Pendiente de iniciar
+                            </div>
+                            <div *ngIf="ejecucion.estado === 'EN_PROCESO'">
+                                <div class="text-blue-600 font-medium">
+                                    <i class="pi pi-play mr-1"></i>Inicio: {{formatDate(ejecucion.fechaInicioTrabajo)}}
+                                </div>
+                                <div class="text-sm text-blue-400 mt-1">
+                                    <i class="pi pi-spin pi-spinner mr-1"></i>En trabajo...
+                                </div>
+                            </div>
+                            <div *ngIf="ejecucion.estado === 'COMPLETADO'">
+                                <div class="text-green-600">
+                                    <i class="pi pi-play mr-1"></i>{{formatDate(ejecucion.fechaInicioTrabajo)}}
+                                </div>
+                                <div class="text-green-700 font-medium">
+                                    <i class="pi pi-check mr-1"></i>{{formatDate(ejecucion.fechaCierre)}}
+                                </div>
+                            </div>
+                            <div *ngIf="ejecucion.estado === 'CANCELADO'" class="text-red-600">
+                                <i class="pi pi-ban mr-1"></i>Cancelado
+                            </div>
+                        </td>
+                        
+                        <!-- Estado -->
+                        <td>
+                            <p-tag [value]="getEstadoLabel(ejecucion.estado)"
+                                   [severity]="getEstadoSeverity(ejecucion.estado)"
+                                   [rounded]="true"></p-tag>
+                        </td>
+                        
+                        <!-- Acciones -->
+                        <td>
+                            <div class="flex flex-nowrap align-items-center gap-1">
+                                <!-- Ver detalle -->
+                                <button pButton pRipple icon="pi pi-eye"
+                                    class="p-button-rounded p-button-text p-button-info p-button-sm"
+                                    (click)="verDetalle(ejecucion)" pTooltip="Ver detalle"></button>
+                                
+                                <!-- Acción principal según estado -->
+                                <button pButton pRipple icon="pi pi-play"
+                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
+                                    (click)="abrirIniciarDialog(ejecucion)" 
+                                    pTooltip="Iniciar trabajo"
+                                    [loading]="accionLoadingId === ejecucion.idEjecucion"
+                                    *ngIf="puedeIniciar(ejecucion)"></button>
+                                
+                                <button pButton pRipple icon="pi pi-check"
+                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
+                                    (click)="abrirCompletarDialog(ejecucion)" 
+                                    pTooltip="Completar mantenimiento"
+                                    [loading]="accionLoadingId === ejecucion.idEjecucion"
+                                    *ngIf="puedeCompletar(ejecucion)"></button>
+                                
+                                <!-- Menú de más opciones -->
+                                <button pButton pRipple icon="pi pi-ellipsis-v"
+                                    class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                                    (click)="openAccionesMenu($event, ejecucion)"
+                                    pTooltip="Más opciones"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="7" class="text-center p-5">
+                            <div class="flex flex-column align-items-center">
+                                <i class="pi pi-inbox text-5xl text-400 mb-3"></i>
+                                <span class="text-900 font-semibold text-xl mb-2">No hay ejecuciones registradas</span>
+                                <span class="text-600 text-base mb-1">Las ejecuciones se crean desde el módulo de Programaciones.</span>
+                                <span class="text-500 text-sm mb-3">O puede crearlas directamente desde el Calendario.</span>
+                                <button pButton pRipple label="Ir al Calendario" icon="pi pi-calendar" 
+                                        class="p-button-success p-button-sm mt-2"
+                                        routerLink="/administracion/mantenimientos"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            
+            <!-- Menú popup de acciones (fuera de la tabla) -->
+            <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
         </div>
     </div>
 </div>
 
-<!-- Dialog para crear/editar ejecuciones -->
-<p-dialog [(visible)]="showDialog" [style]="{width: '700px'}" 
-    [header]="isEditMode ? 'Editar Ejecución' : 'Nueva Ejecución'" 
-    [modal]="true" class="p-fluid">
+
+<!-- ==================== DIALOG DETALLE ==================== -->
+<p-dialog [(visible)]="showDetalleDialog" [style]="{width: '650px'}" 
+    header="Detalle de Ejecución" [modal]="true">
     
     <ng-template pTemplate="content">
-        <div class="grid">
-            <!-- Info del contrato y equipo (solo lectura en edición) -->
-            <div *ngIf="isEditMode" class="col-12 surface-100 border-round p-3 mb-3">
-                <div class="flex align-items-center gap-2 mb-2">
-                    <i class="pi pi-file-edit text-primary"></i>
-                    <span class="font-semibold">{{ selectedEjecucion.contratoDescripcion }}</span>
-                </div>
-                <div class="flex align-items-center gap-2">
-                    <i class="pi pi-cog text-500"></i>
-                    <span>{{ selectedEjecucion.equipoNombre }}</span>
-                    <span class="text-500">|</span>
-                    <span class="text-500">{{ selectedEjecucion.proveedorNombre }}</span>
-                </div>
+        <div *ngIf="ejecucionDetalle" class="flex flex-column gap-4">
+            <!-- Estado destacado -->
+            <div class="text-center p-3 surface-100 border-round">
+                <p-tag [value]="getEstadoLabel(ejecucionDetalle.estado)"
+                       [severity]="getEstadoSeverity(ejecucionDetalle.estado)"
+                       styleClass="text-lg px-3 py-2"></p-tag>
             </div>
-
-            <!-- Selección de contrato (solo al crear) -->
-            <div *ngIf="!isEditMode" class="col-12 md:col-6">
-                <div class="field">
-                    <label for="contrato">Contrato *</label>
-                    <p-dropdown id="contrato" 
-                        [(ngModel)]="selectedEjecucion.idContrato"
-                        [options]="contratos" 
-                        optionLabel="descripcion" 
-                        optionValue="idContrato"
-                        placeholder="Seleccione un contrato"
-                        [filter]="true"
-                        filterBy="descripcion,proveedor.nombre"
-                        (onChange)="onContratoChange()">
-                        <ng-template pTemplate="selectedItem">
-                            <div *ngIf="selectedEjecucion.idContrato">
-                                {{ getContratoDescripcion(selectedEjecucion.idContrato) }}
-                            </div>
-                        </ng-template>
-                        <ng-template let-contrato pTemplate="item">
-                            <div>
-                                <div>{{ contrato.descripcion }}</div>
-                                <small>{{ contrato.proveedor?.nombre }}</small>
-                            </div>
-                        </ng-template>
-                    </p-dropdown>
-                </div>
-            </div>
-
-            <!-- Selección de equipo (solo al crear) -->
-            <div *ngIf="!isEditMode" class="col-12 md:col-6">
-                <div class="field">
-                    <label for="equipo">Equipo *</label>
-                    <p-dropdown id="equipo" 
-                        [(ngModel)]="selectedEjecucion.idEquipo"
-                        [options]="getEquiposDelContrato()" 
-                        optionLabel="nombre" 
-                        optionValue="idEquipo"
-                        placeholder="Seleccione un equipo"
-                        [disabled]="!selectedEjecucion.idContrato"
-                        [filter]="true"
-                        filterBy="nombre,codigoInacif">
-                        <ng-template let-equipo pTemplate="item">
-                            <div>
-                                <div>{{ equipo.nombre }}</div>
-                                <small>{{ equipo.codigoInacif }} - {{ equipo.ubicacion }}</small>
-                            </div>
-                        </ng-template>
-                    </p-dropdown>
-                    <small *ngIf="!selectedEjecucion.idContrato" class="p-error">
-                        Primero seleccione un contrato
-                    </small>
+            
+            <!-- Info del equipo -->
+            <div class="flex align-items-center gap-3 p-3 surface-50 border-round border-left-3 border-primary">
+                <i class="pi pi-cog text-3xl text-primary"></i>
+                <div>
+                    <div class="font-bold text-lg">{{ ejecucionDetalle.equipoNombre }}</div>
+                    <div class="text-500">{{ ejecucionDetalle.equipoCodigo }}</div>
                 </div>
             </div>
             
-            <!-- Fecha de ejecución -->
-            <div class="col-12 md:col-6">
-                <div class="field">
-                    <label for="fechaEjecucion">Fecha Programada *</label>
-                    <p-calendar id="fechaEjecucion" 
-                        [(ngModel)]="selectedEjecucion.fechaEjecucion"
-                        dateFormat="dd/mm/yy"
-                        [showIcon]="true">
-                    </p-calendar>
-                    <small class="text-500">Cuándo se debe realizar el mantenimiento</small>
+            <!-- Datos principales -->
+            <div class="grid">
+                <div class="col-6">
+                    <div class="surface-100 p-3 border-round">
+                        <label class="text-500 text-sm block mb-1">
+                            <i class="pi pi-calendar mr-1"></i>Fecha Programada
+                        </label>
+                        <div class="font-medium text-lg">{{ formatDate(ejecucionDetalle.fechaEjecucion) || 'No definida' }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="surface-100 p-3 border-round">
+                        <label class="text-500 text-sm block mb-1">
+                            <i class="pi pi-building mr-1"></i>Proveedor
+                        </label>
+                        <div class="font-medium text-lg">{{ ejecucionDetalle.proveedorNombre || 'N/A' }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="surface-100 p-3 border-round">
+                        <label class="text-500 text-sm block mb-1">
+                            <i class="pi pi-file mr-1"></i>Contrato
+                        </label>
+                        <div class="font-medium">{{ ejecucionDetalle.contratoDescripcion || 'N/A' }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="surface-100 p-3 border-round">
+                        <label class="text-500 text-sm block mb-1">
+                            <i class="pi pi-map-marker mr-1"></i>Ubicación
+                        </label>
+                        <div class="font-medium">{{ ejecucionDetalle.equipoUbicacion || 'N/A' }}</div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Estado -->
-            <div class="col-12 md:col-6">
-                <div class="field">
-                    <label for="estado">Estado</label>
-                    <p-dropdown id="estado"
-                        [(ngModel)]="selectedEjecucion.estado"
-                        [options]="estadoOptions"
-                        placeholder="Seleccione estado">
-                    </p-dropdown>
-                    <small class="text-500">Use los botones de acción para cambiar estado</small>
-                </div>
-            </div>
-
-            <!-- Fechas automáticas (solo lectura en edición) -->
-            <div *ngIf="isEditMode && selectedEjecucion.fechaInicioTrabajo" class="col-12 md:col-6">
-                <div class="field">
-                    <label>Inicio Real</label>
-                    <div class="p-inputtext p-component p-disabled surface-100">
-                        {{ formatDate(selectedEjecucion.fechaInicioTrabajo) || 'Pendiente' }}
+            <!-- Fechas de ejecución -->
+            <div class="grid" *ngIf="ejecucionDetalle.fechaInicioTrabajo || ejecucionDetalle.fechaCierre">
+                <div class="col-6" *ngIf="ejecucionDetalle.fechaInicioTrabajo">
+                    <div class="p-3 bg-blue-50 border-round border-left-3 border-blue-500">
+                        <label class="text-blue-600 text-sm block mb-1">
+                            <i class="pi pi-play mr-1"></i>Inicio de Trabajo
+                        </label>
+                        <div class="font-bold text-blue-900">{{ formatDate(ejecucionDetalle.fechaInicioTrabajo) }}</div>
                     </div>
-                    <small class="text-500">Asignado automáticamente al iniciar</small>
                 </div>
-            </div>
-
-            <div *ngIf="isEditMode && selectedEjecucion.fechaCierre" class="col-12 md:col-6">
-                <div class="field">
-                    <label>Fecha de Cierre</label>
-                    <div class="p-inputtext p-component p-disabled surface-100">
-                        {{ formatDate(selectedEjecucion.fechaCierre) || 'Pendiente' }}
+                <div class="col-6" *ngIf="ejecucionDetalle.fechaCierre">
+                    <div class="p-3 bg-green-50 border-round border-left-3 border-green-500">
+                        <label class="text-green-600 text-sm block mb-1">
+                            <i class="pi pi-check mr-1"></i>Fecha de Cierre
+                        </label>
+                        <div class="font-bold text-green-900">{{ formatDate(ejecucionDetalle.fechaCierre) }}</div>
                     </div>
-                    <small class="text-500">Asignado automáticamente al completar</small>
                 </div>
             </div>
             
             <!-- Bitácora -->
-            <div class="col-12">
-                <div class="field">
-                    <label for="bitacora">Bitácora / Observaciones</label>
-                    <textarea id="bitacora" 
-                        pInputTextarea 
-                        [(ngModel)]="selectedEjecucion.bitacora"
-                        rows="4" 
-                        placeholder="Descripción del mantenimiento, observaciones, hallazgos...">
-                    </textarea>
+            <div *ngIf="ejecucionDetalle.bitacora">
+                <label class="text-500 text-sm block mb-2">
+                    <i class="pi pi-book mr-1"></i>Bitácora / Observaciones
+                </label>
+                <div class="p-3 surface-100 border-round white-space-pre-wrap border-left-3 border-300">
+                    {{ ejecucionDetalle.bitacora }}
                 </div>
+            </div>
+        </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cerrar" icon="pi pi-times" 
+            class="p-button-text" (click)="hideDetalleDialog()"></button>
+        <button pButton pRipple label="Ver Evidencias" icon="pi pi-paperclip" 
+            class="p-button-outlined p-button-help" (click)="verEvidenciasDesdeDetalle()"></button>
+    </ng-template>
+</p-dialog>
+
+
+<!-- ==================== DIALOG INICIAR ==================== -->
+<p-dialog [(visible)]="showIniciarDialog" [style]="{width: '500px'}" 
+    header="Iniciar Trabajo de Mantenimiento" [modal]="true">
+    
+    <ng-template pTemplate="content">
+        <div class="flex flex-column gap-4">
+            <!-- Info del equipo -->
+            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
+                <i class="pi pi-cog text-2xl text-primary"></i>
+                <div>
+                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
+                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
+                </div>
+            </div>
+            
+            <div class="p-3 bg-blue-50 border-round border-left-3 border-blue-500">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-info-circle text-blue-500"></i>
+                    <span class="font-medium text-blue-700">Información</span>
+                </div>
+                <p class="m-0 text-sm text-blue-600">
+                    Al iniciar el trabajo, se registrará la fecha y hora actual como inicio del mantenimiento.
+                </p>
+            </div>
+            
+            <div class="field">
+                <label for="iniciarBitacora" class="font-medium">Notas iniciales (opcional)</label>
+                <textarea id="iniciarBitacora" 
+                    pInputTextarea 
+                    [(ngModel)]="iniciarBitacora"
+                    rows="3" 
+                    placeholder="Observaciones al iniciar el trabajo..."
+                    class="w-full">
+                </textarea>
+            </div>
+        </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
+            class="p-button-text" (click)="hideIniciarDialog()"></button>
+        <button pButton pRipple label="Iniciar Trabajo" icon="pi pi-play" 
+            class="p-button-info" 
+            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
+            (click)="confirmarIniciar()"></button>
+    </ng-template>
+</p-dialog>
+
+
+<!-- ==================== DIALOG COMPLETAR ==================== -->
+<p-dialog [(visible)]="showCompletarDialog" [style]="{width: '550px'}" 
+    header="Completar Mantenimiento" [modal]="true">
+    
+    <ng-template pTemplate="content">
+        <div class="flex flex-column gap-4">
+            <!-- Info del equipo -->
+            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
+                <i class="pi pi-cog text-2xl text-primary"></i>
+                <div>
+                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
+                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
+                </div>
+            </div>
+            
+            <!-- Tiempo de trabajo -->
+            <div *ngIf="selectedEjecucion.fechaInicioTrabajo" class="p-3 bg-green-50 border-round border-left-3 border-green-500">
+                <div class="flex align-items-center gap-2 mb-1">
+                    <i class="pi pi-clock text-green-500"></i>
+                    <span class="font-medium text-green-700">Tiempo de trabajo</span>
+                </div>
+                <p class="m-0 text-sm text-green-600">
+                    Iniciado: {{ formatDate(selectedEjecucion.fechaInicioTrabajo) }}
+                </p>
+            </div>
+            
+            <div class="field">
+                <label for="completarObservaciones" class="font-medium">
+                    Observaciones de cierre <span class="text-red-500">*</span>
+                </label>
+                <textarea id="completarObservaciones" 
+                    pInputTextarea 
+                    [(ngModel)]="completarObservaciones"
+                    rows="4" 
+                    placeholder="Describa el trabajo realizado, hallazgos, recomendaciones..."
+                    class="w-full">
+                </textarea>
+                <small class="text-500">Estas observaciones se agregarán a la bitácora</small>
+            </div>
+            
+            <div class="p-3 bg-orange-50 border-round border-left-3 border-orange-500">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-exclamation-triangle text-orange-500"></i>
+                    <span class="text-sm text-orange-700">
+                        No olvide adjuntar evidencias antes de completar el mantenimiento.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
+            class="p-button-text" (click)="hideCompletarDialog()"></button>
+        <button pButton pRipple label="Adjuntar Evidencias" icon="pi pi-paperclip" 
+            class="p-button-outlined p-button-help" 
+            (click)="hideCompletarDialog(); openEvidencias(selectedEjecucion)"></button>
+        <button pButton pRipple label="Completar" icon="pi pi-check" 
+            class="p-button-success" 
+            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
+            (click)="confirmarCompletar()"></button>
+    </ng-template>
+</p-dialog>
+
+
+<!-- ==================== DIALOG CANCELAR ==================== -->
+<p-dialog [(visible)]="showCancelarDialog" [style]="{width: '500px'}" 
+    header="Cancelar Ejecución" [modal]="true">
+    
+    <ng-template pTemplate="content">
+        <div class="flex flex-column gap-4">
+            <!-- Info del equipo -->
+            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
+                <i class="pi pi-cog text-2xl text-primary"></i>
+                <div>
+                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
+                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
+                </div>
+            </div>
+            
+            <div class="p-3 bg-red-50 border-round border-left-3 border-red-500">
+                <div class="flex align-items-center gap-2 mb-2">
+                    <i class="pi pi-exclamation-triangle text-red-500"></i>
+                    <span class="font-medium text-red-700">Atención</span>
+                </div>
+                <p class="m-0 text-sm text-red-600">
+                    Esta acción cancelará la ejecución del mantenimiento. 
+                    Deberá indicar el motivo de la cancelación.
+                </p>
+            </div>
+            
+            <div class="field">
+                <label for="cancelarMotivo" class="font-medium">
+                    Motivo de cancelación <span class="text-red-500">*</span>
+                </label>
+                <textarea id="cancelarMotivo" 
+                    pInputTextarea 
+                    [(ngModel)]="cancelarMotivo"
+                    rows="3" 
+                    placeholder="Indique por qué se cancela este mantenimiento..."
+                    class="w-full">
+                </textarea>
+            </div>
+        </div>
+    </ng-template>
+    
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Volver" icon="pi pi-arrow-left" 
+            class="p-button-text" (click)="hideCancelarDialog()"></button>
+        <button pButton pRipple label="Confirmar Cancelación" icon="pi pi-times" 
+            class="p-button-danger" 
+            [disabled]="!cancelarMotivo.trim()"
+            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
+            (click)="confirmarCancelar()"></button>
+    </ng-template>
+</p-dialog>
+
+
+<!-- ==================== DIALOG EDITAR ==================== -->
+<p-dialog [(visible)]="showDialog" [style]="{width: '700px'}" 
+    [header]="isEditMode ? 'Editar Ejecución' : 'Nueva Ejecución'" 
+    [modal]="true" [maximizable]="true" class="p-fluid">
+    
+    <ng-template pTemplate="content">
+        <!-- Sección: Datos Generales -->
+        <div class="text-primary font-bold text-lg mb-3 flex align-items-center">
+            <i class="pi pi-file-edit mr-2"></i>Datos de la Ejecución
+        </div>
+        
+        <div class="formgrid grid">
+            <!-- Info del contrato y equipo (solo lectura en edición) -->
+            <div *ngIf="isEditMode" class="field col-12">
+                <div class="surface-100 border-round p-3">
+                    <div class="flex align-items-center gap-2 mb-2">
+                        <i class="pi pi-file-edit text-primary"></i>
+                        <span class="font-semibold">{{ selectedEjecucion.contratoDescripcion }}</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-cog text-500"></i>
+                        <span>{{ selectedEjecucion.equipoNombre }}</span>
+                        <span class="text-500">|</span>
+                        <span class="text-500">{{ selectedEjecucion.proveedorNombre }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selección de contrato (solo al crear) -->
+            <div *ngIf="!isEditMode" class="field col-12 md:col-6">
+                <label for="contrato" class="font-medium">Contrato <span class="text-red-500">*</span></label>
+                <p-dropdown id="contrato" 
+                    [(ngModel)]="selectedEjecucion.idContrato"
+                    [options]="contratos" 
+                    optionLabel="descripcion" 
+                    optionValue="idContrato"
+                    placeholder="Seleccione un contrato"
+                    [filter]="true"
+                    filterBy="descripcion,proveedor.nombre"
+                    [showClear]="true"
+                    (onChange)="onContratoChange()"
+                    styleClass="w-full">
+                    <ng-template pTemplate="selectedItem">
+                        <div *ngIf="selectedEjecucion.idContrato">
+                            {{ getContratoDescripcion(selectedEjecucion.idContrato) }}
+                        </div>
+                    </ng-template>
+                    <ng-template let-contrato pTemplate="item">
+                        <div>
+                            <div class="font-bold">{{ contrato.descripcion }}</div>
+                            <small class="text-gray-500">{{ contrato.proveedor?.nombre }}</small>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+            </div>
+
+            <!-- Selección de equipo (solo al crear) -->
+            <div *ngIf="!isEditMode" class="field col-12 md:col-6">
+                <label for="equipo" class="font-medium">Equipo <span class="text-red-500">*</span></label>
+                <p-dropdown id="equipo" 
+                    [(ngModel)]="selectedEjecucion.idEquipo"
+                    [options]="equiposContrato" 
+                    optionLabel="nombre" 
+                    optionValue="idEquipo"
+                    placeholder="Seleccione un equipo"
+                    [disabled]="!selectedEjecucion.idContrato"
+                    [filter]="true"
+                    filterBy="nombre,codigoInacif"
+                    styleClass="w-full">
+                    <ng-template let-equipo pTemplate="item">
+                        <div>
+                            <div class="font-bold">{{ equipo.nombre }}</div>
+                            <small class="text-gray-500">{{ equipo.codigoInacif }} - {{ equipo.ubicacion }}</small>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+                <small *ngIf="!selectedEjecucion.idContrato" class="text-orange-500">
+                    Primero seleccione un contrato
+                </small>
+            </div>
+            
+            <!-- Fecha de ejecución -->
+            <div class="field col-12 md:col-6">
+                <label for="fechaEjecucion" class="font-medium">Fecha Programada <span class="text-red-500">*</span></label>
+                <p-calendar id="fechaEjecucion" 
+                    [(ngModel)]="selectedEjecucion.fechaEjecucion"
+                    dateFormat="dd/mm/yy"
+                    [showIcon]="true"
+                    styleClass="w-full">
+                </p-calendar>
+            </div>
+            
+            <!-- Estado -->
+            <div class="field col-12 md:col-6">
+                <label for="estado" class="font-medium">Estado</label>
+                <p-dropdown id="estado"
+                    [(ngModel)]="selectedEjecucion.estado"
+                    [options]="estadoOptions"
+                    placeholder="Seleccione estado"
+                    styleClass="w-full">
+                </p-dropdown>
+            </div>
+            
+            <!-- Bitácora -->
+            <div class="field col-12">
+                <label for="bitacora" class="font-medium">Bitácora / Observaciones</label>
+                <textarea id="bitacora" 
+                    pInputTextarea 
+                    [(ngModel)]="selectedEjecucion.bitacora"
+                    rows="4" 
+                    placeholder="Descripción del mantenimiento, observaciones, hallazgos...">
+                </textarea>
             </div>
         </div>
     </ng-template>
@@ -273,26 +664,25 @@
         <button pButton pRipple label="Cancelar" icon="pi pi-times" 
             class="p-button-text" (click)="hideDialog()"></button>
         <button pButton pRipple label="Guardar" icon="pi pi-check" 
-            class="p-button-text" (click)="saveEjecucion()"></button>
+            class="p-button-success"
+            (click)="saveEjecucion()"></button>
     </ng-template>
 </p-dialog>
 
-<p-confirmDialog></p-confirmDialog>
-<p-toast></p-toast>
 
-<!-- Dialog para evidencias -->
-<p-dialog [(visible)]="showEvidenciasDialog" [style]="{width: '800px'}" 
-    header="Evidencias del Mantenimiento" [modal]="true" class="p-fluid">
+<!-- ==================== DIALOG EVIDENCIAS ==================== -->
+<p-dialog [(visible)]="showEvidenciasDialog" [style]="{width: '850px'}" 
+    header="Evidencias del Mantenimiento" [modal]="true" [maximizable]="true" class="p-fluid">
     
     <ng-template pTemplate="content">
         <!-- Info de la ejecución -->
-        <div class="surface-100 p-3 border-round mb-4">
+        <div class="surface-100 p-3 border-round mb-4 border-left-3 border-primary">
             <div class="flex align-items-center gap-2 mb-2">
                 <i class="pi pi-wrench text-primary"></i>
                 <span class="font-semibold">{{ selectedEjecucion.equipoNombre || 'Equipo' }}</span>
                 <p-tag [value]="getEstadoLabel(selectedEjecucion.estado)"
                        [severity]="getEstadoSeverity(selectedEjecucion.estado)" 
-                       styleClass="ml-2"></p-tag>
+                       [rounded]="true" styleClass="ml-2"></p-tag>
             </div>
             <small class="text-500">
                 {{ selectedEjecucion.contratoDescripcion }} | {{ formatDate(selectedEjecucion.fechaEjecucion) }}
@@ -300,14 +690,14 @@
         </div>
 
         <!-- Subir nueva evidencia -->
-        <div class="surface-50 p-4 border-round mb-4">
-            <h6 class="mt-0 mb-3 flex align-items-center gap-2">
-                <i class="pi pi-upload text-primary"></i>
+        <div class="surface-50 p-4 border-round mb-4 border-left-3 border-help">
+            <h6 class="mt-0 mb-3 flex align-items-center gap-2 text-purple-700">
+                <i class="pi pi-upload"></i>
                 Subir Nueva Evidencia
             </h6>
             
             <div class="field mb-3">
-                <label for="descripcionEvidencia">Descripción (opcional)</label>
+                <label for="descripcionEvidencia" class="font-medium">Descripción (opcional)</label>
                 <input pInputText id="descripcionEvidencia" [(ngModel)]="nuevaDescripcion" 
                        placeholder="Ej: Foto del equipo después del mantenimiento" class="w-full"/>
             </div>
@@ -325,7 +715,7 @@
                         type="button"
                         icon="pi pi-upload" 
                         label="Seleccionar archivos"
-                        class="p-button-outlined"
+                        class="p-button-outlined p-button-help"
                         [disabled]="uploading"
                         (click)="fileInput.click()"></button>
                 <span *ngIf="archivosSeleccionados.length > 0" class="text-500">

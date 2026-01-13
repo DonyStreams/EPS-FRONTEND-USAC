@@ -17,6 +17,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TagModule } from 'primeng/tag';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { MenuModule } from 'primeng/menu';
 
 import { EjecucionesRoutingModule } from './ejecuciones-routing.module';
 import { EjecucionesComponent } from './ejecuciones.component';
@@ -42,7 +43,8 @@ import { EjecucionesComponent } from './ejecuciones.component';
         TooltipModule,
         TagModule,
         FileUploadModule,
-        ProgressBarModule
+        ProgressBarModule,
+        MenuModule
     ]
 })
 export class EjecucionesModule { }

@@ -33,8 +33,8 @@ export class AppMenuComponent implements OnInit {
                 label: 'Gestión de Mantenimientos',
                 icon: 'pi pi-fw pi-cog',
                 items: [
+                    { label: 'Calendario', icon: 'pi pi-fw pi-calendar', routerLink: ['/administracion/mantenimientos'] },
                     { label: 'Programaciones', icon: 'pi pi-fw pi-clock', routerLink: ['/administracion/programaciones'] },
-                    { label: 'Mantenimientos', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/administracion/mantenimientos'] },                    
                     { label: 'Ejecuciones', icon: 'pi pi-fw pi-check-circle', routerLink: ['/administracion/ejecuciones'] },
                     { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/administracion/tipos-mantenimiento'] },
                     { label: 'Historial', icon: 'pi pi-fw pi-history', routerLink: ['/administracion/historial-programaciones'] }

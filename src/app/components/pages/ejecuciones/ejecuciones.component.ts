@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { Table } from 'primeng/table';
+import { Menu } from 'primeng/menu';
 import { EjecucionesService, EjecucionMantenimiento, GuardarEjecucionRequest, CambioEstadoRequest } from '../../../service/ejecuciones.service';
 import { ContratosService, Contrato } from '../../../service/contratos.service';
 import { EvidenciasService, Evidencia, UploadProgress } from '../../../service/evidencias.service';
@@ -13,12 +14,17 @@ import { environment } from '../../../../environments/environment';
 })
 export class EjecucionesComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
 
     ejecuciones: EjecucionMantenimiento[] = [];
     contratos: Contrato[] = [];
     loading = true;
     showDialog = false;
     accionLoadingId: number | null = null;
+    
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    ejecucionSeleccionadaMenu: EjecucionMantenimiento | null = null;
     
     selectedEjecucion: Partial<EjecucionMantenimiento> = {};
     isEditMode = false;
@@ -30,6 +36,23 @@ export class EjecucionesComponent implements OnInit {
         { label: 'Cancelado', value: 'CANCELADO' }
     ];
     
+    // Dialog de detalle
+    showDetalleDialog = false;
+    ejecucionDetalle: EjecucionMantenimiento | null = null;
+    
+    // Dialog de iniciar trabajo
+    showIniciarDialog = false;
+    iniciarBitacora = '';
+    
+    // Dialog de completar
+    showCompletarDialog = false;
+    completarBitacora = '';
+    completarObservaciones = '';
+    
+    // Dialog de cancelar
+    showCancelarDialog = false;
+    cancelarMotivo = '';
+    
     // Evidencias
     showEvidenciasDialog = false;
     evidencias: Evidencia[] = [];
@@ -39,6 +62,16 @@ export class EjecucionesComponent implements OnInit {
     nuevaDescripcion = '';
     ejecucionEvidenciasId: number | null = null;
     archivosSeleccionados: File[] = [];
+    
+    // Filtros
+    filtroEstado: string = '';
+    estadosFiltro = [
+        { label: 'Todos los estados', value: '' },
+        { label: 'Programado', value: 'PROGRAMADO' },
+        { label: 'En proceso', value: 'EN_PROCESO' },
+        { label: 'Completado', value: 'COMPLETADO' },
+        { label: 'Cancelado', value: 'CANCELADO' }
+    ];
     
     cols = [
         { field: 'fechaEjecucion', header: 'Fecha Ejecución' },
@@ -398,6 +431,235 @@ export class EjecucionesComponent implements OnInit {
         console.log('Equipos del contrato:', this.equiposContrato);
     }
 
+    // ==================== DETALLE ====================
+    
+    verDetalle(ejecucion: EjecucionMantenimiento) {
+        this.ejecucionDetalle = ejecucion;
+        this.showDetalleDialog = true;
+    }
+    
+    hideDetalleDialog() {
+        this.showDetalleDialog = false;
+        this.ejecucionDetalle = null;
+    }
+    
+    verEvidenciasDesdeDetalle() {
+        if (this.ejecucionDetalle) {
+            const ejecucion = this.ejecucionDetalle;
+            this.hideDetalleDialog();
+            this.openEvidencias(ejecucion);
+        }
+    }
+    
+    // ==================== INICIAR TRABAJO ====================
+    
+    abrirIniciarDialog(ejecucion: EjecucionMantenimiento) {
+        this.selectedEjecucion = ejecucion;
+        this.iniciarBitacora = ejecucion.bitacora || '';
+        this.showIniciarDialog = true;
+    }
+    
+    confirmarIniciar() {
+        if (!this.selectedEjecucion.idEjecucion) return;
+        
+        const payload: CambioEstadoRequest = {
+            estado: 'EN_PROCESO',
+            fechaReferencia: new Date(),
+            fechaInicio: new Date(),
+            bitacora: this.iniciarBitacora
+        };
+        
+        this.accionLoadingId = this.selectedEjecucion.idEjecucion;
+        this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Trabajo iniciado',
+                    detail: 'El mantenimiento está ahora en proceso'
+                });
+                this.hideIniciarDialog();
+                this.loadEjecuciones();
+            },
+            error: (error) => {
+                console.error('Error al iniciar trabajo:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo iniciar el trabajo'
+                });
+            },
+            complete: () => {
+                this.accionLoadingId = null;
+            }
+        });
+    }
+    
+    hideIniciarDialog() {
+        this.showIniciarDialog = false;
+        this.iniciarBitacora = '';
+    }
+    
+    // ==================== COMPLETAR ====================
+    
+    abrirCompletarDialog(ejecucion: EjecucionMantenimiento) {
+        this.selectedEjecucion = ejecucion;
+        this.completarBitacora = ejecucion.bitacora || '';
+        this.completarObservaciones = '';
+        this.showCompletarDialog = true;
+    }
+    
+    confirmarCompletar() {
+        if (!this.selectedEjecucion.idEjecucion) return;
+        
+        let bitacoraFinal = this.completarBitacora;
+        if (this.completarObservaciones) {
+            bitacoraFinal += `\n\n--- CIERRE (${new Date().toLocaleDateString('es-GT')}) ---\n${this.completarObservaciones}`;
+        }
+        
+        const payload: CambioEstadoRequest = {
+            estado: 'COMPLETADO',
+            fechaReferencia: new Date(),
+            fechaInicio: this.parseToDate(this.selectedEjecucion.fechaInicioTrabajo) ?? new Date(),
+            bitacora: bitacoraFinal
+        };
+        
+        this.accionLoadingId = this.selectedEjecucion.idEjecucion;
+        this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Mantenimiento completado',
+                    detail: 'El mantenimiento ha sido finalizado exitosamente'
+                });
+                this.hideCompletarDialog();
+                this.loadEjecuciones();
+            },
+            error: (error) => {
+                console.error('Error al completar:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo completar el mantenimiento'
+                });
+            },
+            complete: () => {
+                this.accionLoadingId = null;
+            }
+        });
+    }
+    
+    hideCompletarDialog() {
+        this.showCompletarDialog = false;
+        this.completarBitacora = '';
+        this.completarObservaciones = '';
+    }
+    
+    // ==================== CANCELAR ====================
+    
+    abrirCancelarDialog(ejecucion: EjecucionMantenimiento) {
+        this.selectedEjecucion = ejecucion;
+        this.cancelarMotivo = '';
+        this.showCancelarDialog = true;
+    }
+    
+    confirmarCancelar() {
+        if (!this.selectedEjecucion.idEjecucion || !this.cancelarMotivo.trim()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Motivo requerido',
+                detail: 'Debe indicar el motivo de cancelación'
+            });
+            return;
+        }
+        
+        let bitacoraFinal = this.selectedEjecucion.bitacora || '';
+        bitacoraFinal += `\n\n--- CANCELADO (${new Date().toLocaleDateString('es-GT')}) ---\nMotivo: ${this.cancelarMotivo}`;
+        
+        const payload: CambioEstadoRequest = {
+            estado: 'CANCELADO',
+            fechaReferencia: new Date(),
+            bitacora: bitacoraFinal
+        };
+        
+        this.accionLoadingId = this.selectedEjecucion.idEjecucion;
+        this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'info',
+                    summary: 'Mantenimiento cancelado',
+                    detail: 'El mantenimiento ha sido cancelado'
+                });
+                this.hideCancelarDialog();
+                this.loadEjecuciones();
+            },
+            error: (error) => {
+                console.error('Error al cancelar:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo cancelar el mantenimiento'
+                });
+            },
+            complete: () => {
+                this.accionLoadingId = null;
+            }
+        });
+    }
+    
+    hideCancelarDialog() {
+        this.showCancelarDialog = false;
+        this.cancelarMotivo = '';
+    }
+    
+    // ==================== FILTROS ====================
+    
+    onFiltroEstadoChange() {
+        if (this.filtroEstado) {
+            this.dt.filter(this.filtroEstado, 'estado', 'equals');
+        } else {
+            this.dt.filter('', 'estado', 'contains');
+        }
+    }
+    
+    get ejecucionesFiltradas(): EjecucionMantenimiento[] {
+        if (!this.filtroEstado) return this.ejecuciones;
+        return this.ejecuciones.filter(e => e.estado === this.filtroEstado);
+    }
+    
+    // Contadores por estado para las tarjetas
+    get countProgramados(): number {
+        return this.ejecuciones.filter(e => e.estado === 'PROGRAMADO').length;
+    }
+    
+    get countEnProceso(): number {
+        return this.ejecuciones.filter(e => e.estado === 'EN_PROCESO').length;
+    }
+    
+    get countCompletados(): number {
+        return this.ejecuciones.filter(e => e.estado === 'COMPLETADO').length;
+    }
+    
+    get countCancelados(): number {
+        return this.ejecuciones.filter(e => e.estado === 'CANCELADO').length;
+    }
+    
+    get countVencidas(): number {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return this.ejecuciones.filter(e => {
+            if (e.estado !== 'PROGRAMADO') return false;
+            const fecha = this.parseToDate(e.fechaEjecucion);
+            return fecha && fecha < hoy;
+        }).length;
+    }
+    
+    setFiltroEstado(estado: string) {
+        this.filtroEstado = estado;
+        this.onFiltroEstadoChange();
+    }
+    
+    // ==================== UTILIDADES ====================
+
     getEstadoLabel(estado?: string): string {
         switch (estado) {
             case 'EN_PROCESO':
@@ -427,6 +689,34 @@ export class EjecucionesComponent implements OnInit {
         }
     }
 
+    getTipoSeverity(tipo?: string): 'info' | 'success' | 'warning' | 'danger' | 'secondary' {
+        if (!tipo) return 'secondary';
+        const tipoLower = tipo.toLowerCase();
+        if (tipoLower.includes('preventivo')) return 'success';
+        if (tipoLower.includes('correctivo')) return 'danger';
+        if (tipoLower.includes('calibraci')) return 'info';
+        return 'secondary';
+    }
+    
+    /**
+     * Verifica si una ejecución está vencida (fecha pasada y aún PROGRAMADO)
+     */
+    isVencida(ejecucion: EjecucionMantenimiento): boolean {
+        if (ejecucion.estado !== 'PROGRAMADO') return false;
+        const fecha = this.parseToDate(ejecucion.fechaEjecucion);
+        if (!fecha) return false;
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return fecha < hoy;
+    }
+    
+    /**
+     * Verifica si una ejecución viene de una programación automática
+     */
+    tieneProgramacion(ejecucion: EjecucionMantenimiento): boolean {
+        return !!ejecucion.idProgramacion;
+    }
+
     puedeIniciar(ejecucion: EjecucionMantenimiento): boolean {
         return ejecucion.estado === 'PROGRAMADO';
     }
@@ -437,6 +727,58 @@ export class EjecucionesComponent implements OnInit {
 
     estaCompletadoOCancelado(ejecucion: EjecucionMantenimiento): boolean {
         return ejecucion.estado === 'COMPLETADO' || ejecucion.estado === 'CANCELADO';
+    }
+
+    // ==================== MENÚ DE ACCIONES ====================
+    
+    openAccionesMenu(event: Event, ejecucion: EjecucionMantenimiento): void {
+        this.ejecucionSeleccionadaMenu = ejecucion;
+        
+        this.accionesMenuItems = [
+            {
+                label: 'Ver Detalle',
+                icon: 'pi pi-eye',
+                command: () => this.verDetalle(ejecucion)
+            },
+            {
+                label: 'Evidencias',
+                icon: 'pi pi-paperclip',
+                command: () => this.openEvidencias(ejecucion)
+            },
+            { separator: true },
+            {
+                label: 'Iniciar Trabajo',
+                icon: 'pi pi-play',
+                visible: this.puedeIniciar(ejecucion),
+                command: () => this.abrirIniciarDialog(ejecucion)
+            },
+            {
+                label: 'Completar',
+                icon: 'pi pi-check',
+                visible: this.puedeCompletar(ejecucion),
+                command: () => this.abrirCompletarDialog(ejecucion)
+            },
+            {
+                label: 'Cancelar',
+                icon: 'pi pi-times',
+                visible: !this.estaCompletadoOCancelado(ejecucion),
+                command: () => this.abrirCancelarDialog(ejecucion)
+            },
+            { separator: true },
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => this.editEjecucion(ejecucion)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                command: () => this.deleteEjecucion(ejecucion)
+            }
+        ];
+
+        this.menuAcciones.toggle(event);
     }
 
     // ==================== EVIDENCIAS ====================

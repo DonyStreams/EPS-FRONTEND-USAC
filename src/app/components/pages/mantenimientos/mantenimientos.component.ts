@@ -25,15 +25,13 @@ interface CalendarEvent {
     borderColor?: string;
     textColor?: string;
     extendedProps?: {
-        tipo: 'programacion' | 'ejecucion';
-        estado?: string;
+        tipo: 'programacion';
         tipoMantenimiento?: string;
         equipoNombre?: string;
         proveedorNombre?: string;
         contratoDescripcion?: string;
         frecuencia?: string;
         idProgramacion?: number;
-        idEjecucion?: number;
         idContrato?: number;
         idEquipo?: number;
     };
@@ -50,7 +48,6 @@ export class MantenimientosComponent implements OnInit {
     events: CalendarEvent[] = [];
     
     programaciones: ProgramacionMantenimiento[] = [];
-    ejecuciones: EjecucionMantenimiento[] = [];
     contratos: ContratoCalendario[] = [];
     
     loading = false;
@@ -65,12 +62,14 @@ export class MantenimientosComponent implements OnInit {
     nuevaEjecucion: Partial<EjecucionMantenimiento> = {};
     equiposContrato: any[] = [];
     
-    // Filtros
+    // Filtros por tipo de mantenimiento
     filtroTipo: string = 'todos';
     tiposFiltro = [
-        { label: 'Todos', value: 'todos' },
-        { label: 'Programaciones', value: 'programacion' },
-        { label: 'Ejecuciones', value: 'ejecucion' }
+        { label: 'Todos los tipos', value: 'todos' },
+        { label: 'Preventivo', value: 'PREVENTIVO' },
+        { label: 'Correctivo', value: 'CORRECTIVO' },
+        { label: 'Calibración', value: 'CALIBRACION' },
+        { label: 'Otros', value: 'OTROS' }
     ];
 
     constructor(
@@ -115,48 +114,23 @@ export class MantenimientosComponent implements OnInit {
 
     private loadData(): void {
         this.loading = true;
-        let programacionesCargadas = false;
-        let ejecucionesCargadas = false;
         
-        // Cargar programaciones
+        // Cargar programaciones (solo estas se muestran en el calendario)
         this.programacionesService.getAll().subscribe({
             next: (data) => {
                 this.programaciones = data || [];
                 console.log('📅 Programaciones cargadas:', this.programaciones.length);
-                programacionesCargadas = true;
-                if (programacionesCargadas && ejecucionesCargadas) {
-                    this.generateEvents();
-                }
+                this.generateEvents();
+                this.loading = false;
             },
             error: (err) => {
                 console.error('Error cargando programaciones:', err);
-                programacionesCargadas = true;
-                if (programacionesCargadas && ejecucionesCargadas) {
-                    this.generateEvents();
-                }
+                this.generateEvents();
+                this.loading = false;
             }
         });
 
-        // Cargar ejecuciones
-        this.ejecucionesService.getAll().subscribe({
-            next: (data) => {
-                this.ejecuciones = data || [];
-                console.log('✅ Ejecuciones cargadas:', this.ejecuciones.length);
-                ejecucionesCargadas = true;
-                if (programacionesCargadas && ejecucionesCargadas) {
-                    this.generateEvents();
-                }
-            },
-            error: (err) => {
-                console.error('Error cargando ejecuciones:', err);
-                ejecucionesCargadas = true;
-                if (programacionesCargadas && ejecucionesCargadas) {
-                    this.generateEvents();
-                }
-            }
-        });
-
-        // Cargar contratos para crear ejecuciones
+        // Cargar contratos para crear ejecuciones desde el calendario
         this.contratosService.getAll().subscribe({
             next: (data) => {
                 this.contratos = (data || []).map((c: any) => ({
@@ -166,11 +140,9 @@ export class MantenimientosComponent implements OnInit {
                     equipos: c.equipos || []
                 }));
                 console.log('📋 Contratos cargados:', this.contratos.length);
-                this.loading = false;
             },
             error: (err) => {
                 console.error('Error cargando contratos:', err);
-                this.loading = false;
             }
         });
     }
@@ -182,72 +154,15 @@ export class MantenimientosComponent implements OnInit {
         const unAnioAdelante = new Date(hoy.getFullYear() + 1, hoy.getMonth(), hoy.getDate());
 
         console.log('🔄 Generando eventos del calendario...');
-        console.log('📅 Programaciones totales:', this.programaciones.length);
         console.log('📅 Programaciones activas:', this.programaciones.filter(p => p.activa).length);
-        console.log('✅ Ejecuciones totales:', this.ejecuciones.length);
 
-        // DEBUG: Ver estructura de primera programación
-        if (this.programaciones.length > 0) {
-            console.log('🔍 Estructura de programación:', this.programaciones[0]);
-            console.log('🔍 ¿Tiene fechaProximoMantenimiento?', this.programaciones[0].fechaProximoMantenimiento);
-        }
-
-        // Generar eventos de programaciones (recurrentes)
+        // Generar eventos solo de programaciones (cuándo toca el mantenimiento)
         this.programaciones.forEach(prog => {
-            console.log(`🔍 Programación ${prog.idProgramacion}: activa=${prog.activa}, fechaProxima=${prog.fechaProximoMantenimiento}`);
             if (prog.activa && prog.fechaProximoMantenimiento) {
                 const eventosRecurrentes = this.generarEventosRecurrentes(prog, unAnioAtras, unAnioAdelante);
-                console.log(`  ✅ Generó ${eventosRecurrentes.length} eventos recurrentes`);
                 eventos.push(...eventosRecurrentes);
-            } else {
-                console.log(`  ❌ No cumple condiciones: activa=${prog.activa}, fechaProxima=${!!prog.fechaProximoMantenimiento}`);
             }
         });
-        console.log('🟣 Eventos de programaciones generados:', eventos.length);
-
-        // Agregar ejecuciones reales
-        let ejecucionesValidas = 0;
-        this.ejecuciones.forEach(ejec => {
-            console.log(`🔍 Ejecución ${ejec.idEjecucion}: fecha=${ejec.fechaEjecucion}, estado=${ejec.estado}`);
-            if (ejec.fechaEjecucion) {
-                ejecucionesValidas++;
-                
-                // Parsear fecha si viene como string
-                let fechaEjecucion: Date;
-                const fechaOriginal = ejec.fechaEjecucion as any;
-                
-                if (typeof fechaOriginal === 'string') {
-                    const fechaLimpia = fechaOriginal.replace('[UTC]', '');
-                    fechaEjecucion = new Date(fechaLimpia);
-                } else if (fechaOriginal instanceof Date) {
-                    fechaEjecucion = fechaOriginal;
-                } else {
-                    fechaEjecucion = new Date(fechaOriginal);
-                }
-                
-                console.log(`  📅 Fecha parseada: ${fechaEjecucion.toISOString()}`);
-                
-                eventos.push({
-                    id: `ejec-${ejec.idEjecucion}`,
-                    title: ejec.equipoNombre || 'Equipo',
-                    start: fechaEjecucion,
-                    backgroundColor: this.getColorByEstado(ejec.estado),
-                    borderColor: this.getColorByEstado(ejec.estado),
-                    textColor: '#ffffff',
-                    extendedProps: {
-                        tipo: 'ejecucion',
-                        estado: ejec.estado,
-                        equipoNombre: ejec.equipoNombre,
-                        proveedorNombre: ejec.proveedorNombre,
-                        contratoDescripcion: ejec.contratoDescripcion,
-                        idEjecucion: ejec.idEjecucion,
-                        idContrato: ejec.idContrato,
-                        idEquipo: ejec.idEquipo
-                    }
-                });
-            }
-        });
-        console.log('✅ Eventos de ejecuciones agregados:', ejecucionesValidas);
 
         this.events = eventos;
         console.log('📊 Total eventos en calendario:', this.events.length);
@@ -356,12 +271,8 @@ export class MantenimientosComponent implements OnInit {
             return { bg: '#ef4444', border: '#dc2626' }; // Rojo
         } else if (tipoUpper.includes('CALIBRACION') || tipoUpper.includes('CALIBRACIÓN')) {
             return { bg: '#3b82f6', border: '#2563eb' }; // Azul
-        } else if (tipoUpper.includes('PREDICTIVO')) {
-            return { bg: '#f59e0b', border: '#d97706' }; // Naranja
-        } else if (tipoUpper.includes('EMERGENCIA')) {
-            return { bg: '#dc2626', border: '#b91c1c' }; // Rojo oscuro
         } else {
-            return { bg: '#6366f1', border: '#4f46e5' }; // Morado (default)
+            return { bg: '#6366f1', border: '#4f46e5' }; // Morado (Otros)
         }
     }
 
@@ -403,7 +314,19 @@ export class MantenimientosComponent implements OnInit {
         let filteredEvents = [...this.events];
         
         if (this.filtroTipo !== 'todos') {
-            filteredEvents = this.events.filter(e => e.extendedProps?.tipo === this.filtroTipo);
+            // Filtrar por tipo de mantenimiento
+            filteredEvents = this.events.filter(e => {
+                const tipoMant = e.extendedProps?.tipoMantenimiento?.toUpperCase() || '';
+                
+                if (this.filtroTipo === 'OTROS') {
+                    // "Otros" = todo lo que NO sea Preventivo, Correctivo o Calibración
+                    return !tipoMant.includes('PREVENTIVO') && 
+                           !tipoMant.includes('CORRECTIVO') && 
+                           !tipoMant.includes('CALIBRACION') &&
+                           !tipoMant.includes('CALIBRACIÓN');
+                }
+                return tipoMant.includes(this.filtroTipo);
+            });
         }
 
         this.calendarOptions = {
@@ -419,26 +342,6 @@ export class MantenimientosComponent implements OnInit {
     closeDetailDialog(): void {
         this.showDetailDialog = false;
         this.selectedEvent = null;
-    }
-
-    getEstadoLabel(estado?: string): string {
-        switch (estado?.toUpperCase()) {
-            case 'PROGRAMADO': return 'Programado';
-            case 'EN_PROCESO': return 'En Proceso';
-            case 'COMPLETADO': return 'Completado';
-            case 'CANCELADO': return 'Cancelado';
-            default: return estado || 'Sin estado';
-        }
-    }
-
-    getEstadoSeverity(estado?: string): string {
-        switch (estado?.toUpperCase()) {
-            case 'PROGRAMADO': return 'warning';
-            case 'EN_PROCESO': return 'info';
-            case 'COMPLETADO': return 'success';
-            case 'CANCELADO': return 'danger';
-            default: return 'secondary';
-        }
     }
 
     closeCreateDialog(): void {

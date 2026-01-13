@@ -68,7 +68,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             { label: 'Nuevo Equipo', icon: 'pi pi-fw pi-plus', routerLink: ['/administracion/equipos'] },
             { label: 'Programar Mantenimiento', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/administracion/programaciones/nuevo'] },
             { label: 'Ver Alertas', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/administracion/programaciones'] },
-            { label: 'Crear Ticket', icon: 'pi pi-fw pi-ticket', routerLink: ['/administracion/tickets/nuevo'] }
+            { label: 'Crear Ticket', icon: 'pi pi-fw pi-ticket', routerLink: ['/administracion/tickets'], queryParams: { action: 'nuevo' } }
         ];
     }
 
