@@ -1,0 +1,116 @@
+# ============================================
+# Docker Compose - Sistema Completo INACIF
+# Backend + Frontend + Keycloak + Base de Datos
+# ============================================
+# Uso: docker-compose -f docker-compose.full.yml up -d
+# ============================================
+
+services:
+  # ==========================================
+  # BASE DE DATOS - SQL Server
+  # ==========================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: inacif-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD:-InacifDB2024!}
+      - MSSQL_PID=Express
+      - TZ=America/Guatemala
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-InacifDB2024!}" -C -Q "SELECT 1" || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==========================================
+  # KEYCLOAK - Identity Provider
+  # ==========================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.3
+    container_name: inacif-keycloak
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - TZ=America/Guatemala
+    command: start-dev
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==========================================
+  # BACKEND - TomEE Java
+  # ==========================================
+  backend:
+    build:
+      context: ../MantenimientosBackend
+      dockerfile: DockerFile
+    container_name: inacif-backend
+    ports:
+      - "${BACKEND_PORT:-8081}:8080"
+    environment:
+      - TZ=America/Guatemala
+      - KEYCLOAK_URL=http://keycloak:8080
+      - DB_HOST=sqlserver
+      - DB_PORT=1433
+      - DB_NAME=MantenimientosINACIF
+      - DB_USER=sa
+      - DB_PASSWORD=${DB_PASSWORD:-InacifDB2024!}
+    volumes:
+      - inacif-files:/root/inacif-imagenes
+      - inacif-contracts:/root/contratos-archivos
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ==========================================
+  # FRONTEND - Angular + Nginx
+  # ==========================================
+  frontend:
+    build:
+      context: ../EPS-FRONTEND
+      dockerfile: Dockerfile.prod
+    container_name: inacif-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      - TZ=America/Guatemala
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# ==========================================
+# VOLÚMENES PERSISTENTES
+# ==========================================
+volumes:
+  sqlserver-data:
+    driver: local
+  keycloak-data:
+    driver: local
+  inacif-files:
+    driver: local
+  inacif-contracts:
+    driver: local
+
+# ==========================================
+# RED
+# ==========================================
+networks:
+  default:
+    name: inacif-network
+    driver: bridge

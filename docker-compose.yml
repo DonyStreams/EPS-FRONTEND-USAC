@@ -1,0 +1,48 @@
+# ============================================
+# Docker Compose - Frontend Angular
+# Sistema de Mantenimientos INACIF
+# ============================================
+# Uso:
+#   Desarrollo: docker-compose up frontend-dev
+#   Producción: docker-compose up frontend-prod
+# ============================================
+
+services:
+  # ==========================================
+  # Frontend para DESARROLLO
+  # ==========================================
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    container_name: inacif-frontend-dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - TZ=America/Guatemala
+    restart: unless-stopped
+
+  # ==========================================
+  # Frontend para PRODUCCIÓN
+  # ==========================================
+  frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    container_name: inacif-frontend
+    environment:
+      - TZ=America/Guatemala
+    restart: unless-stopped
+
+# ============================================
+# Red para comunicación con backend
+# ============================================
+networks:
+  default:
+    name: inacif-network
+    driver: bridge

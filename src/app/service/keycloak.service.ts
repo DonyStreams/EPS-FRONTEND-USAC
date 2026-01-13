@@ -55,6 +55,24 @@ export class KeycloakService {
         });
       }
     }, 300000); // Cada 5 minutos
+
+    // Renovar token cuando la pestaña vuelve a estar activa
+    // Esto soluciona el problema de que setInterval no se ejecuta cuando la pestaña está en segundo plano
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.isLoggedIn()) {
+        console.log('[Keycloak] Pestaña activa, verificando token...');
+        this.updateToken(60).then((refreshed) => {
+          if (refreshed) {
+            console.log('[Keycloak] Token renovado al activar pestaña');
+          } else {
+            console.log('[Keycloak] Token aún válido');
+          }
+        }).catch((error) => {
+          console.error('[Keycloak] Error al renovar token, redirigiendo a login...', error);
+          this.login();
+        });
+      }
+    });
   }
 
   getToken(): string | undefined {

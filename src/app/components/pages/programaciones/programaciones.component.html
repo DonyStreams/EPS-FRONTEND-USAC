@@ -157,36 +157,33 @@
                                 [severity]="programacion.activa ? 'success' : 'secondary'" [rounded]="true"></p-tag>
                         </td>
                         <td>
-                            <div class="flex flex-nowrap gap-0">
+                            <div class="flex flex-nowrap align-items-center gap-1">
+                                <!-- Acciones principales -->
                                 <button pButton pRipple icon="pi pi-eye"
-                                    class="p-button-text p-button-info p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-info p-button-sm"
                                     (click)="verDetalle(programacion)" pTooltip="Ver detalle"></button>
                                 <button pButton pRipple icon="pi pi-pencil"
-                                    class="p-button-text p-button-warning p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-warning p-button-sm"
                                     (click)="editProgramacion(programacion)" pTooltip="Editar"></button>
-                                <button pButton pRipple icon="pi pi-calendar-plus"
-                                    class="p-button-text p-button-success p-button-sm"
-                                    (click)="crearMantenimiento(programacion)" pTooltip="Crear ejecución"
-                                    [disabled]="!programacion.activa"></button>
-                                <!-- Botón Reprogramar: Cambiar fecha manualmente -->
-                                <button pButton pRipple icon="pi pi-calendar-times"
-                                    class="p-button-text p-button-help p-button-sm"
-                                    (click)="openReprogramarDialog(programacion)" 
-                                    pTooltip="Reprogramar a otra fecha"
-                                    *ngIf="programacion.activa"></button>
-                                <!-- Botón Descartar: Solo visible si está vencida -->
+                                
+                                <!-- Acción principal según estado -->
+                                <button pButton pRipple icon="pi pi-play"
+                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
+                                    (click)="crearMantenimiento(programacion)" 
+                                    pTooltip="Ejecutar mantenimiento"
+                                    *ngIf="programacion.activa && !isVencida(programacion.fechaProximoMantenimiento)"></button>
                                 <button pButton pRipple icon="pi pi-forward"
-                                    class="p-button-text p-button-danger p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
                                     (click)="descartarProgramacion(programacion)" 
-                                    pTooltip="Descartar y avanzar a siguiente"
-                                    *ngIf="isVencida(programacion.fechaProximoMantenimiento) && programacion.activa"></button>
-                                <button pButton pRipple [icon]="programacion.activa ? 'pi pi-pause' : 'pi pi-play'"
-                                    [class]="programacion.activa ? 'p-button-text p-button-secondary p-button-sm' : 'p-button-text p-button-success p-button-sm'"
-                                    (click)="toggleActiva(programacion)"
-                                    [pTooltip]="programacion.activa ? 'Pausar (ocultar del calendario)' : 'Activar (mostrar en calendario)'"></button>
-                                <button pButton pRipple icon="pi pi-trash"
-                                    class="p-button-text p-button-danger p-button-sm"
-                                    (click)="deleteProgramacion(programacion)" pTooltip="Eliminar"></button>
+                                    pTooltip="Descartar (vencida)"
+                                    *ngIf="programacion.activa && isVencida(programacion.fechaProximoMantenimiento)"></button>
+                                
+                                <!-- Menú de más opciones -->
+                                <button pButton pRipple icon="pi pi-ellipsis-v"
+                                    class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                                    (click)="openAccionesMenu($event, programacion)"
+                                    pTooltip="Más opciones"></button>
+                                <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
                             </div>
                         </td>
                     </tr>

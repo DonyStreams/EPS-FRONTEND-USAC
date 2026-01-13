@@ -31,27 +31,57 @@
                 </div>
             </div>
             
-            <!-- Leyenda de colores -->
-            <div class="flex flex-wrap gap-3 mb-4 p-3 surface-100 border-round">
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #6366f1"></span>
-                    <span class="text-sm">Programado (recurrente)</span>
+            <!-- Leyenda de colores por Tipo de Mantenimiento (Programaciones) -->
+            <div class="mb-4">
+                <div class="font-medium text-sm text-700 mb-2">
+                    <i class="pi pi-calendar-plus mr-2"></i>Programaciones por Tipo:
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #f59e0b"></span>
-                    <span class="text-sm">Ejecucion Programada</span>
+                <div class="flex flex-wrap gap-3 p-3 surface-100 border-round">
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
+                        <span class="text-sm">Preventivo</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
+                        <span class="text-sm">Correctivo</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
+                        <span class="text-sm">Calibración</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #f59e0b"></span>
+                        <span class="text-sm">Predictivo</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #6366f1"></span>
+                        <span class="text-sm">Otro</span>
+                    </div>
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
-                    <span class="text-sm">En Proceso</span>
+            </div>
+            
+            <!-- Leyenda de Estados (Ejecuciones) -->
+            <div class="mb-4">
+                <div class="font-medium text-sm text-700 mb-2">
+                    <i class="pi pi-check-square mr-2"></i>Ejecuciones por Estado:
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
-                    <span class="text-sm">Completado</span>
-                </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
-                    <span class="text-sm">Cancelado</span>
+                <div class="flex flex-wrap gap-3 p-3 surface-50 border-round">
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #f59e0b"></span>
+                        <span class="text-sm">Programado</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
+                        <span class="text-sm">En Proceso</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
+                        <span class="text-sm">Completado</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
+                        <span class="text-sm">Cancelado</span>
+                    </div>
                 </div>
             </div>
 
@@ -98,8 +128,9 @@
                     <span class="font-semibold">¿Cómo usar el calendario?</span>
                 </div>
                 <ul class="m-0 pl-4 text-sm text-600">
-                    <li>Haz clic en un <strong>evento morado</strong> (programación) para crear una ejecución real</li>
-                    <li>Haz clic en un <strong>evento de color</strong> (ejecución) para ver sus detalles y evidencias</li>
+                    <li>Los <strong>colores de programaciones</strong> indican el tipo: verde (preventivo), rojo (correctivo), azul (calibración), naranja (predictivo)</li>
+                    <li>Haz clic en un <strong>evento de programación</strong> para crear una ejecución real</li>
+                    <li>Los <strong>eventos de ejecución</strong> muestran su estado con colores diferentes</li>
                     <li>Haz clic en un <strong>día vacío</strong> para crear una nueva ejecución manual</li>
                     <li>Usa los botones de navegación para cambiar de mes o semana</li>
                     <li>Filtra por tipo: solo programaciones, solo ejecuciones, o ambos</li>
@@ -178,6 +209,19 @@
                 <div>
                     <p-tag [value]="selectedEvent.extendedProps?.frecuencia || 'Sin frecuencia'" severity="info"></p-tag>
                     <small class="text-500 block mt-1">Frecuencia de mantenimiento</small>
+                </div>
+            </div>
+
+            <!-- Tipo de Mantenimiento (solo para programaciones) -->
+            <div *ngIf="selectedEvent.extendedProps?.tipo === 'programacion'" class="flex align-items-center gap-3">
+                <i class="pi pi-wrench text-xl text-500"></i>
+                <div>
+                    <span class="inline-flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" 
+                              [style.background-color]="getTipoMantenimientoColor(selectedEvent.extendedProps?.tipoMantenimiento)"></span>
+                        <span class="font-medium">{{ selectedEvent.extendedProps?.tipoMantenimiento || 'Sin tipo' }}</span>
+                    </span>
+                    <small class="text-500 block mt-1">Tipo de mantenimiento</small>
                 </div>
             </div>
         </div>

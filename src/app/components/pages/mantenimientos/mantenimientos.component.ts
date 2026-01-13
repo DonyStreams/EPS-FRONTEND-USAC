@@ -27,6 +27,7 @@ interface CalendarEvent {
     extendedProps?: {
         tipo: 'programacion' | 'ejecucion';
         estado?: string;
+        tipoMantenimiento?: string;
         equipoNombre?: string;
         proveedorNombre?: string;
         contratoDescripcion?: string;
@@ -291,6 +292,9 @@ export class MantenimientosComponent implements OnInit {
 
         // Generar eventos hacia adelante
         let contadorEventos = 0;
+        const tipoMantenimientoNombre = prog.tipoMantenimiento?.nombre || '';
+        const colores = this.getColorByTipoMantenimiento(tipoMantenimientoNombre);
+        
         while (fecha <= hasta) {
             const equipoNombre = prog.equipo?.nombre || 'Equipo';
             const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
@@ -298,13 +302,14 @@ export class MantenimientosComponent implements OnInit {
             
             eventos.push({
                 id: `prog-${prog.idProgramacion}-${fecha.getTime()}`,
-                title: equipoNombre,
+                title: `${equipoNombre}`,
                 start: new Date(fecha),
-                backgroundColor: '#6366f1',
-                borderColor: '#6366f1',
+                backgroundColor: colores.bg,
+                borderColor: colores.border,
                 textColor: '#ffffff',
                 extendedProps: {
                     tipo: 'programacion',
+                    tipoMantenimiento: tipoMantenimientoNombre,
                     equipoNombre: equipoNombre,
                     proveedorNombre: proveedorNombre,
                     contratoDescripcion: contratoDesc,
@@ -341,6 +346,27 @@ export class MantenimientosComponent implements OnInit {
             case 'CANCELADO': return '#ef4444';
             default: return '#6b7280';
         }
+    }
+
+    private getColorByTipoMantenimiento(tipo?: string): { bg: string; border: string } {
+        const tipoUpper = tipo?.toUpperCase() || '';
+        if (tipoUpper.includes('PREVENTIVO')) {
+            return { bg: '#22c55e', border: '#16a34a' }; // Verde
+        } else if (tipoUpper.includes('CORRECTIVO')) {
+            return { bg: '#ef4444', border: '#dc2626' }; // Rojo
+        } else if (tipoUpper.includes('CALIBRACION') || tipoUpper.includes('CALIBRACIÓN')) {
+            return { bg: '#3b82f6', border: '#2563eb' }; // Azul
+        } else if (tipoUpper.includes('PREDICTIVO')) {
+            return { bg: '#f59e0b', border: '#d97706' }; // Naranja
+        } else if (tipoUpper.includes('EMERGENCIA')) {
+            return { bg: '#dc2626', border: '#b91c1c' }; // Rojo oscuro
+        } else {
+            return { bg: '#6366f1', border: '#4f46e5' }; // Morado (default)
+        }
+    }
+
+    getTipoMantenimientoColor(tipo?: string): string {
+        return this.getColorByTipoMantenimiento(tipo).bg;
     }
 
     handleEventClick(info: EventClickArg): void {

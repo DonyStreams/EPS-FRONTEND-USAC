@@ -1,0 +1,36 @@
+# Dependencias
+node_modules/
+
+# Build outputs
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test
+coverage/
+.nyc_output/
+
+# Documentación
+*.md
+!README.md
+
+# Archivos de configuración de desarrollo
+*.code-workspace
+.angular/

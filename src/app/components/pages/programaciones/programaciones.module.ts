@@ -9,6 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogModule } from 'primeng/dialog';
+import { MenuModule } from 'primeng/menu';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { CalendarModule } from 'primeng/calendar';
@@ -53,7 +54,8 @@ import { ProgramacionesService } from '../../../service/programaciones.service';
         ConfirmDialogModule,
         ToastModule,
         ToolbarModule,
-        TagModule
+        TagModule,
+        MenuModule
     ]
 })
 export class ProgramacionesModule { }

@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { Table } from 'primeng/table';
+import { Menu } from 'primeng/menu';
 import { HttpClient } from '@angular/common/http';
 import { ProgramacionesService } from '../../../service/programaciones.service';
 import { environment } from '../../../../environments/environment';
@@ -117,6 +118,11 @@ export class ProgramacionesComponent implements OnInit {
     tiposMantenimiento: TipoMantenimiento[] = [];
     contratosDisponibles: Contrato[] = [];
     
+    // Menú de acciones
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+    accionesMenuItems: MenuItem[] = [];
+    programacionSeleccionadaMenu: ProgramacionMantenimiento | null = null;
+
     // Opciones de frecuencia para dropdown
     frecuenciaOpciones = [
         { label: 'Semanal (7 días)', value: 7 },
@@ -931,6 +937,56 @@ export class ProgramacionesComponent implements OnInit {
             nuevaFecha: null,
             motivo: ''
         };
+    }
+
+    /**
+     * Abre el menú de acciones secundarias
+     */
+    openAccionesMenu(event: Event, programacion: ProgramacionMantenimiento): void {
+        this.programacionSeleccionadaMenu = programacion;
+        
+        this.accionesMenuItems = [
+            {
+                label: 'Ejecutar Mantenimiento',
+                icon: 'pi pi-calendar-plus',
+                visible: programacion.activa,
+                command: () => this.crearMantenimiento(programacion)
+            },
+            {
+                label: 'Reprogramar',
+                icon: 'pi pi-calendar-times',
+                visible: programacion.activa,
+                command: () => this.openReprogramarDialog(programacion)
+            },
+            {
+                label: 'Ver Historial',
+                icon: 'pi pi-history',
+                command: () => this.verHistorialProgramacion(programacion)
+            },
+            { separator: true },
+            {
+                label: programacion.activa ? 'Pausar' : 'Activar',
+                icon: programacion.activa ? 'pi pi-pause' : 'pi pi-play',
+                command: () => this.toggleActiva(programacion)
+            },
+            { separator: true },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                command: () => this.deleteProgramacion(programacion)
+            }
+        ];
+
+        this.menuAcciones.toggle(event);
+    }
+
+    /**
+     * Navega al historial filtrado por esta programación
+     */
+    verHistorialProgramacion(programacion: ProgramacionMantenimiento): void {
+        // Navegar al historial con filtro
+        window.location.href = `/administracion/historial-programaciones?programacionId=${programacion.idProgramacion}&equipoNombre=${encodeURIComponent(programacion.equipo?.nombre || '')}`;
     }
 
     /**
