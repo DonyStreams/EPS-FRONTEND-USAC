@@ -72,7 +72,6 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th pSortableColumn="idArea" style="width: 5rem">ID <p-sortIcon field="idArea"></p-sortIcon></th>
                 <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
                 <th pSortableColumn="tipoArea">Tipo <p-sortIcon field="tipoArea"></p-sortIcon></th>
                 <th style="width: 8rem">Estado</th>
@@ -82,9 +81,6 @@
         
         <ng-template pTemplate="body" let-area>
             <tr>
-                <td>
-                    <span class="font-bold text-primary">#{{ area.idArea }}</span>
-                </td>
                 <td>
                     <div class="flex align-items-center">
                         <i class="pi pi-building text-600 mr-2"></i>

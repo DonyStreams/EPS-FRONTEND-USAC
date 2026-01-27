@@ -142,6 +142,10 @@ export class HistorialProgramacionesComponent implements OnInit {
 
     getTipoEventoLabel(tipo: string): string {
         const labels: { [key: string]: string } = {
+            'CREADO': 'Creado',
+            'EDITADO': 'Editado',
+            'PAUSADO': 'Pausado',
+            'ACTIVADO': 'Activado',
             'EJECUTADO': 'Ejecutado',
             'SALTADO': 'Descartado',
             'REPROGRAMADO': 'Reprogramado'
@@ -149,17 +153,25 @@ export class HistorialProgramacionesComponent implements OnInit {
         return labels[tipo] || tipo;
     }
 
-    getTipoEventoSeverity(tipo: string): string {
-        const severities: { [key: string]: string } = {
+    getTipoEventoSeverity(tipo: string): "success" | "secondary" | "info" | "warning" | "danger" | "contrast" | undefined {
+        const severities: { [key: string]: "success" | "secondary" | "info" | "warning" | "danger" | "contrast" } = {
+            'CREADO': 'info',
+            'EDITADO': 'secondary',
+            'PAUSADO': 'warning',
+            'ACTIVADO': 'success',
             'EJECUTADO': 'success',
-            'SALTADO': 'warning',
-            'REPROGRAMADO': 'info'
+            'SALTADO': 'danger',
+            'REPROGRAMADO': 'warning'
         };
-        return severities[tipo] || 'info';
+        return severities[tipo] || 'secondary';
     }
 
     getTipoEventoIcon(tipo: string): string {
         const icons: { [key: string]: string } = {
+            'CREADO': 'pi pi-plus-circle',
+            'EDITADO': 'pi pi-pencil',
+            'PAUSADO': 'pi pi-pause',
+            'ACTIVADO': 'pi pi-play',
             'EJECUTADO': 'pi pi-check-circle',
             'SALTADO': 'pi pi-forward',
             'REPROGRAMADO': 'pi pi-calendar-plus'

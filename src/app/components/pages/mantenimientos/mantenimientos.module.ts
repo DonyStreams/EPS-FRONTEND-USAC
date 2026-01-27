@@ -15,6 +15,7 @@ import { CalendarModule } from 'primeng/calendar';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @NgModule({
     imports: [
@@ -32,7 +33,8 @@ import { FullCalendarModule } from '@fullcalendar/angular';
         CalendarModule,
         TagModule,
         TooltipModule,
-        FullCalendarModule
+        FullCalendarModule,
+        ConfirmDialogModule
     ],
     declarations: [MantenimientosComponent]
 })

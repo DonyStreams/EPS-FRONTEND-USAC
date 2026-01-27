@@ -128,14 +128,8 @@
                 <th pSortableColumn="equipoNombre">
                     Equipo <p-sortIcon field="equipoNombre"></p-sortIcon>
                 </th>
-                <th pSortableColumn="tipoMantenimiento" style="width: 150px">
-                    Tipo <p-sortIcon field="tipoMantenimiento"></p-sortIcon>
-                </th>
-                <th style="width: 200px">
-                    Fechas
-                </th>
                 <th pSortableColumn="motivo">
-                    Motivo
+                    Motivo / Detalle
                 </th>
                 <th pSortableColumn="usuarioNombre" style="width: 150px">
                     Usuario <p-sortIcon field="usuarioNombre"></p-sortIcon>
@@ -163,30 +157,16 @@
                         <i class="pi pi-desktop text-primary mr-2"></i>
                         <div>
                             <div class="font-semibold">{{ registro.equipoNombre || 'Sin equipo' }}</div>
-                            <small class="text-500" *ngIf="registro.equipoSerie">
-                                S/N: {{ registro.equipoSerie }}
-                            </small>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="text-600">{{ registro.tipoMantenimiento || 'N/A' }}</span>
-                </td>
-                <td>
-                    <div class="text-sm">
-                        <div class="flex align-items-center mb-1">
-                            <span class="text-500 mr-2">Original:</span>
-                            <span class="font-medium">{{ formatDateOnly(registro.fechaOriginal) }}</span>
-                        </div>
-                        <div class="flex align-items-center" *ngIf="registro.fechaNueva">
-                            <span class="text-500 mr-2">Nueva:</span>
-                            <span class="font-medium text-primary">{{ formatDateOnly(registro.fechaNueva) }}</span>
+                            <small class="text-500">{{ registro.tipoMantenimiento || '' }}</small>
                         </div>
                     </div>
                 </td>
                 <td>
                     <div class="white-space-normal text-600 text-sm">
                         {{ registro.motivo || 'Sin motivo especificado' }}
+                        <div *ngIf="registro.tipoEvento === 'REPROGRAMADO' || registro.tipoEvento === 'SALTADO'" class="text-xs text-500 mt-1">
+                            {{ formatDateOnly(registro.fechaOriginal) }} → {{ formatDateOnly(registro.fechaNueva) }}
+                        </div>
                     </div>
                 </td>
                 <td>
@@ -201,7 +181,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7" class="text-center p-5">
+                <td colspan="5" class="text-center p-5">
                     <div class="flex flex-column align-items-center">
                         <i class="pi pi-inbox text-4xl text-300 mb-3"></i>
                         <span class="text-600">No hay registros en el historial</span>

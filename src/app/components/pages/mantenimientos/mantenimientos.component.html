@@ -2,6 +2,11 @@
     <div class="col-12">
         <div class="card">
             <p-toast></p-toast>
+            <p-confirmDialog [style]="{width: '450px'}">
+                <ng-template pTemplate="message" let-message>
+                    <div [innerHTML]="message.message"></div>
+                </ng-template>
+            </p-confirmDialog>
             
             <!-- Header con titulo y controles -->
             <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center mb-4 gap-3">
@@ -31,26 +36,107 @@
                 </div>
             </div>
             
-            <!-- Leyenda de colores por Tipo de Mantenimiento -->
-            <div class="flex flex-wrap gap-3 p-3 mb-4 surface-100 border-round align-items-center">
-                <span class="text-sm font-medium text-700 mr-2">
-                    <i class="pi pi-info-circle mr-1"></i>Tipos:
-                </span>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
-                    <span class="text-sm">Preventivo</span>
+            <!-- Leyenda de colores y rango de visualización -->
+            <div class="flex flex-wrap justify-content-between gap-3 p-3 mb-4 surface-100 border-round align-items-center">
+                <div class="flex flex-wrap gap-3 align-items-center">
+                    <span class="text-sm font-medium text-700 mr-2">
+                        <i class="pi pi-info-circle mr-1"></i>Tipos:
+                    </span>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #22c55e"></span>
+                        <span class="text-sm">Preventivo</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
+                        <span class="text-sm">Correctivo</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
+                        <span class="text-sm">Calibración</span>
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                        <span class="w-1rem h-1rem border-round" style="background-color: #6366f1"></span>
+                        <span class="text-sm">Otros</span>
+                    </div>
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #ef4444"></span>
-                    <span class="text-sm">Correctivo</span>
+                <div class="flex align-items-center gap-2 text-500">
+                    <i class="pi pi-eye text-sm"></i>
+                    <span class="text-sm">Mostrando: 3 meses atrás - 6 meses adelante</span>
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #3b82f6"></span>
-                    <span class="text-sm">Calibración</span>
+            </div>
+
+            <!-- Mini Dashboard de Estadísticas -->
+            <div class="grid mb-4">
+                <div class="col-12 md:col-6 lg:col-3">
+                    <div class="surface-card shadow-1 border-round p-3">
+                        <div class="flex justify-content-between align-items-center">
+                            <div>
+                                <span class="block text-500 font-medium mb-1">Programaciones Activas</span>
+                                <div class="text-900 font-bold text-2xl">{{ stats.totalProgramados }}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-blue-100 border-round" 
+                                 style="width: 2.5rem; height: 2.5rem">
+                                <i class="pi pi-calendar text-blue-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <span class="text-500 text-sm">Equipos con mantenimiento programado</span>
+                    </div>
                 </div>
-                <div class="flex align-items-center gap-2">
-                    <span class="w-1rem h-1rem border-round" style="background-color: #6366f1"></span>
-                    <span class="text-sm">Otros</span>
+                
+                <div class="col-12 md:col-6 lg:col-3">
+                    <div class="surface-card shadow-1 border-round p-3">
+                        <div class="flex justify-content-between align-items-center">
+                            <div>
+                                <span class="block text-500 font-medium mb-1">Próximos 7 días</span>
+                                <div class="text-900 font-bold text-2xl">{{ stats.proximos7Dias }}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-orange-100 border-round" 
+                                 style="width: 2.5rem; height: 2.5rem">
+                                <i class="pi pi-clock text-orange-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <span class="text-orange-500 text-sm font-medium">Requieren atención</span>
+                    </div>
+                </div>
+                
+                <div class="col-12 md:col-6 lg:col-3">
+                    <div class="surface-card shadow-1 border-round p-3">
+                        <div class="flex justify-content-between align-items-center">
+                            <div>
+                                <span class="block text-500 font-medium mb-1">Este Mes</span>
+                                <div class="text-900 font-bold text-2xl">{{ stats.esteMes }}</div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center bg-cyan-100 border-round" 
+                                 style="width: 2.5rem; height: 2.5rem">
+                                <i class="pi pi-calendar-plus text-cyan-500 text-xl"></i>
+                            </div>
+                        </div>
+                        <span class="text-500 text-sm">Mantenimientos del mes</span>
+                    </div>
+                </div>
+                
+                <div class="col-12 md:col-6 lg:col-3">
+                    <div class="surface-card shadow-1 border-round p-3" 
+                         [ngClass]="{'border-left-3 border-red-500': stats.vencidos > 0}">
+                        <div class="flex justify-content-between align-items-center">
+                            <div>
+                                <span class="block text-500 font-medium mb-1">Vencidos</span>
+                                <div class="font-bold text-2xl" 
+                                     [ngClass]="stats.vencidos > 0 ? 'text-red-500' : 'text-900'">
+                                    {{ stats.vencidos }}
+                                </div>
+                            </div>
+                            <div class="flex align-items-center justify-content-center border-round" 
+                                 [ngClass]="stats.vencidos > 0 ? 'bg-red-100' : 'bg-green-100'"
+                                 style="width: 2.5rem; height: 2.5rem">
+                                <i class="text-xl" 
+                                   [ngClass]="stats.vencidos > 0 ? 'pi pi-exclamation-triangle text-red-500' : 'pi pi-check text-green-500'"></i>
+                            </div>
+                        </div>
+                        <span class="text-sm" [ngClass]="stats.vencidos > 0 ? 'text-red-500 font-medium' : 'text-green-500'">
+                            {{ stats.vencidos > 0 ? '¡Requieren atención!' : 'Todo al día' }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -112,6 +198,19 @@
     
     <ng-template pTemplate="content">
         <div *ngIf="selectedEvent" class="flex flex-column gap-3">
+            
+            <!-- Alerta de contrato vencido -->
+            <div *ngIf="selectedEvent.extendedProps?.contratoVencido" 
+                 class="p-3 border-round bg-orange-50 border-1 border-orange-300 flex align-items-center gap-3">
+                <i class="pi pi-exclamation-triangle text-orange-500 text-2xl"></i>
+                <div>
+                    <div class="font-semibold text-orange-700">⚠️ Contrato Vencido</div>
+                    <div class="text-orange-600 text-sm">
+                        El contrato asociado ya venció. Actualice el contrato para continuar con los servicios de mantenimiento.
+                    </div>
+                </div>
+            </div>
+
             <!-- Fecha -->
             <div class="flex align-items-center gap-2 p-3 surface-100 border-round">
                 <i class="pi pi-calendar text-2xl text-primary"></i>
@@ -141,10 +240,19 @@
 
             <!-- Contrato -->
             <div class="flex align-items-center gap-3">
-                <i class="pi pi-file text-xl text-500"></i>
+                <i class="pi pi-file text-xl" [class.text-orange-500]="selectedEvent.extendedProps?.contratoVencido" [class.text-500]="!selectedEvent.extendedProps?.contratoVencido"></i>
                 <div>
-                    <div class="font-medium">{{ selectedEvent.extendedProps?.contratoDescripcion || 'Sin contrato' }}</div>
+                    <div class="font-medium" [class.text-orange-600]="selectedEvent.extendedProps?.contratoVencido">
+                        {{ selectedEvent.extendedProps?.contratoDescripcion || 'Sin contrato' }}
+                        <p-tag *ngIf="selectedEvent.extendedProps?.contratoVencido" value="VENCIDO" severity="warning" class="ml-2" [style]="{fontSize: '0.7rem'}"></p-tag>
+                    </div>
                     <small class="text-500">Contrato</small>
+                    <div *ngIf="selectedEvent.extendedProps?.contratoFechaFin" class="mt-1">
+                        <small [class.text-orange-600]="selectedEvent.extendedProps?.contratoVencido" [class.text-600]="!selectedEvent.extendedProps?.contratoVencido">
+                            <i class="pi pi-clock mr-1"></i>
+                            {{ selectedEvent.extendedProps?.contratoVencido ? 'Venció el' : 'Vigente hasta' }}: {{ formatDateShort(selectedEvent.extendedProps.contratoFechaFin) }}
+                        </small>
+                    </div>
                 </div>
             </div>
 
@@ -163,7 +271,7 @@
                 <div>
                     <span class="inline-flex align-items-center gap-2">
                         <span class="w-1rem h-1rem border-round" 
-                              [style.background-color]="getTipoMantenimientoColor(selectedEvent.extendedProps?.tipoMantenimiento)"></span>
+                              [style.background-color]="selectedEvent.extendedProps?.contratoVencido ? '#6c757d' : getTipoMantenimientoColor(selectedEvent.extendedProps?.tipoMantenimiento)"></span>
                         <span class="font-medium">{{ selectedEvent.extendedProps?.tipoMantenimiento || 'Sin tipo' }}</span>
                     </span>
                     <small class="text-500 block mt-1">Tipo de mantenimiento</small>
@@ -173,12 +281,24 @@
     </ng-template>
     
     <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cerrar" icon="pi pi-times" 
-                class="p-button-text" (click)="closeDetailDialog()"></button>
-        
-        <!-- Botón para crear ejecución desde programación -->
-        <button pButton pRipple label="Registrar Ejecución" icon="pi pi-plus" 
-                class="p-button-success" (click)="crearDesdeProgamacion()"></button>
+        <div class="flex justify-content-between w-full">
+            <button pButton pRipple label="Cerrar" icon="pi pi-times" 
+                    class="p-button-text" (click)="closeDetailDialog()"></button>
+            
+            <div class="flex gap-2">
+                <!-- Botón para ver la programación -->
+                <button pButton pRipple label="Ver Programación" icon="pi pi-external-link" 
+                        class="p-button-outlined" 
+                        (click)="verProgramacion()"
+                        pTooltip="Ir al detalle de la programación"></button>
+                
+                <!-- Botón para crear ejecución desde programación -->
+                <button pButton pRipple label="Registrar Ejecución" icon="pi pi-play" 
+                        class="p-button-success" 
+                        (click)="crearDesdeProgamacion()"
+                        pTooltip="Crear ejecución de mantenimiento"></button>
+            </div>
+        </div>
     </ng-template>
 </p-dialog>
 

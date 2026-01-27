@@ -19,7 +19,6 @@ export class ContratosComponent implements OnInit {
     proveedores: Proveedor[] = [];
     
     displayDialog: boolean = false;
-    displayFileDialog: boolean = false;
     contratoForm: FormGroup;
     selectedContrato: Contrato | null = null;
     isEditing: boolean = false;
@@ -420,43 +419,6 @@ export class ContratosComponent implements OnInit {
     }
     
     // 📎 MÉTODOS DE ARCHIVOS
-    
-    verArchivos(contrato: Contrato): void {
-        console.log('👁️ Ver archivos del contrato:', contrato.id);
-        this.openFileDialog(contrato);
-    }
-    
-    openFileDialog(contrato: Contrato): void {
-        console.log('📂 Abriendo modal de archivos para contrato:', contrato.id);
-        
-        this.selectedContrato = contrato;
-        this.uploadedFiles = []; // Limpiar archivos previos
-        
-        // Resetear flags de control
-        this.isClearing = false;
-        this.lastClearTime = 0;
-        
-        this.displayFileDialog = true;
-        
-        // 🆕 Limpiar cualquier estado previo del componente de upload
-        setTimeout(() => {
-            if (this.fileUpload) {
-                // Limpiar también nuestro array local
-                this.uploadedFiles = [];
-                
-                // Resetear el input si existe
-                const input = this.fileUpload.basicFileInput?.nativeElement;
-                if (input) {
-                    input.value = '';
-                }
-                
-                // Limpiar array interno
-                if (this.fileUpload.files) {
-                    this.fileUpload.files = [];
-                }
-            }
-        }, 100);
-    }
 
     // 🆕 MÉTODO PARA NAVEGAR A LA PÁGINA DE GESTIÓN DE ARCHIVOS
     gestionarArchivos(contrato: Contrato): void {
@@ -583,11 +545,6 @@ export class ContratosComponent implements OnInit {
             detail: `${fileName} ha sido eliminado`
         });
     }
-
-    // 🆕 MÉTODO PARA CERRAR EL MODAL DE ARCHIVOS
-    closeFileDialog(): void {
-        this.limpiarEstadoModal();
-    }
     
     uploadFiles(): void {
         if (this.uploadedFiles.length === 0) {
@@ -664,10 +621,8 @@ export class ContratosComponent implements OnInit {
                 detail: `${exitosos} archivo(s) subido(s) correctamente`
             });
             
-            // 🆕 Limpiar completamente el estado del modal
-            this.limpiarEstadoModal();
-            
-            // 🆕 Recargar la lista de contratos para actualizar el contador de archivos
+            // Limpiar archivos y recargar lista
+            this.uploadedFiles = [];
             this.loadContratos();
             
         } else if (exitosos > 0 && errores > 0) {
@@ -1037,36 +992,6 @@ export class ContratosComponent implements OnInit {
                 return stringValue;
             }).join(',');
         }).join('\n');
-    }
-    
-    // 🆕 MÉTODO PARA LIMPIAR COMPLETAMENTE EL ESTADO DEL MODAL
-    private limpiarEstadoModal(): void {
-        console.log('🧹 Limpiando estado del modal...');
-        
-        this.displayFileDialog = false;
-        this.uploadedFiles = [];
-        this.selectedContrato = null;
-        
-        // Resetear flags de control
-        this.isClearing = false;
-        this.lastClearTime = 0;
-        
-        // Usar setTimeout para asegurar que el DOM se actualice
-        setTimeout(() => {
-            // Limpiar el componente p-fileUpload usando ViewChild
-            if (this.fileUpload) {
-                // Resetear el input de archivo directamente
-                const input = this.fileUpload.basicFileInput?.nativeElement;
-                if (input) {
-                    input.value = '';
-                }
-                
-                // Limpiar el array interno si existe
-                if (this.fileUpload.files) {
-                    this.fileUpload.files = [];
-                }
-            }
-        }, 100);
     }
     
     private getMockProveedores(): Proveedor[] {

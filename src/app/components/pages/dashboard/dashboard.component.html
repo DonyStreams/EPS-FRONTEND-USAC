@@ -1,109 +1,360 @@
-<div class="grid">
-    <div class="col-12">
-        <div class="card px-6 py-6">
-            <h3 class="mb-4">Dashboard - Sistema de Mantenimientos</h3>
-            
-            <!-- Alertas Importantes -->
-            <div class="grid" *ngIf="dashboardAlertas">
-                <div class="col-12">
-                    <h5 class="text-900 font-semibold mb-3">
-                        <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
-                        Alertas del Sistema
-                    </h5>
+<div class="dashboard-container">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-overlay">
+        <div class="loading-content">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Cargando dashboard...</p>
+        </div>
+    </div>
+
+    <div *ngIf="!loading" class="grid">
+        <!-- Header -->
+        <div class="col-12">
+            <div class="flex flex-column md:flex-row justify-content-between align-items-start md:align-items-center gap-3 mb-4">
+                <div>
+                    <h2 class="m-0 text-900 font-bold">Dashboard - Sistema de Mantenimientos</h2>
+                    <p class="text-500 mt-1 mb-0">Resumen general del sistema INACIF</p>
                 </div>
-                
-                <div class="col-12 sm:col-6 lg:col-3">
-                    <div class="card p-3 border-left-3 border-red-500">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-1">Programaciones Vencidas</span>
-                                <div class="text-900 font-medium text-xl">{{ totalVencidas }}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-red-100 border-round" style="width:2.5rem;height:2.5rem">
-                                <i class="pi pi-calendar-times text-red-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <span class="text-red-500 font-medium text-sm">Requieren atención inmediata</span>
+                <p-button icon="pi pi-refresh" label="Actualizar" styleClass="p-button-outlined" (onClick)="loadAllData()"></p-button>
+            </div>
+        </div>
+
+        <!-- KPIs Principales - Alertas -->
+        <div class="col-12">
+            <div class="section-title">
+                <i class="pi pi-exclamation-triangle text-orange-500"></i>
+                <h5 class="text-900">Alertas y Programaciones</h5>
+            </div>
+        </div>
+
+        <div class="col-12 sm:col-6 lg:col-3 xl:col-3">
+            <div class="card kpi-card p-3 border-left-3 border-red-500">
+                <div class="flex justify-content-between align-items-start">
+                    <div class="flex-1">
+                        <span class="kpi-label block text-500 font-medium mb-1">Vencidos</span>
+                        <div class="kpi-value text-red-600">{{ totalVencidas }}</div>
+                        <span class="kpi-sublabel text-red-500 font-medium">Atención inmediata</span>
                     </div>
-                </div>
-                
-                <div class="col-12 sm:col-6 lg:col-3">
-                    <div class="card p-3 border-left-3 border-orange-500">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-1">Total Alertas</span>
-                                <div class="text-900 font-medium text-xl">{{ totalAlertas }}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-orange-100 border-round" style="width:2.5rem;height:2.5rem">
-                                <i class="pi pi-bell text-orange-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <span class="text-orange-500 font-medium text-sm">Notificaciones pendientes</span>
-                    </div>
-                </div>
-                
-                <div class="col-12 sm:col-6 lg:col-3">
-                    <div class="card p-3 border-left-3 border-blue-500">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-1">Programaciones Activas</span>
-                                <div class="text-900 font-medium text-xl">{{ totalProgramaciones }}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-blue-100 border-round" style="width:2.5rem;height:2.5rem">
-                                <i class="pi pi-calendar-plus text-blue-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <span class="text-blue-500 font-medium text-sm">En seguimiento</span>
-                    </div>
-                </div>
-                
-                <div class="col-12 sm:col-6 lg:col-3">
-                    <div class="card p-3 border-left-3 border-green-500">
-                        <div class="flex justify-content-between mb-3">
-                            <div>
-                                <span class="block text-500 font-medium mb-1">Equipos Activos</span>
-                                <div class="text-900 font-medium text-xl">{{ equiposActivos }}</div>
-                            </div>
-                            <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width:2.5rem;height:2.5rem">
-                                <i class="pi pi-desktop text-green-500 text-xl"></i>
-                            </div>
-                        </div>
-                        <span class="text-green-500 font-medium text-sm">En el sistema</span>
+                    <div class="kpi-icon flex align-items-center justify-content-center bg-red-100 border-round">
+                        <i class="pi pi-calendar-times text-red-500 text-xl"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Accesos Rápidos -->
-            <div class="grid mt-5">
-                <div class="col-12">
-                    <h5 class="text-900 font-semibold mb-3">
-                        <i class="pi pi-bolt text-blue-500 mr-2"></i>
-                        Accesos Rápidos
-                    </h5>
-                </div>
-                <div class="col-12">
-                    <div class="card p-3">
-                        <div class="flex flex-wrap gap-3">
-                            <p-button 
-                                *ngFor="let item of items" 
-                                [label]="item.label" 
-                                [icon]="item.icon"
-                                [routerLink]="item.routerLink"
-                                [queryParams]="item.queryParams"
-                                class="p-button-outlined">
-                            </p-button>
-                        </div>
+        <div class="col-12 sm:col-6 lg:col-3 xl:col-3">
+            <div class="card kpi-card p-3 border-left-3 border-orange-500">
+                <div class="flex justify-content-between align-items-start">
+                    <div class="flex-1">
+                        <span class="kpi-label block text-500 font-medium mb-1">Alertas Activas</span>
+                        <div class="kpi-value text-orange-600">{{ totalAlertas }}</div>
+                        <span class="kpi-sublabel text-orange-500 font-medium">Próximos a vencer</span>
+                    </div>
+                    <div class="kpi-icon flex align-items-center justify-content-center bg-orange-100 border-round">
+                        <i class="pi pi-bell text-orange-500 text-xl"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Gráfico Principal -->
-            <div class="grid mt-5">
-                <div class="col-12">
-                    <div class="card">
-                        <h5>Tendencia de Mantenimientos</h5>
-                        <p-chart type="line" [data]="chartData" [options]="chartOptions"></p-chart>
+        <div class="col-12 sm:col-6 lg:col-3 xl:col-3">
+            <div class="card kpi-card p-3 border-left-3 border-blue-500">
+                <div class="flex justify-content-between align-items-start">
+                    <div class="flex-1">
+                        <span class="kpi-label block text-500 font-medium mb-1">Programaciones</span>
+                        <div class="kpi-value text-blue-600">{{ totalProgramaciones }}</div>
+                        <span class="kpi-sublabel text-blue-500 font-medium">Activas</span>
                     </div>
+                    <div class="kpi-icon flex align-items-center justify-content-center bg-blue-100 border-round">
+                        <i class="pi pi-calendar-plus text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 sm:col-6 lg:col-3 xl:col-3">
+            <div class="card kpi-card p-3 border-left-3 border-purple-500">
+                <div class="flex justify-content-between align-items-start">
+                    <div class="flex-1">
+                        <span class="kpi-label block text-500 font-medium mb-1">Tickets Críticos</span>
+                        <div class="kpi-value text-purple-600">{{ ticketsCriticos }}</div>
+                        <span class="kpi-sublabel text-purple-500 font-medium">Sin cerrar</span>
+                    </div>
+                    <div class="kpi-icon flex align-items-center justify-content-center bg-purple-100 border-round">
+                        <i class="pi pi-exclamation-circle text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs Secundarios - Inventario -->
+        <div class="col-12 mt-3">
+            <div class="section-title">
+                <i class="pi pi-box text-cyan-500"></i>
+                <h5 class="text-900">Inventario y Recursos</h5>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-green-600">{{ equiposActivos }}</div>
+                    <span class="kpi-label text-500">Equipos Activos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-red-600">{{ equiposCriticos }}</div>
+                    <span class="kpi-label text-500">Equipos Críticos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-cyan-600">{{ contratosActivos }}</div>
+                    <span class="kpi-label text-500">Contratos Vigentes</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-red-600">{{ contratosVencidos }}</div>
+                    <span class="kpi-label text-500">Contratos Vencidos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-indigo-600">{{ proveedoresActivos }}</div>
+                    <span class="kpi-label text-500">Proveedores</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 sm:col-6 md:col-4 lg:col-2">
+            <div class="card kpi-card p-3 surface-100">
+                <div class="text-center">
+                    <div class="kpi-value text-teal-600">{{ ejecucionesCompletadas }}</div>
+                    <span class="kpi-label text-500">Ejec. Completadas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accesos Rápidos -->
+        <div class="col-12 mt-3">
+            <div class="card quick-actions">
+                <div class="section-title">
+                    <i class="pi pi-bolt text-blue-500"></i>
+                    <h5 class="text-900">Accesos Rápidos</h5>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <p-button 
+                        *ngFor="let item of items" 
+                        [label]="item.label" 
+                        [icon]="item.icon"
+                        [routerLink]="item.routerLink"
+                        [queryParams]="item.queryParams"
+                        styleClass="p-button-outlined p-button-sm">
+                    </p-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos Row 1 -->
+        <div class="col-12 mt-3">
+            <div class="section-title">
+                <i class="pi pi-chart-bar text-green-500"></i>
+                <h5 class="text-900">Estadísticas de Equipos</h5>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-4">
+            <div class="card chart-container">
+                <h6 class="text-700 font-semibold mb-3">Equipos por Estado</h6>
+                <div class="chart-wrapper">
+                    <p-chart type="doughnut" [data]="equiposPorEstadoData" [options]="equiposPorEstadoOptions" *ngIf="equiposPorEstadoData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-8">
+            <div class="card chart-container">
+                <h6 class="text-700 font-semibold mb-3">Equipos por Área/Laboratorio</h6>
+                <div class="chart-wrapper">
+                    <p-chart type="bar" [data]="equiposPorAreaData" [options]="equiposPorAreaOptions" *ngIf="equiposPorAreaData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos Row 2 - Tickets -->
+        <div class="col-12 mt-3">
+            <div class="section-title">
+                <i class="pi pi-ticket text-yellow-500"></i>
+                <h5 class="text-900">Estadísticas de Tickets</h5>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-4">
+            <div class="card chart-container">
+                <h6 class="text-700 font-semibold mb-3">Tickets por Prioridad</h6>
+                <div class="chart-wrapper">
+                    <p-chart type="pie" [data]="ticketsPorPrioridadData" [options]="ticketsPorPrioridadOptions" *ngIf="ticketsPorPrioridadData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-4">
+            <div class="card chart-container">
+                <h6 class="text-700 font-semibold mb-3">Tickets por Estado</h6>
+                <div class="chart-wrapper">
+                    <p-chart type="doughnut" [data]="ticketsPorEstadoData" [options]="ticketsPorEstadoOptions" *ngIf="ticketsPorEstadoData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-6 xl:col-4">
+            <div class="card chart-container">
+                <h6 class="text-700 font-semibold mb-3">Ejecuciones por Estado</h6>
+                <div class="chart-wrapper">
+                    <p-chart type="pie" [data]="ejecucionesPorEstadoData" [options]="ejecucionesPorEstadoOptions" *ngIf="ejecucionesPorEstadoData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tendencia de Mantenimientos -->
+        <div class="col-12 mt-3">
+            <div class="card">
+                <div class="section-title">
+                    <i class="pi pi-chart-line text-blue-500"></i>
+                    <h5 class="text-900">Tendencia de Ejecuciones (Últimos 6 meses)</h5>
+                </div>
+                <div style="height: 300px;">
+                    <p-chart type="line" [data]="tendenciaMantenimientosData" [options]="tendenciaMantenimientosOptions" *ngIf="tendenciaMantenimientosData"></p-chart>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas Recientes -->
+        <div class="col-12 xl:col-6 mt-3">
+            <div class="card alerts-table">
+                <div class="section-title">
+                    <i class="pi pi-list text-orange-500"></i>
+                    <h5 class="text-900">Alertas Recientes</h5>
+                </div>
+                <p-table [value]="alertasRecientes" [responsive]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Equipo</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Días</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-alerta>
+                        <tr>
+                            <td>
+                                <span class="font-medium">{{ alerta.equipo?.nombre || 'N/A' }}</span>
+                                <br>
+                                <small class="text-500">{{ alerta.equipo?.codigoInacif }}</small>
+                            </td>
+                            <td>{{ alerta.tipoMantenimiento?.nombre || 'N/A' }}</td>
+                            <td>
+                                <span class="alert-badge" [ngClass]="{'vencido': calcularDiasRestantes(alerta) < 0, 'alerta': calcularDiasRestantes(alerta) >= 0}">
+                                    <i class="pi" [ngClass]="getAlertaIcon(alerta)"></i>
+                                    {{ getAlertaEstado(alerta) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span [ngClass]="{'text-red-600': calcularDiasRestantes(alerta) < 0, 'text-orange-600': calcularDiasRestantes(alerta) >= 0}">
+                                    {{ formatDiasRestantes(alerta) }}
+                                </span>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="4" class="text-center text-500 py-4">
+                                <i class="pi pi-check-circle text-green-500 text-2xl mb-2"></i>
+                                <p>No hay alertas pendientes</p>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+                <div class="mt-3 text-right" *ngIf="alertasRecientes.length > 0">
+                    <a routerLink="/administracion/programaciones" class="text-primary font-medium no-underline">
+                        Ver todas las alertas <i class="pi pi-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Contratos -->
+        <div class="col-12 xl:col-6 mt-3">
+            <div class="card">
+                <div class="section-title">
+                    <i class="pi pi-file text-cyan-500"></i>
+                    <h5 class="text-900">Estado de Contratos</h5>
+                </div>
+                <div class="grid">
+                    <div class="col-12 md:col-6">
+                        <div class="chart-wrapper" style="height: 200px;">
+                            <p-chart type="doughnut" [data]="contratosPorEstadoData" [options]="contratosPorEstadoOptions" *ngIf="contratosPorEstadoData"></p-chart>
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-6">
+                        <div class="flex flex-column gap-2 justify-content-center h-full">
+                            <div class="flex align-items-center gap-3 p-2 surface-100 border-round">
+                                <div class="bg-green-100 p-2 border-round">
+                                    <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-900 font-bold text-xl">{{ contratosActivos }}</div>
+                                    <span class="text-500 text-sm">Vigentes</span>
+                                </div>
+                            </div>
+                            <div class="flex align-items-center gap-3 p-2 surface-100 border-round">
+                                <div class="bg-orange-100 p-2 border-round">
+                                    <i class="pi pi-clock text-orange-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-900 font-bold text-xl">{{ contratosPorVencer }}</div>
+                                    <span class="text-500 text-sm">Por Vencer (30d)</span>
+                                </div>
+                            </div>
+                            <div class="flex align-items-center gap-3 p-2 surface-100 border-round">
+                                <div class="bg-red-100 p-2 border-round">
+                                    <i class="pi pi-times-circle text-red-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-900 font-bold text-xl">{{ contratosVencidos }}</div>
+                                    <span class="text-500 text-sm">Vencidos</span>
+                                </div>
+                            </div>
+                            <div class="flex align-items-center gap-3 p-2 surface-100 border-round">
+                                <div class="bg-blue-100 p-2 border-round">
+                                    <i class="pi pi-users text-blue-600 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-900 font-bold text-xl">{{ proveedoresActivos }}</div>
+                                    <span class="text-500 text-sm">Proveedores</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-right">
+                    <a routerLink="/administracion/contratos" class="text-primary font-medium no-underline">
+                        Gestionar contratos <i class="pi pi-arrow-right ml-1"></i>
+                    </a>
                 </div>
             </div>
         </div>

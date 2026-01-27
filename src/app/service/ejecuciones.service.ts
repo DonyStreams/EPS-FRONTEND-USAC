@@ -23,6 +23,7 @@ export interface EjecucionMantenimiento {
     idProgramacion?: number;
     frecuenciaDias?: number;
     fechaProximoProgramado?: string | Date | null;
+    tipoMantenimiento?: string;
 
     usuarioResponsableId?: number;
     usuarioResponsableNombre?: string;

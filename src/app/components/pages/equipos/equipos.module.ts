@@ -13,6 +13,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CheckboxModule } from 'primeng/checkbox';
+import { MenuModule } from 'primeng/menu';
 
 import { EquiposListComponent } from './equipos-list.component';
 import { HistorialEquiposComponent } from './historial-equipos/historial-equipos.component';
@@ -38,6 +39,7 @@ import { EquiposRoutingModule } from './equipos-routing.module';
     ToastModule,
     ConfirmDialogModule,
     CheckboxModule,
+    MenuModule,
     EquiposRoutingModule
   ]
 })

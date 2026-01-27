@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { KeycloakService } from './keycloak.service';
+import { UsuariosService, Usuario } from './usuarios.service';
 
 export interface Ticket {
     id?: number;
@@ -92,8 +94,53 @@ export interface EvidenciaTicket {
 })
 export class TicketsService {
     private apiUrl = `${environment.apiUrl}/tickets`;
+    private currentUsuario: Usuario | null = null;
 
-    constructor(private http: HttpClient) { }
+    constructor(
+        private http: HttpClient,
+        private keycloakService: KeycloakService,
+        private usuariosService: UsuariosService
+    ) {
+        // Cargar usuario actual al inicializar
+        this.loadCurrentUser();
+    }
+    
+    /**
+     * Carga el usuario actual basado en el keycloakId
+     */
+    private loadCurrentUser(): void {
+        const keycloakId = this.keycloakService.getUserId();
+        if (keycloakId) {
+            this.usuariosService.getByKeycloakId(keycloakId).subscribe({
+                next: (usuario) => {
+                    this.currentUsuario = usuario;
+                    console.log('✅ Usuario actual cargado:', usuario.nombreCompleto);
+                },
+                error: (err) => {
+                    console.warn('⚠️ No se pudo cargar usuario de BD, usando datos de Keycloak');
+                    // Usar datos de Keycloak como fallback
+                    this.currentUsuario = {
+                        id: 1, // ID por defecto
+                        keycloakId: keycloakId,
+                        nombreCompleto: this.keycloakService.getUserFullName() || 'Usuario',
+                        correo: this.keycloakService.getUserEmail() || '',
+                        activo: true
+                    };
+                }
+            });
+        }
+    }
+    
+    /**
+     * Obtiene el usuario actual (ID y nombre)
+     */
+    getCurrentUser(): { id: number, nombre: string } {
+        if (this.currentUsuario) {
+            return { id: this.currentUsuario.id, nombre: this.currentUsuario.nombreCompleto };
+        }
+        // Fallback
+        return { id: 1, nombre: this.keycloakService.getUserFullName() || 'Sistema' };
+    }
 
     getAll(): Observable<Ticket[]> {
         return this.http.get<{tickets: Ticket[], total: number, success: boolean}>(this.apiUrl)
@@ -119,7 +166,14 @@ export class TicketsService {
     }
 
     update(id: number, ticket: Partial<Ticket>): Observable<Ticket> {
-        return this.http.put<Ticket>(`${this.apiUrl}/${id}`, ticket);
+        // Agregar información del usuario que modifica
+        const currentUser = this.getCurrentUser();
+        const ticketConUsuario = {
+            ...ticket,
+            usuarioModificadorId: currentUser.id,
+            usuarioModificadorNombre: currentUser.nombre
+        };
+        return this.http.put<Ticket>(`${this.apiUrl}/${id}`, ticketConUsuario);
     }
 
     delete(id: number): Observable<{message: string, success: boolean}> {
@@ -160,7 +214,12 @@ export class TicketsService {
     }
 
     uploadEvidenciaArchivo(ticketId: number, file: File, descripcion?: string): Observable<any> {
-        let headers = new HttpHeaders({ 'X-Filename': file.name });
+        const currentUser = this.getCurrentUser();
+        let headers = new HttpHeaders({ 
+            'X-Filename': file.name,
+            'X-Usuario-Id': currentUser.id.toString(),
+            'X-Usuario-Nombre': encodeURIComponent(currentUser.nombre)
+        });
         if (descripcion && descripcion.trim().length > 0) {
             headers = headers.set('X-Descripcion', encodeURIComponent(descripcion.trim()));
         }

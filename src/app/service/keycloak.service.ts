@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import Keycloak from 'keycloak-js';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -7,6 +8,10 @@ import Keycloak from 'keycloak-js';
 export class KeycloakService {
   private keycloakInstance!: Keycloak.KeycloakInstance;
   private initialized: boolean = false;
+  
+  // Observable para notificar cuando la sesión expira
+  private sessionExpired$ = new BehaviorSubject<boolean>(false);
+  public onSessionExpired = this.sessionExpired$.asObservable();
 
   constructor() {
     this.keycloakInstance = new (Keycloak as any)({
@@ -59,7 +64,7 @@ export class KeycloakService {
     // Renovar token cuando la pestaña vuelve a estar activa
     // Esto soluciona el problema de que setInterval no se ejecuta cuando la pestaña está en segundo plano
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.isLoggedIn()) {
+      if (!document.hidden && this.keycloakInstance?.authenticated) {
         console.log('[Keycloak] Pestaña activa, verificando token...');
         this.updateToken(60).then((refreshed) => {
           if (refreshed) {
@@ -68,8 +73,13 @@ export class KeycloakService {
             console.log('[Keycloak] Token aún válido');
           }
         }).catch((error) => {
-          console.error('[Keycloak] Error al renovar token, redirigiendo a login...', error);
-          this.login();
+          console.error('[Keycloak] Error al renovar token (sesión expirada):', error);
+          // Notificar que la sesión expiró
+          this.sessionExpired$.next(true);
+          // Dar tiempo para que el interceptor muestre el mensaje
+          setTimeout(() => {
+            this.login();
+          }, 2500);
         });
       }
     });
@@ -207,10 +217,12 @@ export class KeycloakService {
   }
 
   isLoggedIn(): boolean {
-    const result = this.initialized && !!this.keycloakInstance?.authenticated;
+    const hasToken = !!this.keycloakInstance?.token;
+    const result = this.initialized && !!this.keycloakInstance?.authenticated && hasToken;
     console.log('[Keycloak Real] isLoggedIn check:', {
       initialized: this.initialized,
       authenticated: this.keycloakInstance?.authenticated,
+      hasToken: hasToken,
       result: result
     });
     return result;

@@ -102,7 +102,7 @@
             <p-table #dt [value]="ejecuciones" [loading]="loading" [paginator]="true" [rows]="10"
                 [rowsPerPageOptions]="[10,20,50]" [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ejecuciones"
-                [globalFilterFields]="['equipoNombre','proveedorNombre','contratoDescripcion','bitacora','estado']"
+                [globalFilterFields]="['equipoNombre','contratoDescripcion','tipoMantenimiento','estado']"
                 [rowHover]="true" dataKey="idEjecucion">
 
                 <ng-template pTemplate="caption">
@@ -118,99 +118,42 @@
 
                 <ng-template pTemplate="header">
                     <tr>
-                        <th pSortableColumn="fechaEjecucion">Fecha Programada <p-sortIcon field="fechaEjecucion"></p-sortIcon></th>
                         <th pSortableColumn="equipoNombre">Equipo <p-sortIcon field="equipoNombre"></p-sortIcon></th>
-                        <th pSortableColumn="contratoDescripcion">Contrato <p-sortIcon field="contratoDescripcion"></p-sortIcon></th>
-                        <th pSortableColumn="proveedorNombre">Proveedor <p-sortIcon field="proveedorNombre"></p-sortIcon></th>
-                        <th>Fechas de Trabajo</th>
+                        <th pSortableColumn="tipoMantenimiento">Tipo <p-sortIcon field="tipoMantenimiento"></p-sortIcon></th>
+                        <th pSortableColumn="fechaEjecucion">Fecha Programada <p-sortIcon field="fechaEjecucion"></p-sortIcon></th>
                         <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
-                        <th style="width: 180px"></th>
+                        <th style="width: 100px"></th>
                     </tr>
                 </ng-template>
 
                 <ng-template pTemplate="body" let-ejecucion>
-                    <tr [class.bg-green-50]="ejecucion.estado === 'COMPLETADO'"
-                        [class.bg-red-50]="ejecucion.estado === 'CANCELADO'"
-                        [class.bg-orange-50]="isVencida(ejecucion)">
+                    <tr>
+                        <!-- Equipo -->
+                        <td>
+                            <div class="flex align-items-center gap-2">
+                                <i class="pi pi-desktop text-primary"></i>
+                                <div>
+                                    <div class="font-semibold text-900">{{ejecucion.equipoNombre || 'N/A'}}</div>
+                                    <div class="text-xs text-500">{{ejecucion.equipoCodigo}}</div>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <!-- Tipo de Mantenimiento -->
+                        <td>
+                            <p-tag [value]="ejecucion.tipoMantenimiento || 'N/A'"
+                                [severity]="getTipoSeverity(ejecucion.tipoMantenimiento)"
+                                [rounded]="true"></p-tag>
+                        </td>
+                        
                         <!-- Fecha Programada -->
                         <td>
                             <div class="flex align-items-center gap-2">
-                                <div>
-                                    <div class="flex align-items-center gap-1">
-                                        <i class="pi pi-calendar text-primary"></i>
-                                        <span class="font-medium" [class.text-red-600]="isVencida(ejecucion)">
-                                            {{formatDate(ejecucion.fechaEjecucion)}}
-                                        </span>
-                                    </div>
-                                    <div class="flex align-items-center gap-1 mt-1">
-                                        <p-tag *ngIf="isVencida(ejecucion)" 
-                                               value="VENCIDA" severity="danger" 
-                                               styleClass="text-xs"></p-tag>
-                                        <span *ngIf="tieneProgramacion(ejecucion)" 
-                                              class="text-xs text-blue-500"
-                                              pTooltip="Creada desde programación automática">
-                                            <i class="pi pi-sync"></i> Programado
-                                        </span>
-                                        <span *ngIf="!tieneProgramacion(ejecucion)" 
-                                              class="text-xs text-gray-400"
-                                              pTooltip="Creada manualmente">
-                                            <i class="pi pi-user"></i> Manual
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        <!-- Equipo -->
-                        <td>
-                            <div class="flex align-items-center">
-                                <div>
-                                    <div class="font-bold">{{ejecucion.equipoNombre || 'N/A'}}</div>
-                                    <div class="text-sm text-gray-500">{{ejecucion.equipoCodigo}}</div>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        <!-- Contrato -->
-                        <td>
-                            <div>
-                                <div class="font-medium">{{ejecucion.contratoDescripcion || 'N/A'}}</div>
-                                <div class="text-sm text-gray-500" *ngIf="ejecucion.tipoMantenimiento">
-                                    <p-tag [value]="ejecucion.tipoMantenimiento" 
-                                           [severity]="getTipoSeverity(ejecucion.tipoMantenimiento)"
-                                           [rounded]="true" styleClass="text-xs"></p-tag>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        <!-- Proveedor -->
-                        <td>
-                            <span class="text-700">{{ejecucion.proveedorNombre || 'N/A'}}</span>
-                        </td>
-                        
-                        <!-- Fechas de Trabajo -->
-                        <td>
-                            <div *ngIf="ejecucion.estado === 'PROGRAMADO'" class="text-orange-600">
-                                <i class="pi pi-clock mr-1"></i>Pendiente de iniciar
-                            </div>
-                            <div *ngIf="ejecucion.estado === 'EN_PROCESO'">
-                                <div class="text-blue-600 font-medium">
-                                    <i class="pi pi-play mr-1"></i>Inicio: {{formatDate(ejecucion.fechaInicioTrabajo)}}
-                                </div>
-                                <div class="text-sm text-blue-400 mt-1">
-                                    <i class="pi pi-spin pi-spinner mr-1"></i>En trabajo...
-                                </div>
-                            </div>
-                            <div *ngIf="ejecucion.estado === 'COMPLETADO'">
-                                <div class="text-green-600">
-                                    <i class="pi pi-play mr-1"></i>{{formatDate(ejecucion.fechaInicioTrabajo)}}
-                                </div>
-                                <div class="text-green-700 font-medium">
-                                    <i class="pi pi-check mr-1"></i>{{formatDate(ejecucion.fechaCierre)}}
-                                </div>
-                            </div>
-                            <div *ngIf="ejecucion.estado === 'CANCELADO'" class="text-red-600">
-                                <i class="pi pi-ban mr-1"></i>Cancelado
+                                <span class="font-semibold" [class.text-red-600]="isVencida(ejecucion)">
+                                    {{formatDate(ejecucion.fechaEjecucion)}}
+                                </span>
+                                <p-tag *ngIf="isVencida(ejecucion)" value="VENCIDA"
+                                    severity="danger" [style]="{fontSize: '0.7rem'}"></p-tag>
                             </div>
                         </td>
                         
@@ -223,32 +166,15 @@
                         
                         <!-- Acciones -->
                         <td>
-                            <div class="flex flex-nowrap align-items-center gap-1">
-                                <!-- Ver detalle -->
+                            <div class="flex flex-nowrap align-items-center justify-content-center">
                                 <button pButton pRipple icon="pi pi-eye"
-                                    class="p-button-rounded p-button-text p-button-info p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-info"
                                     (click)="verDetalle(ejecucion)" pTooltip="Ver detalle"></button>
                                 
-                                <!-- Acción principal según estado -->
-                                <button pButton pRipple icon="pi pi-play"
-                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
-                                    (click)="abrirIniciarDialog(ejecucion)" 
-                                    pTooltip="Iniciar trabajo"
-                                    [loading]="accionLoadingId === ejecucion.idEjecucion"
-                                    *ngIf="puedeIniciar(ejecucion)"></button>
-                                
-                                <button pButton pRipple icon="pi pi-check"
-                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
-                                    (click)="abrirCompletarDialog(ejecucion)" 
-                                    pTooltip="Completar mantenimiento"
-                                    [loading]="accionLoadingId === ejecucion.idEjecucion"
-                                    *ngIf="puedeCompletar(ejecucion)"></button>
-                                
-                                <!-- Menú de más opciones -->
                                 <button pButton pRipple icon="pi pi-ellipsis-v"
-                                    class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-secondary"
                                     (click)="openAccionesMenu($event, ejecucion)"
-                                    pTooltip="Más opciones"></button>
+                                    pTooltip="Acciones"></button>
                             </div>
                         </td>
                     </tr>
@@ -256,7 +182,7 @@
 
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="7" class="text-center p-5">
+                        <td colspan="5" class="text-center p-5">
                             <div class="flex flex-column align-items-center">
                                 <i class="pi pi-inbox text-5xl text-400 mb-3"></i>
                                 <span class="text-900 font-semibold text-xl mb-2">No hay ejecuciones registradas</span>
@@ -305,17 +231,19 @@
                 <div class="col-6">
                     <div class="surface-100 p-3 border-round">
                         <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-calendar mr-1"></i>Fecha Programada
+                            <i class="pi pi-wrench mr-1"></i>Tipo de Mantenimiento
                         </label>
-                        <div class="font-medium text-lg">{{ formatDate(ejecucionDetalle.fechaEjecucion) || 'No definida' }}</div>
+                        <p-tag [value]="ejecucionDetalle.tipoMantenimiento || 'N/A'"
+                               [severity]="getTipoSeverity(ejecucionDetalle.tipoMantenimiento)"
+                               [rounded]="true"></p-tag>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="surface-100 p-3 border-round">
                         <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-building mr-1"></i>Proveedor
+                            <i class="pi pi-calendar mr-1"></i>Fecha Programada
                         </label>
-                        <div class="font-medium text-lg">{{ ejecucionDetalle.proveedorNombre || 'N/A' }}</div>
+                        <div class="font-medium text-lg">{{ formatDate(ejecucionDetalle.fechaEjecucion) || 'No definida' }}</div>
                     </div>
                 </div>
                 <div class="col-6">
@@ -329,7 +257,15 @@
                 <div class="col-6">
                     <div class="surface-100 p-3 border-round">
                         <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-map-marker mr-1"></i>Ubicación
+                            <i class="pi pi-building mr-1"></i>Proveedor
+                        </label>
+                        <div class="font-medium">{{ ejecucionDetalle.proveedorNombre || 'N/A' }}</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="surface-100 p-3 border-round">
+                        <label class="text-500 text-sm block mb-1">
+                            <i class="pi pi-map-marker mr-1"></i>Ubicación del Equipo
                         </label>
                         <div class="font-medium">{{ ejecucionDetalle.equipoUbicacion || 'N/A' }}</div>
                     </div>
@@ -371,8 +307,6 @@
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Cerrar" icon="pi pi-times" 
             class="p-button-text" (click)="hideDetalleDialog()"></button>
-        <button pButton pRipple label="Ver Evidencias" icon="pi pi-paperclip" 
-            class="p-button-outlined p-button-help" (click)="verEvidenciasDesdeDetalle()"></button>
     </ng-template>
 </p-dialog>
 
@@ -670,132 +604,275 @@
 </p-dialog>
 
 
-<!-- ==================== DIALOG EVIDENCIAS ==================== -->
-<p-dialog [(visible)]="showEvidenciasDialog" [style]="{width: '850px'}" 
-    header="Evidencias del Mantenimiento" [modal]="true" [maximizable]="true" class="p-fluid">
+<!-- ==================== DIALOG DE GESTIÓN (COMENTARIOS + EVIDENCIAS + ESTADOS) ==================== -->
+<p-dialog [(visible)]="showGestionDialog" [style]="{width: '90vw', height: '90vh'}" 
+    header="💬 Gestión de Ejecución" [modal]="true" [maximizable]="true" [draggable]="true" [resizable]="true">
     
     <ng-template pTemplate="content">
-        <!-- Info de la ejecución -->
-        <div class="surface-100 p-3 border-round mb-4 border-left-3 border-primary">
-            <div class="flex align-items-center gap-2 mb-2">
-                <i class="pi pi-wrench text-primary"></i>
-                <span class="font-semibold">{{ selectedEjecucion.equipoNombre || 'Equipo' }}</span>
-                <p-tag [value]="getEstadoLabel(selectedEjecucion.estado)"
-                       [severity]="getEstadoSeverity(selectedEjecucion.estado)" 
-                       [rounded]="true" styleClass="ml-2"></p-tag>
+        <div class="gestion-container" *ngIf="ejecucionGestion">
+            <!-- HEADER DE LA EJECUCIÓN -->
+            <div class="ejecucion-header mb-4">
+                <div class="surface-100 border-round-lg p-4 shadow-1">
+                    <div class="flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="flex align-items-center">
+                            <div class="bg-primary border-circle w-3rem h-3rem flex align-items-center justify-content-center mr-3">
+                                <i class="pi pi-cog text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h5 class="m-0 text-primary">{{ ejecucionGestion.equipoNombre }}</h5>
+                                <p class="text-600 mt-1 mb-0">{{ ejecucionGestion.equipoCodigo }}</p>
+                                <small class="text-500">
+                                    <i class="pi pi-calendar mr-1"></i>
+                                    Programado: {{ formatDate(ejecucionGestion.fechaEjecucion) }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="flex flex-column align-items-end gap-2">
+                            <p-tag [value]="getEstadoLabel(ejecucionGestion.estado)" 
+                                   [severity]="getEstadoSeverity(ejecucionGestion.estado)" 
+                                   [rounded]="true" class="text-sm"></p-tag>
+                            <p-tag *ngIf="ejecucionGestion.tipoMantenimiento"
+                                   [value]="ejecucionGestion.tipoMantenimiento" 
+                                   [severity]="getTipoSeverity(ejecucionGestion.tipoMantenimiento)" 
+                                   [rounded]="true" class="text-sm"></p-tag>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <small class="text-500">
-                {{ selectedEjecucion.contratoDescripcion }} | {{ formatDate(selectedEjecucion.fechaEjecucion) }}
-            </small>
-        </div>
 
-        <!-- Subir nueva evidencia -->
-        <div class="surface-50 p-4 border-round mb-4 border-left-3 border-help">
-            <h6 class="mt-0 mb-3 flex align-items-center gap-2 text-purple-700">
-                <i class="pi pi-upload"></i>
-                Subir Nueva Evidencia
-            </h6>
-            
-            <div class="field mb-3">
-                <label for="descripcionEvidencia" class="font-medium">Descripción (opcional)</label>
-                <input pInputText id="descripcionEvidencia" [(ngModel)]="nuevaDescripcion" 
-                       placeholder="Ej: Foto del equipo después del mantenimiento" class="w-full"/>
-            </div>
-            
-            <!-- Input file nativo más confiable -->
-            <div class="flex align-items-center gap-2">
-                <input type="file" 
-                       #fileInput
-                       (change)="onNativeFileSelect($event)"
-                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                       multiple
-                       [disabled]="uploading"
-                       class="hidden"/>
-                <button pButton pRipple 
-                        type="button"
-                        icon="pi pi-upload" 
-                        label="Seleccionar archivos"
-                        class="p-button-outlined p-button-help"
-                        [disabled]="uploading"
-                        (click)="fileInput.click()"></button>
-                <span *ngIf="archivosSeleccionados.length > 0" class="text-500">
-                    {{ archivosSeleccionados.length }} archivo(s) seleccionado(s)
-                </span>
-            </div>
-            
-            <div *ngIf="archivosSeleccionados.length > 0 && !uploading" class="mt-3">
-                <button pButton pRipple 
-                        type="button"
-                        icon="pi pi-cloud-upload" 
-                        label="Subir archivos"
-                        class="p-button-success"
-                        (click)="subirArchivosSeleccionados()"></button>
-            </div>
-            
-            <div *ngIf="uploading" class="mt-3">
-                <p-progressBar [value]="uploadProgress" [showValue]="true"></p-progressBar>
-                <small class="text-500">Subiendo archivo...</small>
-            </div>
-            
-            <small class="text-500 block mt-2">
-                Formatos permitidos: Imágenes (jpg, png, gif), PDF, Word, Excel. Máximo 10MB.
-            </small>
-        </div>
-
-        <!-- Lista de evidencias -->
-        <h6 class="flex align-items-center gap-2 mb-3">
-            <i class="pi pi-folder-open text-primary"></i>
-            Evidencias Adjuntas ({{ evidencias.length }})
-        </h6>
-
-        <div *ngIf="loadingEvidencias" class="text-center p-4">
-            <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-            <p class="mt-2 text-500">Cargando evidencias...</p>
-        </div>
-
-        <div *ngIf="!loadingEvidencias && evidencias.length === 0" class="text-center p-4 surface-100 border-round">
-            <i class="pi pi-inbox text-4xl text-400"></i>
-            <p class="mt-2 text-500">No hay evidencias adjuntas a esta ejecución</p>
-        </div>
-
-        <div *ngIf="!loadingEvidencias && evidencias.length > 0" class="grid">
-            <div *ngFor="let evidencia of evidencias" class="col-12 md:col-6">
-                <div class="surface-card p-3 border-1 surface-border border-round shadow-1">
-                    <div class="flex align-items-start gap-3">
-                        <!-- Icono del archivo -->
-                        <div class="flex-shrink-0">
-                            <div class="w-4rem h-4rem border-round surface-100 flex align-items-center justify-content-center cursor-pointer"
-                                 (click)="downloadEvidencia(evidencia)">
-                                <i [class]="getFileIcon(evidencia) + ' text-3xl'"></i>
+            <div class="grid">
+                <!-- PANEL DE COMENTARIOS -->
+                <div class="col-12 lg:col-7">
+                    <div class="surface-card border-round-lg shadow-1 h-full">
+                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                            <div class="flex align-items-center">
+                                <i class="pi pi-comments text-primary mr-2"></i>
+                                <h6 class="m-0">Historial de Seguimiento</h6>
+                                <p-badge [value]="comentarios.length.toString()" severity="info" class="ml-2"></p-badge>
                             </div>
                         </div>
                         
-                        <!-- Info -->
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="font-medium text-overflow-ellipsis overflow-hidden white-space-nowrap" 
-                                 [pTooltip]="evidencia.nombreOriginal">
-                                {{ evidencia.nombreOriginal }}
+                        <div class="p-3">
+                            <div class="comentarios-scroll" style="max-height: 400px; overflow-y: auto; padding-right: 8px;">
+                                <!-- ESTADO VACÍO -->
+                                <div *ngIf="comentarios.length === 0 && !loadingComentarios" class="text-center py-6">
+                                    <div class="surface-100 border-circle w-6rem h-6rem flex align-items-center justify-content-center mx-auto mb-3">
+                                        <i class="pi pi-comment text-4xl text-400"></i>
+                                    </div>
+                                    <h6 class="text-600">No hay comentarios</h6>
+                                    <p class="text-500 text-sm m-0">Agregue el primer comentario de seguimiento</p>
+                                </div>
+
+                                <!-- LOADING -->
+                                <div *ngIf="loadingComentarios" class="text-center py-6">
+                                    <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+                                    <p class="text-500 mt-2">Cargando comentarios...</p>
+                                </div>
+
+                                <!-- COMENTARIOS -->
+                                <div *ngFor="let comentario of comentarios; let i = index" class="comentario-card mb-3">
+                                    <div class="surface-50 border-round-lg p-3 border-left-3 border-primary shadow-1">
+                                        <!-- Header del comentario -->
+                                        <div class="flex justify-content-between align-items-start mb-2">
+                                            <div class="flex align-items-center">
+                                                <div class="bg-primary-reverse border-circle w-2rem h-2rem flex align-items-center justify-content-center mr-2">
+                                                    <i class="pi pi-user text-primary text-sm"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-primary text-sm">{{ comentario.usuario || 'Sistema' }}</div>
+                                                    <small class="text-500">
+                                                        <i class="pi pi-clock mr-1"></i>
+                                                        {{ comentario.fechaCreacion | date:'short' }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <p-tag [value]="comentario.tipoComentario" 
+                                                   [severity]="getTipoComentarioSeverity(comentario.tipoComentario)"
+                                                   [rounded]="true" class="text-xs"></p-tag>
+                                        </div>
+                                        
+                                        <!-- Contenido del comentario -->
+                                        <div class="comment-content">
+                                            <p class="line-height-3 text-700 m-0">{{ comentario.comentario }}</p>
+                                            
+                                            <!-- MOSTRAR CAMBIO DE ESTADO SI EXISTE -->
+                                            <div *ngIf="comentario.estadoAnterior && comentario.estadoNuevo" class="mt-3 p-2 surface-200 border-round">
+                                                <div class="flex align-items-center text-sm flex-wrap gap-2">
+                                                    <i class="pi pi-arrow-right text-orange-500"></i>
+                                                    <span class="text-600">Estado cambió de</span>
+                                                    <p-tag [value]="getEstadoLabel(comentario.estadoAnterior)" 
+                                                           [severity]="getEstadoSeverity(comentario.estadoAnterior)" 
+                                                           [rounded]="true" class="text-xs"></p-tag>
+                                                    <span class="text-600">a</span>
+                                                    <p-tag [value]="getEstadoLabel(comentario.estadoNuevo)" 
+                                                           [severity]="getEstadoSeverity(comentario.estadoNuevo)" 
+                                                           [rounded]="true" class="text-xs"></p-tag>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <small class="text-500 block">{{ formatFileSize(evidencia.tamanio) }}</small>
-                            <small *ngIf="evidencia.descripcion" class="text-600 block mt-1">
-                                {{ evidencia.descripcion }}
-                            </small>
-                            <small class="text-400 block mt-1">
-                                {{ formatDate(evidencia.fechaCreacion) }}
-                                <span *ngIf="evidencia.usuarioCreacionNombre"> por {{ evidencia.usuarioCreacionNombre }}</span>
-                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL DE AGREGAR COMENTARIO -->
+                <div class="col-12 lg:col-5">
+                    <div class="surface-card border-round-lg shadow-1 mb-3">
+                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                            <div class="flex align-items-center">
+                                <i class="pi pi-plus-circle text-green-500 mr-2"></i>
+                                <h6 class="m-0">Nuevo Comentario</h6>
+                            </div>
                         </div>
                         
-                        <!-- Acciones -->
-                        <div class="flex-shrink-0 flex gap-1">
-                            <button pButton pRipple icon="pi pi-download" 
-                                    class="p-button-rounded p-button-text p-button-sm"
-                                    (click)="downloadEvidencia(evidencia)"
-                                    pTooltip="Descargar"></button>
-                            <button pButton pRipple icon="pi pi-trash" 
-                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                    (click)="deleteEvidencia(evidencia)"
-                                    pTooltip="Eliminar"></button>
+                        <div class="p-4">
+                            <!-- CAMBIO DE ESTADO -->
+                            <div class="field mb-3">
+                                <label for="nuevoEstado" class="block text-900 font-medium mb-2">
+                                    <i class="pi pi-refresh mr-1"></i>
+                                    Cambiar Estado (Opcional)
+                                </label>
+                                <p-dropdown id="nuevoEstado"
+                                            [(ngModel)]="nuevoEstadoSeleccionado" 
+                                            [options]="estadosEdicion" 
+                                            placeholder="Mantener estado actual"
+                                            [showClear]="true"
+                                            styleClass="w-full">
+                                    <ng-template pTemplate="selectedItem" let-option>
+                                        <div class="flex align-items-center" *ngIf="option">
+                                            <p-tag [value]="getEstadoLabel(option)" 
+                                                   [severity]="getEstadoSeverity(option)" 
+                                                   [rounded]="true" class="mr-2"></p-tag>
+                                        </div>
+                                    </ng-template>
+                                    <ng-template pTemplate="item" let-option>
+                                        <div class="flex align-items-center">
+                                            <p-tag [value]="getEstadoLabel(option)" 
+                                                   [severity]="getEstadoSeverity(option)" 
+                                                   [rounded]="true" class="mr-2"></p-tag>
+                                        </div>
+                                    </ng-template>
+                                </p-dropdown>
+                            </div>
+
+                            <!-- TIPO DE COMENTARIO -->
+                            <div class="field mb-3">
+                                <label for="tipoComentario" class="block text-900 font-medium mb-2">
+                                    <i class="pi pi-tag mr-1"></i>
+                                    Tipo de Comentario
+                                </label>
+                                <p-dropdown id="tipoComentario"
+                                            [(ngModel)]="tipoComentarioSeleccionado" 
+                                            [options]="tiposComentario" 
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            placeholder="Seleccionar tipo"
+                                            styleClass="w-full">
+                                    <ng-template pTemplate="selectedItem" let-option>
+                                        <div class="flex align-items-center" *ngIf="option">
+                                            <p-tag [value]="option.label || option" 
+                                                   [severity]="getTipoComentarioSeverity(option.value || option)" 
+                                                   [rounded]="true" class="mr-2"></p-tag>
+                                        </div>
+                                    </ng-template>
+                                    <ng-template pTemplate="item" let-option>
+                                        <div class="flex align-items-center">
+                                            <p-tag [value]="option.label" 
+                                                   [severity]="getTipoComentarioSeverity(option.value)" 
+                                                   [rounded]="true" class="mr-2"></p-tag>
+                                        </div>
+                                    </ng-template>
+                                </p-dropdown>
+                            </div>
+
+                            <!-- TEXTO DEL COMENTARIO -->
+                            <div class="field mb-3">
+                                <label for="comentarioTexto" class="block text-900 font-medium mb-2">
+                                    <i class="pi pi-pencil mr-1"></i>
+                                    Comentario *
+                                </label>
+                                <textarea pInputTextarea 
+                                          id="comentarioTexto" 
+                                          [(ngModel)]="nuevoComentario" 
+                                          rows="4" 
+                                          placeholder="Escribe tu comentario aquí..."
+                                          class="w-full"
+                                          [autoResize]="true"></textarea>
+                                <small class="text-500">{{ (nuevoComentario || '').length }} caracteres</small>
+                            </div>
+
+                            <!-- BOTÓN DE AGREGAR -->
+                            <div class="flex justify-content-end">
+                                <button pButton pRipple 
+                                        label="Agregar Comentario" 
+                                        icon="pi pi-send" 
+                                        class="p-button-primary"
+                                        (click)="agregarComentario()"
+                                        [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN DE EVIDENCIAS -->
+                    <div class="surface-card border-round-lg shadow-1">
+                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                            <div class="flex align-items-center justify-content-between">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-paperclip text-orange-500 mr-2"></i>
+                                    <h6 class="m-0">Evidencias</h6>
+                                    <p-badge [value]="evidencias.length.toString()" severity="warning" class="ml-2"></p-badge>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3">
+                            <!-- Upload de archivos -->
+                            <div class="mb-3">
+                                <p-fileUpload mode="basic" 
+                                              [multiple]="true" 
+                                              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                                              [maxFileSize]="10000000"
+                                              chooseLabel="Subir Archivos"
+                                              chooseIcon="pi pi-upload"
+                                              (uploadHandler)="subirEvidenciaGestion($event)"
+                                              [auto]="true"
+                                              [customUpload]="true"
+                                              styleClass="w-full">
+                                </p-fileUpload>
+                                <p-progressBar *ngIf="uploading" [value]="uploadProgress" [showValue]="true" class="mt-2"></p-progressBar>
+                            </div>
+
+                            <!-- Lista de evidencias -->
+                            <div *ngIf="evidencias.length > 0" class="evidencias-list" style="max-height: 200px; overflow-y: auto;">
+                                <div *ngFor="let evidencia of evidencias" 
+                                     class="flex align-items-center justify-content-between p-2 surface-50 border-round mb-2">
+                                    <div class="flex align-items-center min-w-0 flex-grow-1">
+                                        <i [class]="getFileIcon(evidencia) + ' mr-2 text-xl'"></i>
+                                        <span class="text-overflow-ellipsis overflow-hidden white-space-nowrap text-sm" 
+                                              [pTooltip]="evidencia.nombreOriginal">
+                                            {{ evidencia.nombreOriginal }}
+                                        </span>
+                                    </div>
+                                    <div class="flex-shrink-0 flex gap-1">
+                                        <button pButton pRipple icon="pi pi-download" 
+                                                class="p-button-rounded p-button-text p-button-sm"
+                                                (click)="downloadEvidencia(evidencia)"
+                                                pTooltip="Descargar"></button>
+                                        <button pButton pRipple icon="pi pi-trash" 
+                                                class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                                (click)="deleteEvidencia(evidencia)"
+                                                pTooltip="Eliminar"></button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div *ngIf="evidencias.length === 0" class="text-center py-3">
+                                <i class="pi pi-folder-open text-3xl text-400"></i>
+                                <p class="text-500 text-sm m-0 mt-2">Sin evidencias adjuntas</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -805,6 +882,6 @@
     
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Cerrar" icon="pi pi-times" 
-            class="p-button-text" (click)="hideEvidenciasDialog()"></button>
+            class="p-button-text" (click)="hideGestionDialog()"></button>
     </ng-template>
 </p-dialog>

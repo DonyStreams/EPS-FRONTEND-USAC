@@ -32,4 +32,10 @@ export class EquiposService {
   eliminarEquipo(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  getEquiposByCategoria(idCategoria: number): Observable<Equipo[]> {
+    return this.http.get<Equipo[]>(`${this.apiUrl}`, { 
+      params: new HttpParams().set('idCategoria', idCategoria.toString()) 
+    });
+  }
 }

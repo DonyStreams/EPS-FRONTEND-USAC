@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { Router } from '@angular/router';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { CalendarOptions, EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -30,17 +31,20 @@ interface CalendarEvent {
         equipoNombre?: string;
         proveedorNombre?: string;
         contratoDescripcion?: string;
+        contratoFechaFin?: Date | string;
+        contratoVencido?: boolean;
         frecuencia?: string;
         idProgramacion?: number;
         idContrato?: number;
         idEquipo?: number;
+        esUnico?: boolean;
     };
 }
 
 @Component({
     selector: 'app-mantenimientos',
     templateUrl: './mantenimientos.component.html',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService]
 })
 export class MantenimientosComponent implements OnInit {
 
@@ -72,11 +76,27 @@ export class MantenimientosComponent implements OnInit {
         { label: 'Otros', value: 'OTROS' }
     ];
 
+    // Estadísticas del dashboard
+    stats = {
+        totalProgramados: 0,
+        proximos7Dias: 0,
+        vencidos: 0,
+        esteMes: 0,
+        porTipo: {
+            preventivo: 0,
+            correctivo: 0,
+            calibracion: 0,
+            otros: 0
+        }
+    };
+
     constructor(
         private programacionesService: ProgramacionesService,
         private ejecucionesService: EjecucionesService,
         private contratosService: ContratosService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private confirmationService: ConfirmationService,
+        private router: Router
     ) {}
 
     ngOnInit(): void {
@@ -150,74 +170,196 @@ export class MantenimientosComponent implements OnInit {
     private generateEvents(): void {
         const eventos: CalendarEvent[] = [];
         const hoy = new Date();
-        const unAnioAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate());
-        const unAnioAdelante = new Date(hoy.getFullYear() + 1, hoy.getMonth(), hoy.getDate());
+        hoy.setHours(0, 0, 0, 0);
+        // Mostrar eventos: 3 meses atrás y 6 meses adelante
+        const tresMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate());
+        const seisMesesAdelante = new Date(hoy.getFullYear(), hoy.getMonth() + 6, hoy.getDate());
 
         console.log('🔄 Generando eventos del calendario...');
         console.log('📅 Programaciones activas:', this.programaciones.filter(p => p.activa).length);
 
-        // Generar eventos solo de programaciones (cuándo toca el mantenimiento)
+        // Generar eventos solo de programaciones ACTIVAS (las pausadas no se muestran)
         this.programaciones.forEach(prog => {
             if (prog.activa && prog.fechaProximoMantenimiento) {
-                const eventosRecurrentes = this.generarEventosRecurrentes(prog, unAnioAtras, unAnioAdelante);
+                // Verificar si el contrato está vencido para usar color diferente
+                const contratoVencido = this.isContratoVencido(prog);
+                if (contratoVencido) {
+                    console.log(`⚠️ Programación ${prog.idProgramacion}: contrato vencido (se mostrará con color gris)`);
+                }
+                
+                const eventosRecurrentes = this.generarEventosRecurrentes(prog, tresMesesAtras, seisMesesAdelante, contratoVencido);
                 eventos.push(...eventosRecurrentes);
             }
         });
 
         this.events = eventos;
         console.log('📊 Total eventos en calendario:', this.events.length);
+        
+        // Calcular estadísticas
+        this.calcularEstadisticas();
+        
         this.applyFilter();
     }
 
-    private generarEventosRecurrentes(prog: ProgramacionMantenimiento, desde: Date, hasta: Date): CalendarEvent[] {
-        const eventos: CalendarEvent[] = [];
-        const frecuenciaDias = prog.frecuenciaDias || 30;
+    /**
+     * Calcula las estadísticas del dashboard
+     */
+    private calcularEstadisticas(): void {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
         
-        if (!frecuenciaDias || !prog.fechaProximoMantenimiento) return eventos;
+        const en7Dias = new Date(hoy);
+        en7Dias.setDate(en7Dias.getDate() + 7);
+        
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
 
-        // Parsear la fecha que viene como string del backend
-        let fechaProxima: Date;
-        const fechaOriginal = prog.fechaProximoMantenimiento as any;
+        // Resetear estadísticas
+        const programacionesActivas = this.programaciones.filter(p => p.activa).length;
         
-        if (typeof fechaOriginal === 'string') {
-            // Limpiar el formato "[UTC]" si existe
-            const fechaLimpia = fechaOriginal.replace('[UTC]', '');
-            fechaProxima = new Date(fechaLimpia);
-        } else if (fechaOriginal instanceof Date) {
-            fechaProxima = fechaOriginal;
-        } else {
-            fechaProxima = new Date(fechaOriginal);
+        this.stats = {
+            totalProgramados: programacionesActivas,
+            proximos7Dias: 0,
+            vencidos: 0,
+            esteMes: 0,
+            porTipo: {
+                preventivo: 0,
+                correctivo: 0,
+                calibracion: 0,
+                otros: 0
+            }
+        };
+
+        this.events.forEach(evento => {
+            const fechaEvento = new Date(evento.start);
+            fechaEvento.setHours(0, 0, 0, 0);
+            
+            // Próximos 7 días
+            if (fechaEvento >= hoy && fechaEvento <= en7Dias) {
+                this.stats.proximos7Dias++;
+            }
+            
+            // Vencidos (antes de hoy)
+            if (fechaEvento < hoy) {
+                this.stats.vencidos++;
+            }
+            
+            // Este mes
+            if (fechaEvento >= inicioMes && fechaEvento <= finMes) {
+                this.stats.esteMes++;
+            }
+            
+            // Por tipo
+            const tipo = evento.extendedProps?.tipoMantenimiento?.toUpperCase() || '';
+            if (tipo.includes('PREVENTIVO')) {
+                this.stats.porTipo.preventivo++;
+            } else if (tipo.includes('CORRECTIVO')) {
+                this.stats.porTipo.correctivo++;
+            } else if (tipo.includes('CALIBRACION') || tipo.includes('CALIBRACIÓN')) {
+                this.stats.porTipo.calibracion++;
+            } else {
+                this.stats.porTipo.otros++;
+            }
+        });
+
+        console.log('📊 Estadísticas calculadas:', this.stats);
+    }
+
+    private generarEventosRecurrentes(prog: ProgramacionMantenimiento, desde: Date, hasta: Date, contratoVencido: boolean = false): CalendarEvent[] {
+        const eventos: CalendarEvent[] = [];
+        const frecuenciaDias = prog.frecuenciaDias;
+        const esUnico = frecuenciaDias === 0;
+        
+        // Si no tiene fecha próxima, no generar eventos
+        if (!prog.fechaProximoMantenimiento) return eventos;
+        
+        // Si es programación única (frecuencia 0), generar solo un evento
+        if (esUnico) {
+            return this.generarEventoUnico(prog, desde, hasta, contratoVencido);
+        }
+        
+        // Si frecuencia es null/undefined, usar 30 como default
+        const frecuencia = frecuenciaDias || 30;
+
+        // Determinar la fecha de inicio real de la programación
+        // Usar fechaUltimoMantenimiento o fechaCreacion como punto de partida
+        let fechaInicioProgramacion: Date | null = null;
+        
+        if (prog.fechaUltimoMantenimiento) {
+            fechaInicioProgramacion = this.parsearFecha(prog.fechaUltimoMantenimiento);
+        } else if (prog.fechaCreacion) {
+            fechaInicioProgramacion = this.parsearFecha(prog.fechaCreacion);
         }
 
+        // Parsear la fecha del próximo mantenimiento
+        const fechaProxima = this.parsearFecha(prog.fechaProximoMantenimiento);
+
         // Validar que la fecha sea válida
-        if (isNaN(fechaProxima.getTime())) {
+        if (!fechaProxima || isNaN(fechaProxima.getTime())) {
             console.warn(`⚠️ Fecha inválida en programación ${prog.idProgramacion}:`, prog.fechaProximoMantenimiento);
             return eventos;
         }
 
+        // 🔑 LÍMITE MÁXIMO: Usar la fecha de fin del contrato si existe
+        let fechaLimiteContrato: Date | null = null;
+        if (prog.contrato?.fechaFin) {
+            fechaLimiteContrato = this.parsearFecha(prog.contrato.fechaFin);
+            console.log(`   📜 Contrato vigente hasta: ${fechaLimiteContrato?.toLocaleDateString('es-GT')}`);
+        }
+        
+        // El límite superior es el menor entre: hasta (6 meses) y fechaFin del contrato
+        let fechaLimiteSuperior = hasta;
+        if (fechaLimiteContrato && fechaLimiteContrato < hasta) {
+            fechaLimiteSuperior = fechaLimiteContrato;
+        }
+
+        // El punto de partida para generar eventos es:
+        // - La fecha del próximo mantenimiento (para mostrar el evento más cercano)
+        // - O desde el último mantenimiento si queremos mostrar el historial real
+        let fechaBase = new Date(fechaProxima);
+        
+        // Si hay fecha de inicio de programación, no generar eventos antes de esa fecha
+        const fechaLimiteInferior = fechaInicioProgramacion || fechaProxima;
+        
+        console.log(`📅 Generando eventos para programación ${prog.idProgramacion}`);
+        console.log(`   📌 Fecha próximo mantenimiento: ${fechaProxima.toLocaleDateString('es-GT')}`);
+        console.log(`   📌 Límite inferior: ${fechaLimiteInferior.toLocaleDateString('es-GT')}`);
+        console.log(`   📌 Límite superior (contrato/6meses): ${fechaLimiteSuperior.toLocaleDateString('es-GT')}`);
+
+        // Generar eventos solo hacia adelante desde la fecha próxima
+        // Y opcionalmente hacia atrás pero solo hasta la fecha del último mantenimiento
         let fecha = new Date(fechaProxima);
         
-        console.log(`📅 Generando eventos para programación ${prog.idProgramacion} desde ${fecha.toISOString()}`);
-        
-        // Retroceder para mostrar programaciones pasadas
-        while (fecha > desde) {
-            fecha = new Date(fecha.getTime() - frecuenciaDias * 24 * 60 * 60 * 1000);
+        // Retroceder solo si hay un último mantenimiento registrado, y solo hasta esa fecha
+        if (prog.fechaUltimoMantenimiento && fechaInicioProgramacion) {
+            // Mostrar desde el último mantenimiento hacia adelante
+            fecha = new Date(fechaInicioProgramacion);
+            // Avanzar una frecuencia ya que el último mantenimiento ya fue ejecutado
+            fecha = new Date(fecha.getTime() + frecuencia * 24 * 60 * 60 * 1000);
         }
-        fecha = new Date(fecha.getTime() + frecuenciaDias * 24 * 60 * 60 * 1000);
 
-        // Generar eventos hacia adelante
+        // Si la fecha calculada es anterior a "desde" (rango visible), ajustar
+        while (fecha < desde && fecha < fechaLimiteSuperior) {
+            fecha = new Date(fecha.getTime() + frecuencia * 24 * 60 * 60 * 1000);
+        }
+
+        // Generar eventos hacia adelante (hasta fecha fin de contrato o límite de visualización)
         let contadorEventos = 0;
         const tipoMantenimientoNombre = prog.tipoMantenimiento?.nombre || '';
-        const colores = this.getColorByTipoMantenimiento(tipoMantenimientoNombre);
         
-        while (fecha <= hasta) {
+        // Si el contrato está vencido, usar color gris; si no, usar color según tipo
+        const colores = contratoVencido 
+            ? { bg: '#6c757d', border: '#495057' }  // Gris para contrato vencido
+            : this.getColorByTipoMantenimiento(tipoMantenimientoNombre);
+        
+        while (fecha <= fechaLimiteSuperior) {
             const equipoNombre = prog.equipo?.nombre || 'Equipo';
             const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
             const contratoDesc = prog.contrato?.descripcion || '';
             
             eventos.push({
                 id: `prog-${prog.idProgramacion}-${fecha.getTime()}`,
-                title: `${equipoNombre}`,
+                title: contratoVencido ? `⚠️ ${equipoNombre}` : equipoNombre,
                 start: new Date(fecha),
                 backgroundColor: colores.bg,
                 borderColor: colores.border,
@@ -228,21 +370,138 @@ export class MantenimientosComponent implements OnInit {
                     equipoNombre: equipoNombre,
                     proveedorNombre: proveedorNombre,
                     contratoDescripcion: contratoDesc,
-                    frecuencia: this.getFrecuenciaLabel(frecuenciaDias),
+                    contratoFechaFin: prog.contrato?.fechaFin,
+                    contratoVencido: contratoVencido,
+                    frecuencia: this.getFrecuenciaLabel(frecuencia),
                     idProgramacion: prog.idProgramacion,
                     idContrato: prog.contratoId,
                     idEquipo: prog.equipoId
                 }
             });
             contadorEventos++;
-            fecha = new Date(fecha.getTime() + frecuenciaDias * 24 * 60 * 60 * 1000);
+            fecha = new Date(fecha.getTime() + frecuencia * 24 * 60 * 60 * 1000);
         }
 
         console.log(`  ✅ Generó ${contadorEventos} eventos para programación ${prog.idProgramacion}`);
         return eventos;
     }
 
+    /**
+     * Genera un único evento para programaciones de tipo único (frecuenciaDias = 0)
+     * Solo muestra el evento si la fecha próxima está dentro del rango visible
+     */
+    private generarEventoUnico(prog: any, desde: Date, hasta: Date, contratoVencido: boolean = false): any[] {
+        const eventos: any[] = [];
+        
+        const fechaProxima = this.parsearFecha(prog.fechaProximoMantenimiento);
+        if (!fechaProxima) {
+            console.warn(`⚠️ Programación única ${prog.idProgramacion} sin fecha próxima válida`);
+            return eventos;
+        }
+
+        // Solo mostrar si está en el rango visible
+        if (fechaProxima < desde || fechaProxima > hasta) {
+            console.log(`📅 Programación única ${prog.idProgramacion} fuera del rango visible`);
+            return eventos;
+        }
+
+        const tipoMantenimientoNombre = prog.tipoMantenimiento?.nombre || '';
+        // Si el contrato está vencido, usar color gris; si no, usar color según tipo
+        const colores = contratoVencido 
+            ? { bg: '#6c757d', border: '#495057' }  // Gris para contrato vencido
+            : this.getColorByTipoMantenimiento(tipoMantenimientoNombre);
+        const equipoNombre = prog.equipo?.nombre || 'Equipo';
+        const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
+        const contratoDesc = prog.contrato?.descripcion || '';
+
+        eventos.push({
+            id: `prog-${prog.idProgramacion}-unico`,
+            title: contratoVencido ? `⚠️ ${equipoNombre} (Único)` : `${equipoNombre} (Único)`,
+            start: new Date(fechaProxima),
+            backgroundColor: colores.bg,
+            borderColor: colores.border,
+            textColor: '#ffffff',
+            extendedProps: {
+                tipo: 'programacion',
+                tipoMantenimiento: tipoMantenimientoNombre,
+                equipoNombre: equipoNombre,
+                proveedorNombre: proveedorNombre,
+                contratoDescripcion: contratoDesc,
+                contratoVencido: contratoVencido,
+                frecuencia: 'ÚNICO',
+                idProgramacion: prog.idProgramacion,
+                idContrato: prog.contratoId,
+                idEquipo: prog.equipoId,
+                esUnico: true
+            }
+        });
+
+        console.log(`✅ Evento único generado para programación ${prog.idProgramacion} en fecha ${fechaProxima.toLocaleDateString()}`);
+        return eventos;
+    }
+
+    /**
+     * Parsea una fecha del backend evitando problemas de timezone.
+     * Las fechas del backend vienen en formato YYYY-MM-DD o ISO y deben interpretarse
+     * como hora local, no UTC.
+     */
+    private parsearFecha(fecha: any): Date | null {
+        if (!fecha) return null;
+        
+        let fechaParsed: Date;
+        
+        if (typeof fecha === 'string') {
+            // Limpiar el formato "[UTC]" si existe
+            const fechaLimpia = fecha.replace('[UTC]', '').trim();
+            
+            // Si es formato YYYY-MM-DD (sin hora), parsearlo manualmente para evitar UTC
+            const soloFechaMatch = fechaLimpia.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (soloFechaMatch) {
+                const [, year, month, day] = soloFechaMatch;
+                // Crear fecha en hora local (mes es 0-indexado)
+                fechaParsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+            } 
+            // Si tiene formato ISO con T pero sin timezone explícito, extraer solo la fecha
+            else if (fechaLimpia.includes('T') && !fechaLimpia.includes('+') && !fechaLimpia.includes('Z')) {
+                const parteFecha = fechaLimpia.split('T')[0];
+                const [year, month, day] = parteFecha.split('-').map(Number);
+                fechaParsed = new Date(year, month - 1, day, 12, 0, 0);
+            }
+            // Si tiene Z o timezone explícito, parsear normalmente pero ajustar
+            else {
+                const tempDate = new Date(fechaLimpia);
+                // Extraer componentes y crear fecha local
+                fechaParsed = new Date(
+                    tempDate.getUTCFullYear(),
+                    tempDate.getUTCMonth(),
+                    tempDate.getUTCDate(),
+                    12, 0, 0
+                );
+            }
+        } else if (fecha instanceof Date) {
+            fechaParsed = fecha;
+        } else {
+            fechaParsed = new Date(fecha);
+        }
+        
+        return isNaN(fechaParsed.getTime()) ? null : fechaParsed;
+    }
+
+    /**
+     * Verifica si el contrato de una programación está vencido
+     */
+    private isContratoVencido(prog: any): boolean {
+        if (!prog.contrato?.fechaFin) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const fechaFin = this.parsearFecha(prog.contrato.fechaFin);
+        if (!fechaFin) return false;
+        fechaFin.setHours(0, 0, 0, 0);
+        return fechaFin < today;
+    }
+
     private getFrecuenciaLabel(dias: number): string {
+        if (dias === 0) return 'ÚNICO';
         if (dias <= 1) return 'DIARIO';
         if (dias <= 7) return 'SEMANAL';
         if (dias <= 15) return 'QUINCENAL';
@@ -293,12 +552,49 @@ export class MantenimientosComponent implements OnInit {
     }
 
     handleDateSelect(info: DateSelectArg): void {
-        this.selectedDate = info.start;
-        this.nuevaEjecucion = {
-            fechaEjecucion: info.start,
-            estado: 'PROGRAMADO'
-        };
-        this.showCreateDialog = true;
+        // Formatear fecha como YYYY-MM-DD en zona local (sin conversión UTC)
+        const fecha = info.start;
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, '0');
+        const day = String(fecha.getDate()).padStart(2, '0');
+        const fechaSeleccionada = `${year}-${month}-${day}`;
+        
+        // Formatear fecha para mostrar al usuario
+        const fechaMostrar = fecha.toLocaleDateString('es-GT', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        console.log('📅 Fecha seleccionada en calendario:', fechaSeleccionada);
+        
+        // Preguntar al usuario si desea crear una nueva programación
+        this.confirmationService.confirm({
+            message: `<div class="text-center">
+                <i class="pi pi-calendar-plus text-5xl text-primary mb-3"></i>
+                <p class="mb-2">¿Desea crear una nueva <strong>programación de mantenimiento</strong> para esta fecha?</p>
+                <p class="text-lg font-semibold text-primary">${fechaMostrar}</p>
+                <p class="text-sm text-500 mt-3">Se le redirigirá al formulario de programaciones con la fecha ya seleccionada.</p>
+            </div>`,
+            header: 'Nueva Programación',
+            icon: 'pi pi-calendar-plus',
+            acceptLabel: 'Sí, crear programación',
+            rejectLabel: 'Cancelar',
+            acceptIcon: 'pi pi-check',
+            rejectIcon: 'pi pi-times',
+            acceptButtonStyleClass: 'p-button-success',
+            rejectButtonStyleClass: 'p-button-text',
+            accept: () => {
+                // Redirigir a programaciones con la fecha pre-llenada
+                this.router.navigate(['/administracion/programaciones'], {
+                    queryParams: { 
+                        nuevaProgramacion: true,
+                        fechaProximoMantenimiento: fechaSeleccionada
+                    }
+                });
+            }
+        });
     }
 
     crearEjecucionManual(): void {
@@ -392,25 +688,86 @@ export class MantenimientosComponent implements OnInit {
         });
     }
 
+    /**
+     * Navega a la vista de programaciones filtrando por el equipo seleccionado
+     */
+    verProgramacion(): void {
+        if (!this.selectedEvent?.extendedProps) return;
+        
+        const props = this.selectedEvent.extendedProps;
+        const idProgramacion = props.idProgramacion;
+        const idEquipo = props.idEquipo;
+        const equipoNombre = props.equipoNombre;
+        
+        this.closeDetailDialog();
+        
+        // Navegar a programaciones con filtro por equipo
+        if (idEquipo) {
+            this.router.navigate(['/administracion/programaciones'], {
+                queryParams: { 
+                    equipoId: idEquipo,
+                    equipoNombre: equipoNombre
+                }
+            });
+        } else {
+            this.router.navigate(['/administracion/programaciones']);
+        }
+    }
+
     crearDesdeProgamacion(): void {
         if (!this.selectedEvent?.extendedProps) return;
         
         const props = this.selectedEvent.extendedProps;
-        this.nuevaEjecucion = {
-            idContrato: props.idContrato,
-            idEquipo: props.idEquipo,
-            idProgramacion: props.idProgramacion, // Vincular con programación
-            fechaEjecucion: this.selectedEvent.start as Date,
-            estado: 'PROGRAMADO'
-        };
+        const idProgramacion = props.idProgramacion;
         
-        if (props.idContrato) {
-            const contrato = this.contratos.find(c => c.id === props.idContrato);
-            this.equiposContrato = contrato?.equipos || [];
+        if (!idProgramacion) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Esta programación no tiene un identificador válido'
+            });
+            return;
         }
-        
-        this.closeDetailDialog();
-        this.showCreateDialog = true;
+
+        const equipoNombre = props.equipoNombre || 'el equipo';
+        const tipoMantenimiento = props.tipoMantenimiento || 'N/A';
+        const fechaProgramada = this.formatDate(this.selectedEvent.start);
+
+        this.confirmationService.confirm({
+            message: `<div class="mb-3">
+                <p><strong>Equipo:</strong> ${equipoNombre}</p>
+                <p><strong>Tipo:</strong> ${tipoMantenimiento}</p>
+                <p><strong>Fecha programada:</strong> ${fechaProgramada}</p>
+                <p class="mt-3">¿Crear ejecución de mantenimiento para este equipo?</p>
+            </div>`,
+            header: 'Confirmar Ejecución',
+            icon: 'pi pi-play',
+            accept: () => {
+                this.loading = true;
+                this.closeDetailDialog();
+                
+                this.programacionesService.crearMantenimiento(idProgramacion).subscribe({
+                    next: () => {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: `Se registró la ejecución para ${equipoNombre}`
+                        });
+                        this.loadData();
+                    },
+                    error: (error) => {
+                        console.error('❌ Error creando ejecución:', error);
+                        this.loading = false;
+                        const detail = error?.error?.message || error?.error || 'No se pudo crear la ejecución';
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail
+                        });
+                    }
+                });
+            }
+        });
     }
 
     formatDate(date: Date | string | null | undefined): string {
@@ -420,6 +777,16 @@ export class MantenimientosComponent implements OnInit {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    formatDateShort(date: Date | string | null | undefined): string {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString('es-GT', {
+            year: 'numeric',
+            month: 'short',
             day: 'numeric'
         });
     }

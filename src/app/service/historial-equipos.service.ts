@@ -26,6 +26,13 @@ export class HistorialEquiposService {
     getAll(): Observable<HistorialEquipo[]> {
         return this.http.get<HistorialEquipo[]>(this.apiUrl);
     }
+    
+    /**
+     * Obtiene solo el historial relacionado con tickets
+     */
+    getTicketsHistory(): Observable<HistorialEquipo[]> {
+        return this.http.get<HistorialEquipo[]>(`${this.apiUrl}/tickets`);
+    }
 
     getById(id: number): Observable<HistorialEquipo> {
         return this.http.get<HistorialEquipo>(`${this.apiUrl}/${id}`);

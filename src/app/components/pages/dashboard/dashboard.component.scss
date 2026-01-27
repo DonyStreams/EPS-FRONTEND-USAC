@@ -1,0 +1,322 @@
+// Dashboard responsive styles
+.dashboard-container {
+    .kpi-card {
+        min-height: 120px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .kpi-icon {
+            width: 3rem;
+            height: 3rem;
+            min-width: 3rem;
+        }
+        
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .kpi-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .kpi-sublabel {
+            font-size: 0.75rem;
+        }
+    }
+
+    .chart-container {
+        min-height: 280px;
+        height: 100%;
+        
+        .chart-wrapper {
+            height: 250px;
+            position: relative;
+        }
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        
+        i {
+            font-size: 1.25rem;
+        }
+        
+        h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+    }
+
+    .quick-actions {
+        .p-button {
+            white-space: nowrap;
+        }
+    }
+
+    .alerts-table {
+        .alert-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            
+            &.vencido {
+                background-color: var(--red-100);
+                color: var(--red-700);
+            }
+            
+            &.alerta {
+                background-color: var(--orange-100);
+                color: var(--orange-700);
+            }
+        }
+    }
+
+    .resumen-card {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-600) 100%);
+        color: white;
+        
+        .resumen-item {
+            text-align: center;
+            padding: 0.5rem;
+            
+            .resumen-value {
+                font-size: 1.5rem;
+                font-weight: 700;
+            }
+            
+            .resumen-label {
+                font-size: 0.75rem;
+                opacity: 0.9;
+            }
+        }
+    }
+}
+
+// Responsive breakpoints
+@media screen and (max-width: 1400px) {
+    .dashboard-container {
+        .kpi-card {
+            .kpi-value {
+                font-size: 1.5rem;
+            }
+            
+            .kpi-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                min-width: 2.5rem;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .dashboard-container {
+        .chart-container {
+            .chart-wrapper {
+                height: 220px;
+            }
+        }
+        
+        .kpi-card {
+            min-height: 100px;
+            
+            .kpi-value {
+                font-size: 1.35rem;
+            }
+            
+            .kpi-label {
+                font-size: 0.8rem;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-container {
+        .kpi-grid {
+            .col-12 {
+                padding: 0.25rem;
+            }
+        }
+        
+        .kpi-card {
+            padding: 0.75rem !important;
+            min-height: 90px;
+            
+            .kpi-content {
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            .kpi-value {
+                font-size: 1.25rem;
+            }
+            
+            .kpi-icon {
+                width: 2.25rem;
+                height: 2.25rem;
+                min-width: 2.25rem;
+            }
+            
+            .kpi-sublabel {
+                display: none;
+            }
+        }
+        
+        .chart-container {
+            .chart-wrapper {
+                height: 200px;
+            }
+        }
+        
+        .quick-actions {
+            .flex-wrap {
+                gap: 0.5rem !important;
+            }
+            
+            .p-button {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.75rem;
+                
+                .pi {
+                    font-size: 0.9rem;
+                }
+            }
+        }
+        
+        .section-title {
+            h5 {
+                font-size: 1rem;
+            }
+            
+            i {
+                font-size: 1rem;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .dashboard-container {
+        .kpi-card {
+            min-height: 80px;
+            
+            .kpi-value {
+                font-size: 1.1rem;
+            }
+            
+            .kpi-label {
+                font-size: 0.7rem;
+            }
+            
+            .kpi-icon {
+                width: 2rem;
+                height: 2rem;
+                min-width: 2rem;
+                
+                i {
+                    font-size: 1rem !important;
+                }
+            }
+        }
+        
+        .chart-container {
+            .chart-wrapper {
+                height: 180px;
+            }
+        }
+        
+        .quick-actions {
+            .p-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        .alerts-table {
+            font-size: 0.8rem;
+            
+            th, td {
+                padding: 0.5rem 0.25rem !important;
+            }
+        }
+        
+        .resumen-card {
+            .resumen-item {
+                .resumen-value {
+                    font-size: 1.25rem;
+                }
+                
+                .resumen-label {
+                    font-size: 0.65rem;
+                }
+            }
+        }
+    }
+}
+
+// Loading state
+.loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    
+    .loading-content {
+        text-align: center;
+        
+        i {
+            font-size: 3rem;
+            color: var(--primary-color);
+        }
+        
+        p {
+            margin-top: 1rem;
+            color: var(--text-color-secondary);
+        }
+    }
+}
+
+// Chart responsiveness helper
+.p-chart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+// Card consistent styling
+.card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    
+    &.chart-card {
+        .card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+}
+
+// Grid gap adjustments for better spacing
+.grid-gap-responsive {
+    gap: 1rem;
+    
+    @media screen and (max-width: 768px) {
+        gap: 0.5rem;
+    }
+}

@@ -5,6 +5,9 @@ import { Menu } from 'primeng/menu';
 import { EjecucionesService, EjecucionMantenimiento, GuardarEjecucionRequest, CambioEstadoRequest } from '../../../service/ejecuciones.service';
 import { ContratosService, Contrato } from '../../../service/contratos.service';
 import { EvidenciasService, Evidencia, UploadProgress } from '../../../service/evidencias.service';
+import { ComentariosEjecucionService, ComentarioEjecucion, CrearComentarioRequest } from '../../../service/comentarios-ejecucion.service';
+import { UsuariosService, Usuario } from '../../../service/usuarios.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -54,7 +57,6 @@ export class EjecucionesComponent implements OnInit {
     cancelarMotivo = '';
     
     // Evidencias
-    showEvidenciasDialog = false;
     evidencias: Evidencia[] = [];
     loadingEvidencias = false;
     uploadProgress = 0;
@@ -62,6 +64,28 @@ export class EjecucionesComponent implements OnInit {
     nuevaDescripcion = '';
     ejecucionEvidenciasId: number | null = null;
     archivosSeleccionados: File[] = [];
+    
+    // Sistema de Comentarios y Gestión
+    showGestionDialog = false;
+    comentarios: ComentarioEjecucion[] = [];
+    loadingComentarios = false;
+    nuevoComentario = '';
+    tipoComentarioSeleccionado = 'SEGUIMIENTO';
+    nuevoEstadoSeleccionado: string | null = null;
+    ejecucionGestion: EjecucionMantenimiento | null = null;
+    
+    tiposComentario = [
+        { label: 'Seguimiento', value: 'SEGUIMIENTO' },
+        { label: 'Técnico', value: 'TECNICO' },
+        { label: 'Observación', value: 'OBSERVACION' },
+        { label: 'Resolución', value: 'RESOLUCION' },
+        { label: 'Alerta', value: 'ALERTA' }
+    ];
+    
+    estadosEdicion = ['PROGRAMADO', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO'];
+    
+    // Usuario actual
+    usuarioActual?: Usuario;
     
     // Filtros
     filtroEstado: string = '';
@@ -88,6 +112,9 @@ export class EjecucionesComponent implements OnInit {
         private ejecucionesService: EjecucionesService,
         private contratosService: ContratosService,
         private evidenciasService: EvidenciasService,
+        private comentariosService: ComentariosEjecucionService,
+        private usuariosService: UsuariosService,
+        private keycloakService: KeycloakService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
     ) {}
@@ -95,6 +122,19 @@ export class EjecucionesComponent implements OnInit {
     ngOnInit() {
         this.loadEjecuciones();
         this.loadContratos();
+        this.cargarUsuarioActual();
+    }
+
+    cargarUsuarioActual() {
+        const keycloakId = this.keycloakService.getUserId();
+        if (keycloakId) {
+            this.usuariosService.getActivos().subscribe({
+                next: (usuarios) => {
+                    this.usuarioActual = usuarios.find(u => u.keycloakId === keycloakId);
+                },
+                error: (err) => console.error('Error cargando usuario actual:', err)
+            });
+        }
     }
 
     loadEjecuciones() {
@@ -443,14 +483,6 @@ export class EjecucionesComponent implements OnInit {
         this.ejecucionDetalle = null;
     }
     
-    verEvidenciasDesdeDetalle() {
-        if (this.ejecucionDetalle) {
-            const ejecucion = this.ejecucionDetalle;
-            this.hideDetalleDialog();
-            this.openEvidencias(ejecucion);
-        }
-    }
-    
     // ==================== INICIAR TRABAJO ====================
     
     abrirIniciarDialog(ejecucion: EjecucionMantenimiento) {
@@ -462,6 +494,7 @@ export class EjecucionesComponent implements OnInit {
     confirmarIniciar() {
         if (!this.selectedEjecucion.idEjecucion) return;
         
+        const estadoAnterior = this.selectedEjecucion.estado || 'PROGRAMADO';
         const payload: CambioEstadoRequest = {
             estado: 'EN_PROCESO',
             fechaReferencia: new Date(),
@@ -472,6 +505,19 @@ export class EjecucionesComponent implements OnInit {
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
         this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
             next: () => {
+                // Crear comentario de cambio de estado
+                const comentarioRequest: CrearComentarioRequest = {
+                    idEjecucion: this.selectedEjecucion.idEjecucion!,
+                    tipoComentario: 'SEGUIMIENTO',
+                    comentario: this.iniciarBitacora 
+                        ? `🔧 Trabajo iniciado.\n\nNotas: ${this.iniciarBitacora}`
+                        : '🔧 Trabajo iniciado.',
+                    estadoAnterior: estadoAnterior,
+                    estadoNuevo: 'EN_PROCESO',
+                    usuarioId: this.usuarioActual?.id
+                };
+                this.comentariosService.create(comentarioRequest).subscribe();
+                
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Trabajo iniciado',
@@ -511,6 +557,7 @@ export class EjecucionesComponent implements OnInit {
     confirmarCompletar() {
         if (!this.selectedEjecucion.idEjecucion) return;
         
+        const estadoAnterior = this.selectedEjecucion.estado || 'EN_PROCESO';
         let bitacoraFinal = this.completarBitacora;
         if (this.completarObservaciones) {
             bitacoraFinal += `\n\n--- CIERRE (${new Date().toLocaleDateString('es-GT')}) ---\n${this.completarObservaciones}`;
@@ -526,6 +573,19 @@ export class EjecucionesComponent implements OnInit {
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
         this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
             next: () => {
+                // Crear comentario de cambio de estado
+                const comentarioRequest: CrearComentarioRequest = {
+                    idEjecucion: this.selectedEjecucion.idEjecucion!,
+                    tipoComentario: 'RESOLUCION',
+                    comentario: this.completarObservaciones 
+                        ? `✅ Mantenimiento completado.\n\nObservaciones: ${this.completarObservaciones}`
+                        : '✅ Mantenimiento completado exitosamente.',
+                    estadoAnterior: estadoAnterior,
+                    estadoNuevo: 'COMPLETADO',
+                    usuarioId: this.usuarioActual?.id
+                };
+                this.comentariosService.create(comentarioRequest).subscribe();
+                
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Mantenimiento completado',
@@ -572,6 +632,7 @@ export class EjecucionesComponent implements OnInit {
             return;
         }
         
+        const estadoAnterior = this.selectedEjecucion.estado || 'PROGRAMADO';
         let bitacoraFinal = this.selectedEjecucion.bitacora || '';
         bitacoraFinal += `\n\n--- CANCELADO (${new Date().toLocaleDateString('es-GT')}) ---\nMotivo: ${this.cancelarMotivo}`;
         
@@ -584,6 +645,17 @@ export class EjecucionesComponent implements OnInit {
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
         this.ejecucionesService.actualizarEstado(this.selectedEjecucion.idEjecucion, payload).subscribe({
             next: () => {
+                // Crear comentario de cancelación
+                const comentarioRequest: CrearComentarioRequest = {
+                    idEjecucion: this.selectedEjecucion.idEjecucion!,
+                    tipoComentario: 'ALERTA',
+                    comentario: `❌ Mantenimiento cancelado.\n\nMotivo: ${this.cancelarMotivo}`,
+                    estadoAnterior: estadoAnterior,
+                    estadoNuevo: 'CANCELADO',
+                    usuarioId: this.usuarioActual?.id
+                };
+                this.comentariosService.create(comentarioRequest).subscribe();
+                
                 this.messageService.add({
                     severity: 'info',
                     summary: 'Mantenimiento cancelado',
@@ -736,14 +808,14 @@ export class EjecucionesComponent implements OnInit {
         
         this.accionesMenuItems = [
             {
+                label: 'Gestionar',
+                icon: 'pi pi-comments',
+                command: () => this.abrirGestion(ejecucion)
+            },
+            {
                 label: 'Ver Detalle',
                 icon: 'pi pi-eye',
                 command: () => this.verDetalle(ejecucion)
-            },
-            {
-                label: 'Evidencias',
-                icon: 'pi pi-paperclip',
-                command: () => this.openEvidencias(ejecucion)
             },
             { separator: true },
             {
@@ -782,14 +854,6 @@ export class EjecucionesComponent implements OnInit {
     }
 
     // ==================== EVIDENCIAS ====================
-
-    openEvidencias(ejecucion: EjecucionMantenimiento) {
-        if (!ejecucion.idEjecucion) return;
-        this.ejecucionEvidenciasId = ejecucion.idEjecucion;
-        this.selectedEjecucion = ejecucion;
-        this.showEvidenciasDialog = true;
-        this.loadEvidencias();
-    }
 
     loadEvidencias() {
         if (!this.ejecucionEvidenciasId) return;
@@ -1000,13 +1064,186 @@ export class EjecucionesComponent implements OnInit {
         return this.evidenciasService.isImage(evidencia);
     }
 
-    hideEvidenciasDialog() {
-        this.showEvidenciasDialog = false;
+    // ==================== GESTIÓN DE COMENTARIOS ====================
+    
+    abrirGestion(ejecucion: EjecucionMantenimiento) {
+        this.ejecucionGestion = ejecucion;
+        this.ejecucionEvidenciasId = ejecucion.idEjecucion || null;
+        this.showGestionDialog = true;
+        this.nuevoComentario = '';
+        this.tipoComentarioSeleccionado = 'SEGUIMIENTO';
+        this.nuevoEstadoSeleccionado = null;
+        this.loadComentarios();
+        this.loadEvidencias();
+    }
+
+    hideGestionDialog() {
+        this.showGestionDialog = false;
+        this.ejecucionGestion = null;
+        this.comentarios = [];
         this.evidencias = [];
-        this.ejecucionEvidenciasId = null;
-        this.nuevaDescripcion = '';
-        this.archivosSeleccionados = [];
-        this.uploading = false;
+        this.nuevoComentario = '';
+        this.tipoComentarioSeleccionado = 'SEGUIMIENTO';
+        this.nuevoEstadoSeleccionado = null;
+    }
+
+    loadComentarios() {
+        if (!this.ejecucionGestion?.idEjecucion) return;
+        
+        this.loadingComentarios = true;
+        this.comentariosService.getByEjecucion(this.ejecucionGestion.idEjecucion).subscribe({
+            next: (data) => {
+                this.comentarios = data;
+                this.loadingComentarios = false;
+            },
+            error: (error) => {
+                console.error('Error al cargar comentarios:', error);
+                this.loadingComentarios = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar los comentarios'
+                });
+            }
+        });
+    }
+
+    agregarComentario() {
+        if (!this.ejecucionGestion?.idEjecucion || !this.nuevoComentario?.trim()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Debe escribir un comentario'
+            });
+            return;
+        }
+
+        const request: CrearComentarioRequest = {
+            idEjecucion: this.ejecucionGestion.idEjecucion,
+            tipoComentario: this.tipoComentarioSeleccionado,
+            comentario: this.nuevoComentario.trim(),
+            usuarioId: this.usuarioActual?.id
+        };
+
+        // Si hay cambio de estado
+        if (this.nuevoEstadoSeleccionado && this.nuevoEstadoSeleccionado !== this.ejecucionGestion.estado) {
+            request.estadoAnterior = this.ejecucionGestion.estado;
+            request.estadoNuevo = this.nuevoEstadoSeleccionado;
+        }
+
+        this.comentariosService.create(request).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Comentario agregado correctamente'
+                });
+                
+                // Actualizar estado local si cambió
+                if (request.estadoNuevo && this.ejecucionGestion) {
+                    this.ejecucionGestion.estado = request.estadoNuevo as any;
+                }
+                
+                this.nuevoComentario = '';
+                this.nuevoEstadoSeleccionado = null;
+                this.loadComentarios();
+                this.loadEjecuciones(); // Refrescar lista principal
+            },
+            error: (error) => {
+                console.error('Error al agregar comentario:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo agregar el comentario'
+                });
+            }
+        });
+    }
+
+    getTipoComentarioSeverity(tipo: string): string {
+        switch (tipo?.toUpperCase()) {
+            case 'TECNICO': return 'info';
+            case 'SEGUIMIENTO': return 'secondary';
+            case 'OBSERVACION': return 'warning';
+            case 'RESOLUCION': return 'success';
+            case 'ALERTA': return 'danger';
+            default: return 'secondary';
+        }
+    }
+
+    getTipoComentarioIcon(tipo: string): string {
+        switch (tipo?.toUpperCase()) {
+            case 'TECNICO': return 'pi pi-wrench';
+            case 'SEGUIMIENTO': return 'pi pi-clock';
+            case 'OBSERVACION': return 'pi pi-eye';
+            case 'RESOLUCION': return 'pi pi-check-circle';
+            case 'ALERTA': return 'pi pi-exclamation-triangle';
+            default: return 'pi pi-comment';
+        }
+    }
+
+    // Subir evidencia desde el dialog de gestión
+    subirEvidenciaGestion(event: any) {
+        const files: File[] = event.files;
+        if (!files || files.length === 0 || !this.ejecucionGestion?.idEjecucion) return;
+
+        this.uploading = true;
         this.uploadProgress = 0;
+        
+        let completedCount = 0;
+        const totalFiles = files.length;
+        
+        // Subir archivos uno por uno
+        files.forEach((file: File) => {
+            this.evidenciasService.upload(
+                this.ejecucionGestion!.idEjecucion!,
+                file,
+                this.nuevaDescripcion
+            ).subscribe({
+                next: (progress: UploadProgress) => {
+                    if (progress.status === 'progress') {
+                        this.uploadProgress = progress.progress || 0;
+                    } else if (progress.status === 'complete') {
+                        completedCount++;
+                        this.uploadProgress = Math.round((completedCount / totalFiles) * 100);
+                        
+                        if (completedCount === totalFiles) {
+                            this.uploading = false;
+                            this.uploadProgress = 0;
+                            this.nuevaDescripcion = '';
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Éxito',
+                                detail: `${totalFiles} archivo(s) subido(s) correctamente`
+                            });
+                            this.loadEvidencias();
+                            
+                            // Agregar comentario automático sobre las evidencias
+                            const comentarioAuto: CrearComentarioRequest = {
+                                idEjecucion: this.ejecucionGestion!.idEjecucion!,
+                                tipoComentario: 'SEGUIMIENTO',
+                                comentario: `Se adjuntaron ${totalFiles} archivo(s) de evidencia.`
+                            };
+                            this.comentariosService.create(comentarioAuto).subscribe(() => {
+                                this.loadComentarios();
+                            });
+                        }
+                    }
+                },
+                error: (error) => {
+                    console.error('Error al subir archivo:', error);
+                    completedCount++;
+                    if (completedCount === totalFiles) {
+                        this.uploading = false;
+                        this.uploadProgress = 0;
+                    }
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: `No se pudo subir el archivo: ${file.name}`
+                    });
+                }
+            });
+        });
     }
 }

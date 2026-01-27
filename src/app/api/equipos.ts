@@ -14,7 +14,7 @@ export interface Equipo {
     softwareFirmware?: string;
     condicionesOperacion?: string;
     descripcion?: string;
-    estado?: boolean | string;
+    estado?: string;         // Valores: 'Activo', 'Inactivo', 'Critico'
     idArea?: number;        // ID del área
     areaNombre?: string;    // Nombre del área (para mostrar)
     idCategoria?: number;   // ID de la categoría

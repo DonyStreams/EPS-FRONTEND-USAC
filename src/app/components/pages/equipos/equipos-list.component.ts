@@ -1,20 +1,22 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { EquiposService } from '../../../service/equipos.service';
-import { FtpService } from '../../../service/ftp.service';
 import { KeycloakService } from '../../../service/keycloak.service';
 import { ExcelService } from '../../../service/excel.service';
 import { AreasService, Area } from '../../../service/areas.service';
 import { CategoriasEquipoService, CategoriaEquipo } from '../../../service/categorias-equipo.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
+import { Menu } from 'primeng/menu';
 import { environment } from '../../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { MessageService } from 'primeng/api';
+import { MessageService, MenuItem } from 'primeng/api';
 
 interface EstadoOption {
   label: string;
   value: string;
+  icon?: string;
+  severity?: string;
 }
 
 @Component({
@@ -26,6 +28,7 @@ export class EquiposListComponent implements OnInit {
   @ViewChild('fileUploadEdit') fileUploadEdit!: FileUpload;
   @ViewChild('formEquipo') formEquipo: any;
   @ViewChild('formEditarEquipo') formEditarEquipo: any;
+  @ViewChild('menuAcciones') menuAcciones!: Menu;
   
   equipos: Equipo[] = [];
   equiposSeleccionados: Equipo[] = [];
@@ -41,7 +44,15 @@ export class EquiposListComponent implements OnInit {
   estados: EstadoOption[] = [
     { label: 'Todos', value: '' },
     { label: 'Activo', value: 'Activo' },
-    { label: 'Inactivo', value: 'Inactivo' }
+    { label: 'Inactivo', value: 'Inactivo' },
+    { label: 'Crítico', value: 'Critico' }
+  ];
+
+  // Opciones de estado para los formularios de crear/editar
+  estadosFormulario: EstadoOption[] = [
+    { label: 'Activo', value: 'Activo', icon: 'pi pi-check-circle', severity: 'success' },
+    { label: 'Inactivo', value: 'Inactivo', icon: 'pi pi-minus-circle', severity: 'secondary' },
+    { label: 'Crítico', value: 'Critico', icon: 'pi pi-exclamation-triangle', severity: 'danger' }
   ];
 
   mostrarModalNuevoEquipo = false;
@@ -61,7 +72,7 @@ export class EquiposListComponent implements OnInit {
     softwareFirmware: '',
     condicionesOperacion: '',
     descripcion: '',
-    estado: true,
+    estado: 'Activo',
     idArea: undefined,
     idCategoria: undefined
   };
@@ -79,10 +90,13 @@ export class EquiposListComponent implements OnInit {
 
   mostrarModalEditarEquipo = false;
   equipoEditando: Equipo | null = null;
+  
+  // Variable para el menú de acciones
+  equipoSeleccionadoMenu: Equipo | null = null;
+  menuItemsAcciones: MenuItem[] = [];
 
   constructor(
     private equiposService: EquiposService, 
-    private ftpService: FtpService,
     private keycloakService: KeycloakService,
     private http: HttpClient,
     private messageService: MessageService,
@@ -113,23 +127,106 @@ export class EquiposListComponent implements OnInit {
     return this.keycloakService.getUserInfo();
   }
 
-  // Método helper para construir URLs de imágenes del FTP
+  // Métodos para conteo por estado
+  get equiposActivos(): number {
+    return this.equipos?.filter(e => e.estado === 'Activo').length || 0;
+  }
+
+  get equiposInactivos(): number {
+    return this.equipos?.filter(e => e.estado === 'Inactivo').length || 0;
+  }
+
+  get equiposCriticos(): number {
+    return this.equipos?.filter(e => e.estado === 'Critico').length || 0;
+  }
+
+  // Método helper para obtener clase de severidad según estado
+  getSeveridadEstado(estado: string): string {
+    switch (estado) {
+      case 'Activo': return 'success';
+      case 'Inactivo': return 'secondary';
+      case 'Critico': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  // Método helper para obtener icono según estado
+  getIconoEstado(estado: string): string {
+    switch (estado) {
+      case 'Activo': return 'pi pi-check-circle';
+      case 'Inactivo': return 'pi pi-minus-circle';
+      case 'Critico': return 'pi pi-exclamation-triangle';
+      default: return 'pi pi-question-circle';
+    }
+  }
+
+  // Método para generar los items del menú de acciones
+  getMenuItems(equipo: Equipo): MenuItem[] {
+    return [
+      {
+        label: 'Editar equipo',
+        icon: 'pi pi-pencil',
+        command: () => this.editarEquipo(equipo),
+        visible: this.puedeEditarEquipos
+      },
+      {
+        label: 'Historial de cambios',
+        icon: 'pi pi-history',
+        command: () => this.verHistorial(equipo)
+      },
+      {
+        label: 'Programaciones',
+        icon: 'pi pi-wrench',
+        command: () => this.verMantenimientos(equipo)
+      },
+      {
+        label: 'Descargar ficha técnica',
+        icon: 'pi pi-download',
+        command: () => this.descargarFicha(equipo)
+      },
+      { separator: true },
+      {
+        label: 'Eliminar equipo',
+        icon: 'pi pi-trash',
+        styleClass: 'text-red-500',
+        command: () => this.eliminarEquipo(equipo),
+        visible: this.puedeEliminarEquipos
+      }
+    ];
+  }
+
+  // Método para abrir el menú de acciones
+  abrirMenuAcciones(event: Event, equipo: Equipo) {
+    this.equipoSeleccionadoMenu = equipo;
+    this.menuItemsAcciones = this.getMenuItems(equipo);
+    this.menuAcciones.toggle(event);
+  }
+
+  // Método helper para construir URLs de imágenes (sistema local)
   construirUrlImagen(rutaImagen: string | File | null): string | null {
     if (!rutaImagen || typeof rutaImagen !== 'string') {
       return null;
     }
 
+    // Limpiar la ruta para obtener solo el nombre del archivo
+    let filename = rutaImagen;
+    
     // Si la ruta empieza con /imagenes/equipos/, extraer solo el nombre del archivo
     if (rutaImagen.startsWith('/imagenes/equipos/')) {
-      const filename = rutaImagen.substring('/imagenes/equipos/'.length);
-      return `${environment.apiUrl}/imagenes/view/${filename}`;
-    } else if (rutaImagen.startsWith('http')) {
-      // Si ya es una URL completa, usarla directamente
-      return rutaImagen;
-    } else {
-      // Asumir que es solo el nombre del archivo
-      return `${environment.apiUrl}/imagenes/view/${rutaImagen}`;
+      filename = rutaImagen.substring('/imagenes/equipos/'.length);
+    } else if (rutaImagen.includes('/')) {
+      // Si tiene alguna otra ruta, tomar solo el nombre del archivo
+      filename = rutaImagen.substring(rutaImagen.lastIndexOf('/') + 1);
     }
+    
+    // Si ya es una URL completa, usarla directamente
+    if (rutaImagen.startsWith('http')) {
+      return rutaImagen;
+    }
+    
+    // Codificar el nombre del archivo para URLs con caracteres especiales
+    const encodedFilename = encodeURIComponent(filename);
+    return `${environment.apiUrl}/imagenes/view/${encodedFilename}`;
   }
 
   ngOnInit() {
@@ -200,7 +297,7 @@ export class EquiposListComponent implements OnInit {
       softwareFirmware: '',
       condicionesOperacion: '',
       descripcion: '',
-      estado: true,
+      estado: 'Activo',
       idArea: undefined,
       idCategoria: undefined
     };
@@ -224,7 +321,7 @@ export class EquiposListComponent implements OnInit {
     this.errorImagen = null;
     
     if (this.nuevoEquipo.fotografia instanceof File) {
-      // 🆕 USAR SISTEMA LOCAL DE IMÁGENES en lugar de FTP
+      // Subir imagen al sistema local de almacenamiento
       this.subirImagenLocal(this.nuevoEquipo.fotografia).then((nombreArchivo) => {
         this.nuevoEquipo.fotografia = nombreArchivo;
         this.guardarEquipo(this.nuevoEquipo);
@@ -282,8 +379,10 @@ export class EquiposListComponent implements OnInit {
   }
 
   cerrarModalEditarEquipo() {
+    // Primero ocultar el modal para evitar errores de ngModel al acceder a equipoEditando
     this.mostrarModalEditarEquipo = false;
-    this.equipoEditando = null;
+    
+    // Resetear otros estados primero
     this.previewUrlEdit = null;
     this.errorImagenEdit = null;
     this.mensaje = null;
@@ -293,10 +392,12 @@ export class EquiposListComponent implements OnInit {
       this.fileUploadEdit.clear();
     }
     
-    // Resetear el estado del formulario de edición
-    if (this.formEditarEquipo) {
-      this.formEditarEquipo.resetForm();
-    }
+    // Usar setTimeout para limpiar equipoEditando después de que Angular procese el cierre del modal
+    // NO llamar a resetForm() ya que dispara eventos ngModelChange que intentan escribir a equipoEditando
+    // El *ngIf="equipoEditando" en el template destruirá el formulario automáticamente
+    setTimeout(() => {
+      this.equipoEditando = null;
+    }, 0);
   }
 
   onFileSelectedEdit(event: any) {
@@ -358,7 +459,7 @@ export class EquiposListComponent implements OnInit {
     this.errorImagenEdit = null;
 
     if (this.equipoEditando.fotografia instanceof File) {
-      // 🆕 USAR SISTEMA LOCAL DE IMÁGENES en lugar de FTP para edición
+      // Subir imagen al sistema local de almacenamiento
       this.subirImagenLocal(this.equipoEditando.fotografia).then((nombreArchivo) => {
         this.equipoEditando!.fotografia = nombreArchivo;
         this.guardarCambiosEquipo();
@@ -389,9 +490,11 @@ export class EquiposListComponent implements OnInit {
 
     this.equiposService.editarEquipo(this.equipoEditando).subscribe({
       next: () => {
+        // Primero ocultar el modal
         this.mostrarModalEditarEquipo = false;
         this.cargarEquipos();
-        this.equipoEditando = null;
+        
+        // Limpiar estados de forma segura
         this.previewUrlEdit = null;
         this.errorImagenEdit = null;
         
@@ -399,6 +502,11 @@ export class EquiposListComponent implements OnInit {
         if (this.fileUploadEdit) {
           this.fileUploadEdit.clear();
         }
+        
+        // Usar setTimeout para limpiar equipoEditando después de que Angular procese el cierre
+        setTimeout(() => {
+          this.equipoEditando = null;
+        }, 0);
         
         // Mostrar notificación de éxito
         this.messageService.add({

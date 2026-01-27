@@ -28,10 +28,12 @@ import { BadgeModule } from 'primeng/badge';
 
 // Componentes
 import { TicketsComponent } from './tickets.component';
+import { HistorialTicketsComponent } from './historial-tickets/historial-tickets.component';
 
 @NgModule({
     declarations: [
-        TicketsComponent
+        TicketsComponent,
+        HistorialTicketsComponent
     ],
     imports: [
         CommonModule,
@@ -59,7 +61,8 @@ import { TicketsComponent } from './tickets.component';
         ChipModule,
         BadgeModule,
         RouterModule.forChild([
-            { path: '', component: TicketsComponent }
+            { path: '', component: TicketsComponent },
+            { path: 'historial', component: HistorialTicketsComponent }
         ])
     ]
 })

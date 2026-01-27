@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { Table } from 'primeng/table';
 import { Menu } from 'primeng/menu';
@@ -92,7 +93,8 @@ export class ProgramacionesComponent implements OnInit {
         total: 0,
         activas: 0,
         proximas: 0,
-        vencidas: 0
+        vencidasFecha: 0,
+        contratosVencidos: 0
     };
 
     // Modal crear/editar
@@ -120,11 +122,17 @@ export class ProgramacionesComponent implements OnInit {
     
     // Menú de acciones
     @ViewChild('menuAcciones') menuAcciones!: Menu;
+    @ViewChild('dt') tabla!: Table;
     accionesMenuItems: MenuItem[] = [];
     programacionSeleccionadaMenu: ProgramacionMantenimiento | null = null;
 
+    // Filtro por equipo desde queryParams
+    filtroEquipoId: number | null = null;
+    filtroEquipoNombre: string | null = null;
+
     // Opciones de frecuencia para dropdown
     frecuenciaOpciones = [
+        { label: 'Único (sin frecuencia)', value: 0 },
         { label: 'Semanal (7 días)', value: 7 },
         { label: 'Quincenal (15 días)', value: 15 },
         { label: 'Mensual (30 días)', value: 30 },
@@ -135,6 +143,7 @@ export class ProgramacionesComponent implements OnInit {
         { label: 'Anual (365 días)', value: 365 },
         { label: 'Personalizado...', value: -1 }
     ];
+    esUnico: boolean = false;
     frecuenciaPersonalizada: boolean = false;
 
     constructor(
@@ -142,13 +151,98 @@ export class ProgramacionesComponent implements OnInit {
         private confirmationService: ConfirmationService,
         private http: HttpClient,
         private programacionesService: ProgramacionesService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private route: ActivatedRoute,
+        private router: Router
     ) { }
 
     ngOnInit() {
+        // Verificar si hay filtro por equipo en los queryParams
+        this.route.queryParams.subscribe(params => {
+            if (params['equipoId']) {
+                this.filtroEquipoId = +params['equipoId'];
+                this.filtroEquipoNombre = params['equipoNombre'] || null;
+                console.log('🔍 Filtro por equipo:', this.filtroEquipoId, this.filtroEquipoNombre);
+            }
+            
+            // Si viene desde el calendario con nuevaProgramacion=true
+            if (params['nuevaProgramacion'] === 'true') {
+                console.log('📅 Nueva programación desde calendario');
+                // Esperar a que se carguen los datos antes de abrir el diálogo
+                setTimeout(() => {
+                    this.openNewFromCalendar(params['fechaProximoMantenimiento']);
+                }, 500);
+            }
+        });
+        
         this.loadProgramaciones();
         this.loadEquipos();
         this.loadTiposMantenimiento();
+    }
+
+    /**
+     * Abre el diálogo de nueva programación con fecha pre-llenada desde el calendario
+     */
+    openNewFromCalendar(fechaStr?: string): void {
+        this.programacion = this.initializeProgramacion();
+        this.isEditing = false;
+        this.frecuenciaPersonalizada = false;
+        this.esUnico = true;
+        
+        // Pre-llenar la fecha si viene del calendario
+        if (fechaStr) {
+            // Parsear fecha en zona local (YYYY-MM-DD)
+            const [year, month, day] = fechaStr.split('-').map(Number);
+            const fecha = new Date(year, month - 1, day, 12, 0, 0); // Usar mediodía para evitar problemas de zona horaria
+            this.programacion.fechaProximoMantenimiento = fecha;
+            console.log('📅 Fecha pre-llenada:', fecha, 'desde string:', fechaStr);
+        }
+        
+        this.displayDialog = true;
+        this.loadAllContratos();
+        
+        // Limpiar los queryParams de la URL
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {},
+            replaceUrl: true
+        });
+        
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Nueva Programación',
+            detail: fechaStr 
+                ? `Fecha seleccionada: ${new Date(Number(fechaStr.split('-')[0]), Number(fechaStr.split('-')[1]) - 1, Number(fechaStr.split('-')[2])).toLocaleDateString('es-GT')}` 
+                : 'Complete los datos de la programación',
+            life: 3000
+        });
+    }
+
+    /**
+     * Limpia el filtro por equipo
+     */
+    limpiarFiltroEquipo(): void {
+        this.filtroEquipoId = null;
+        this.filtroEquipoNombre = null;
+        // Actualizar la URL sin el queryParam
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {}
+        });
+        // Recargar todas las programaciones
+        this.loadProgramaciones();
+    }
+
+    /**
+     * Obtiene las programaciones filtradas
+     */
+    get programacionesFiltradas(): ProgramacionMantenimiento[] {
+        if (this.filtroEquipoId) {
+            return this.programaciones.filter(p => 
+                p.equipoId === this.filtroEquipoId || p.equipo?.idEquipo === this.filtroEquipoId
+            );
+        }
+        return this.programaciones;
     }
 
     /**
@@ -159,7 +253,7 @@ export class ProgramacionesComponent implements OnInit {
             equipoId: 0,
             tipoMantenimientoId: 0,
             contratoId: 0,
-            frecuenciaDias: 30,
+            frecuenciaDias: 0,  // Por defecto: único (sin frecuencia)
             diasAlertaPrevia: 7,
             activa: true,
             fechaProximoMantenimiento: new Date()
@@ -364,6 +458,7 @@ export class ProgramacionesComponent implements OnInit {
      */
     calculateStats(): void {
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
 
         this.stats = {
@@ -372,13 +467,16 @@ export class ProgramacionesComponent implements OnInit {
             proximas: this.programaciones.filter(p =>
                 p.activa &&
                 p.fechaProximoMantenimiento &&
-                p.fechaProximoMantenimiento <= sevenDaysFromNow &&
-                p.fechaProximoMantenimiento >= today
+                new Date(p.fechaProximoMantenimiento) <= sevenDaysFromNow &&
+                new Date(p.fechaProximoMantenimiento) >= today
             ).length,
-            vencidas: this.programaciones.filter(p =>
+            vencidasFecha: this.programaciones.filter(p =>
                 p.activa &&
                 p.fechaProximoMantenimiento &&
-                p.fechaProximoMantenimiento < today
+                new Date(p.fechaProximoMantenimiento) < today
+            ).length,
+            contratosVencidos: this.programaciones.filter(p => 
+                p.activa && this.isContratoVencido(p)
             ).length
         };
     }
@@ -390,6 +488,7 @@ export class ProgramacionesComponent implements OnInit {
         this.programacion = this.initializeProgramacion();
         this.isEditing = false;
         this.frecuenciaPersonalizada = false;
+        this.esUnico = true;  // Por defecto: único (sin frecuencia)
         this.displayDialog = true;
 
         // 🚨 CARGAR CONTRATOS CUANDO SE ABRE EL DIÁLOGO
@@ -409,7 +508,9 @@ export class ProgramacionesComponent implements OnInit {
             equipoId: programacion.equipo?.idEquipo || programacion.equipoId || 0,
             tipoMantenimientoId: programacion.tipoMantenimiento?.idTipo || programacion.tipoMantenimientoId || 0,
             contratoId: programacion.contrato?.idContrato || programacion.contratoId || 0,
-            frecuenciaDias: programacion.frecuenciaDias || 30,
+            // Usar !== undefined para permitir 0 (programación única)
+            frecuenciaDias: programacion.frecuenciaDias !== undefined && programacion.frecuenciaDias !== null 
+                ? programacion.frecuenciaDias : 30,
             diasAlertaPrevia: programacion.diasAlertaPrevia || 7,
             activa: programacion.activa !== undefined ? programacion.activa : true,
             observaciones: programacion.observaciones || '',
@@ -419,9 +520,10 @@ export class ProgramacionesComponent implements OnInit {
         
         console.log('📋 Programación preparada para edición:', this.programacion);
         
-        // Detectar si la frecuencia es personalizada (no está en las opciones predefinidas)
-        const frecuenciasPredefinidas = [7, 15, 30, 60, 90, 120, 180, 365];
-        this.frecuenciaPersonalizada = !frecuenciasPredefinidas.includes(this.programacion.frecuenciaDias);
+        // Detectar si la frecuencia es única (0) o personalizada (no está en las opciones predefinidas)
+        const frecuenciasPredefinidas = [0, 7, 15, 30, 60, 90, 120, 180, 365];
+        this.esUnico = this.programacion.frecuenciaDias === 0;
+        this.frecuenciaPersonalizada = !this.esUnico && !frecuenciasPredefinidas.includes(this.programacion.frecuenciaDias);
         
         this.isEditing = true;
         this.displayDialog = true;
@@ -540,6 +642,8 @@ export class ProgramacionesComponent implements OnInit {
         this.displayDialog = false;
         this.programacion = this.initializeProgramacion();
         this.contratosDisponibles = [];
+        this.esUnico = false;
+        this.frecuenciaPersonalizada = false;
     }
 
     /**
@@ -612,7 +716,7 @@ export class ProgramacionesComponent implements OnInit {
             this.programacion.equipoId &&
             this.programacion.tipoMantenimientoId &&
             this.programacion.contratoId &&
-            this.programacion.frecuenciaDias &&
+            (this.programacion.frecuenciaDias !== undefined && this.programacion.frecuenciaDias !== null && this.programacion.frecuenciaDias >= 0) &&
             this.programacion.diasAlertaPrevia
         );
     }
@@ -621,7 +725,11 @@ export class ProgramacionesComponent implements OnInit {
      * Se ejecuta cuando cambia el equipo seleccionado
      */
     onEquipoChange(): void {
-        this.programacion.contratoId = 0;
+        // Solo limpiar el contrato si estamos creando una nueva programación
+        // En modo edición, el usuario debe decidir si cambiar el contrato
+        if (!this.isEditing) {
+            this.programacion.contratoId = 0;
+        }
         this.loadContratosDisponibles();
     }
 
@@ -629,7 +737,11 @@ export class ProgramacionesComponent implements OnInit {
      * Se ejecuta cuando cambia el tipo de mantenimiento
      */
     onTipoChange(): void {
-        this.programacion.contratoId = 0;
+        // Solo limpiar el contrato si estamos creando una nueva programación
+        // En modo edición, el usuario debe decidir si cambiar el contrato
+        if (!this.isEditing) {
+            this.programacion.contratoId = 0;
+        }
         this.loadContratosDisponibles();
     }
 
@@ -637,6 +749,12 @@ export class ProgramacionesComponent implements OnInit {
      * Calcula la próxima fecha de mantenimiento
      */
     calcularProximaFecha(): void {
+        // Si es único (frecuencia 0), no recalcular la fecha - el usuario la define manualmente
+        if (this.esUnico || this.programacion.frecuenciaDias === 0) {
+            console.log('📅 Programación única - fecha definida manualmente');
+            return;
+        }
+
         if (!this.programacion.frecuenciaDias) {
             return;
         }
@@ -662,16 +780,27 @@ export class ProgramacionesComponent implements OnInit {
     onFrecuenciaChange(event: any): void {
         const valor = event.value;
         
-        if (valor === -1) {
+        if (valor === 0) {
+            // Seleccionó "Único (sin frecuencia)"
+            this.esUnico = true;
+            this.frecuenciaPersonalizada = false;
+            this.programacion.frecuenciaDias = 0;
+            // Para programaciones únicas, mantener la fecha que el usuario seleccione manualmente
+            if (!this.programacion.fechaProximoMantenimiento) {
+                this.programacion.fechaProximoMantenimiento = new Date();
+            }
+        } else if (valor === -1) {
             // Seleccionó "Personalizado"
+            this.esUnico = false;
             this.frecuenciaPersonalizada = true;
             this.programacion.frecuenciaDias = 30; // Valor por defecto
+            this.calcularProximaFecha();
         } else {
+            this.esUnico = false;
             this.frecuenciaPersonalizada = false;
             this.programacion.frecuenciaDias = valor;
+            this.calcularProximaFecha();
         }
-        
-        this.calcularProximaFecha();
     }
 
     /**
@@ -898,7 +1027,12 @@ export class ProgramacionesComponent implements OnInit {
         }
 
         this.loading = true;
-        const fechaFormateada = this.reprogramarData.nuevaFecha.toISOString().split('T')[0];
+        
+        // Formatear fecha manualmente para evitar problemas de zona horaria
+        // toISOString() convierte a UTC y puede restar un día
+        const fecha = this.reprogramarData.nuevaFecha;
+        const fechaFormateada = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+        console.log('📅 Fecha seleccionada:', fecha, '→ Enviando:', fechaFormateada);
 
         this.programacionesService.reprogramarProgramacion(
             this.reprogramarData.programacion.idProgramacion!,
@@ -906,13 +1040,16 @@ export class ProgramacionesComponent implements OnInit {
             this.reprogramarData.motivo
         ).subscribe({
             next: (response) => {
+                console.log('✅ Reprogramación exitosa:', response);
                 this.displayReprogramarDialog = false;
+                this.loading = false;
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Reprogramado',
                     detail: `Mantenimiento reprogramado para el ${response.nuevaFecha}`,
                     life: 5000
                 });
+                // Recargar datos para reflejar el cambio
                 this.loadProgramaciones();
             },
             error: (error) => {
@@ -944,19 +1081,35 @@ export class ProgramacionesComponent implements OnInit {
      */
     openAccionesMenu(event: Event, programacion: ProgramacionMantenimiento): void {
         this.programacionSeleccionadaMenu = programacion;
+        const esUnica = this.esProgramacionUnica(programacion);
+        const esVencida = this.isVencida(programacion.fechaProximoMantenimiento);
         
         this.accionesMenuItems = [
             {
-                label: 'Ejecutar Mantenimiento',
-                icon: 'pi pi-calendar-plus',
-                visible: programacion.activa,
-                command: () => this.crearMantenimiento(programacion)
+                label: 'Editar Programación',
+                icon: 'pi pi-pencil',
+                command: () => this.editProgramacion(programacion)
             },
             {
-                label: 'Reprogramar',
-                icon: 'pi pi-calendar-times',
+                label: 'Ejecutar Mantenimiento',
+                icon: 'pi pi-play',
                 visible: programacion.activa,
+                styleClass: 'font-semibold',
+                command: () => this.crearMantenimiento(programacion)
+            },
+            { separator: true },
+            {
+                label: 'Reprogramar',
+                icon: 'pi pi-calendar',
+                visible: programacion.activa && !esUnica,
                 command: () => this.openReprogramarDialog(programacion)
+            },
+            {
+                label: 'Descartar (Vencida)',
+                icon: 'pi pi-forward',
+                visible: programacion.activa && esVencida && programacion.frecuenciaDias > 0,
+                styleClass: 'text-orange-600',
+                command: () => this.descartarProgramacion(programacion)
             },
             {
                 label: 'Ver Historial',
@@ -965,8 +1118,8 @@ export class ProgramacionesComponent implements OnInit {
             },
             { separator: true },
             {
-                label: programacion.activa ? 'Pausar' : 'Activar',
-                icon: programacion.activa ? 'pi pi-pause' : 'pi pi-play',
+                label: programacion.activa ? 'Pausar Programación' : 'Activar Programación',
+                icon: programacion.activa ? 'pi pi-pause' : 'pi pi-check-circle',
                 command: () => this.toggleActiva(programacion)
             },
             { separator: true },
@@ -1010,7 +1163,7 @@ export class ProgramacionesComponent implements OnInit {
                 'Tipo Mantenimiento': prog.tipoMantenimiento?.nombre || '',
                 'Contrato': prog.contrato?.descripcion || '',
                 'Proveedor': prog.contrato?.proveedor?.nombre || '',
-                'Frecuencia (días)': prog.frecuenciaDias,
+                'Frecuencia (días)': prog.frecuenciaDias === 0 ? 'Único' : prog.frecuenciaDias,
                 'Último Mantenimiento': prog.fechaUltimoMantenimiento ? new Date(prog.fechaUltimoMantenimiento).toLocaleDateString('es-ES') : '',
                 'Próximo Mantenimiento': prog.fechaProximoMantenimiento ? new Date(prog.fechaProximoMantenimiento).toLocaleDateString('es-ES') : '',
                 'Días Alerta': prog.diasAlertaPrevia,
@@ -1076,13 +1229,38 @@ export class ProgramacionesComponent implements OnInit {
     }
 
     /**
+     * Obtiene el texto descriptivo de la frecuencia
+     */
+    getFrecuenciaTexto(dias: number): string {
+        if (dias === 0) return 'Único';
+        if (dias === 7) return 'Semanal';
+        if (dias === 15) return 'Quincenal';
+        if (dias === 30) return 'Mensual';
+        if (dias === 60) return 'Bimestral';
+        if (dias === 90) return 'Trimestral';
+        if (dias === 120) return 'Cuatrimestral';
+        if (dias === 180) return 'Semestral';
+        if (dias === 365) return 'Anual';
+        return `${dias} días`;
+    }
+
+    /**
+     * Verifica si una programación es de uso único
+     */
+    esProgramacionUnica(programacion: ProgramacionMantenimiento): boolean {
+        return programacion.frecuenciaDias === 0;
+    }
+
+    /**
      * Obtiene la clase CSS para las fechas
      */
     getDateClass(fecha: Date | undefined): string {
         if (!fecha) return '';
 
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const fechaObj = new Date(fecha);
+        fechaObj.setHours(0, 0, 0, 0);
 
         if (fechaObj < today) {
             return 'fecha-vencida';
@@ -1100,7 +1278,35 @@ export class ProgramacionesComponent implements OnInit {
         if (!fecha) return false;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        return new Date(fecha) < today;
+        const fechaObj = new Date(fecha);
+        fechaObj.setHours(0, 0, 0, 0);
+        return fechaObj < today;
+    }
+
+    /**
+     * Verifica si el contrato de una programación está vencido
+     */
+    isContratoVencido(programacion: ProgramacionMantenimiento): boolean {
+        if (!programacion.contrato?.fechaFin) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const fechaFin = new Date(programacion.contrato.fechaFin);
+        fechaFin.setHours(0, 0, 0, 0);
+        return fechaFin < today;
+    }
+
+    /**
+     * Obtiene el tipo de vencimiento de una programación
+     * Retorna: 'fecha' | 'contrato' | 'ambos' | null
+     */
+    getTipoVencimiento(programacion: ProgramacionMantenimiento): 'fecha' | 'contrato' | 'ambos' | null {
+        const fechaVencida = this.isVencida(programacion.fechaProximoMantenimiento);
+        const contratoVencido = this.isContratoVencido(programacion);
+        
+        if (fechaVencida && contratoVencido) return 'ambos';
+        if (fechaVencida) return 'fecha';
+        if (contratoVencido) return 'contrato';
+        return null;
     }
 
     /**
@@ -1109,8 +1315,10 @@ export class ProgramacionesComponent implements OnInit {
     isProxima(fecha: Date | undefined): boolean {
         if (!fecha) return false;
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
         const fechaObj = new Date(fecha);
+        fechaObj.setHours(0, 0, 0, 0);
         return fechaObj >= today && fechaObj <= sevenDaysFromNow;
     }
 
@@ -1125,6 +1333,16 @@ export class ProgramacionesComponent implements OnInit {
 
         // Convertir a string y limpiar el formato [UTC]
         const cleanDateString = String(dateString).replace(/\[UTC\]$/, '');
+
+        // Si es formato yyyy-MM-dd, parsearlo manualmente para evitar problemas de timezone
+        // new Date("2026-02-01") lo interpreta como UTC y puede restar un día en zonas horarias negativas
+        const dateOnlyMatch = cleanDateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (dateOnlyMatch) {
+            const year = parseInt(dateOnlyMatch[1], 10);
+            const month = parseInt(dateOnlyMatch[2], 10) - 1; // Los meses en JS van de 0-11
+            const day = parseInt(dateOnlyMatch[3], 10);
+            return new Date(year, month, day);
+        }
 
         // Intentar parsear la fecha
         const parsedDate = new Date(cleanDateString);

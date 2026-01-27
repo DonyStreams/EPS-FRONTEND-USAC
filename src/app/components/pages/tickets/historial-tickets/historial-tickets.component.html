@@ -1,8 +1,8 @@
 <div class="card">
     <div class="flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="m-0 mb-2">📋 Bitácora / Historial de Equipos</h3>
-            <p class="text-600 m-0">Registro cronológico de todos los cambios y eventos de los equipos</p>
+            <h3 class="m-0 mb-2">🎫 Bitácora / Historial de Tickets</h3>
+            <p class="text-600 m-0">Registro cronológico de todos los eventos de tickets de fallas</p>
         </div>
     </div>
 
@@ -44,7 +44,7 @@
                         pInputText 
                         type="text" 
                         (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
-                        placeholder="Buscar en historial..."
+                        placeholder="Buscar en historial de tickets..."
                         class="w-full" />
                 </span>
                 <div class="flex gap-2">
@@ -75,10 +75,10 @@
                     Fecha/Hora <p-sortIcon field="fechaRegistro"></p-sortIcon>
                 </th>
                 <th pSortableColumn="tipoCambio" style="width: 150px">
-                    Tipo <p-sortIcon field="tipoCambio"></p-sortIcon>
+                    Estado <p-sortIcon field="tipoCambio"></p-sortIcon>
                 </th>
                 <th pSortableColumn="equipoNombre">
-                    Equipo <p-sortIcon field="equipoNombre"></p-sortIcon>
+                    Equipo Afectado <p-sortIcon field="equipoNombre"></p-sortIcon>
                 </th>
                 <th pSortableColumn="descripcion">
                     Descripción
@@ -148,11 +148,9 @@
         <ng-template pTemplate="emptymessage">
             <tr>
                 <td colspan="7" class="text-center p-5">
-                    <div class="flex flex-column align-items-center justify-content-center">
-                        <i class="pi pi-inbox text-5xl text-400 mb-3"></i>
-                        <p class="text-xl font-medium mt-0 mb-2">No hay registros en el historial</p>
-                        <p class="text-600 mt-0">Los eventos y cambios de equipos aparecerán aquí</p>
-                    </div>
+                    <i class="pi pi-ticket text-5xl text-400 mb-3"></i>
+                    <p class="text-xl font-medium mt-0 mb-2">No hay registros en el historial de tickets</p>
+                    <p class="text-600 mt-0">Los eventos de tickets de fallas aparecerán aquí</p>
                 </td>
             </tr>
         </ng-template>

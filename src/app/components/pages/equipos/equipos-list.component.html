@@ -1,11 +1,14 @@
 <p-toast></p-toast>
 
+<!-- Menú de acciones global -->
+<p-menu #menuAcciones [popup]="true" [model]="menuItemsAcciones" appendTo="body"></p-menu>
+
 <div class="card">
   <!-- HEADER CON TÍTULO -->
   <div class="mb-4">
     <h4 class="m-0 text-900">
       <i class="pi pi-desktop mr-2 text-primary"></i>
-      Gestión de Equipos
+      Gestión de Equiposs
     </h4>
     <p class="text-600 mt-1 mb-0">Administra el inventario de equipos del laboratorio</p>
   </div>
@@ -55,8 +58,8 @@
             <i class="pi pi-check-circle text-green-500 text-2xl"></i>
           </div>
           <div>
-            <span class="text-600 text-sm">Operativos</span>
-            <div class="text-900 font-bold text-2xl">{{equipos?.length || 0}}</div>
+            <span class="text-600 text-sm">Activos</span>
+            <div class="text-900 font-bold text-2xl">{{equiposActivos}}</div>
           </div>
         </div>
       </div>
@@ -64,12 +67,12 @@
     <div class="col-12 md:col-3">
       <div class="surface-card shadow-1 border-round p-3">
         <div class="flex align-items-center">
-          <div class="bg-orange-100 border-circle p-3 mr-3">
-            <i class="pi pi-wrench text-orange-500 text-2xl"></i>
+          <div class="bg-gray-100 border-circle p-3 mr-3">
+            <i class="pi pi-minus-circle text-gray-500 text-2xl"></i>
           </div>
           <div>
-            <span class="text-600 text-sm">En Mantenimiento</span>
-            <div class="text-900 font-bold text-2xl">0</div>
+            <span class="text-600 text-sm">Inactivos</span>
+            <div class="text-900 font-bold text-2xl">{{equiposInactivos}}</div>
           </div>
         </div>
       </div>
@@ -81,8 +84,8 @@
             <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
           </div>
           <div>
-            <span class="text-600 text-sm">Fuera de Servicio</span>
-            <div class="text-900 font-bold text-2xl">0</div>
+            <span class="text-600 text-sm">Críticos</span>
+            <div class="text-900 font-bold text-2xl">{{equiposCriticos}}</div>
           </div>
         </div>
       </div>
@@ -109,8 +112,8 @@
         <th>Área / Laboratorio</th>
         <th pSortableColumn="marca">Marca <p-sortIcon field="marca"></p-sortIcon></th>
         <th pSortableColumn="modelo">Modelo <p-sortIcon field="modelo"></p-sortIcon></th>
-        <th pSortableColumn="numeroSerie">N° Serie <p-sortIcon field="numeroSerie"></p-sortIcon></th>
-        <th style="width: 12rem">Acciones</th>
+        <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
+        <th style="width: 5rem; text-align: center">Acciones</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-equipo>
@@ -135,16 +138,13 @@
         <td>{{ equipo.marca || '-' }}</td>
         <td>{{ equipo.modelo || '-' }}</td>
         <td>
-          <span class="text-600 font-italic">{{ equipo.numeroSerie || 'Sin serie' }}</span>
+          <p-tag [severity]="getSeveridadEstado(equipo.estado)" [value]="equipo.estado || 'Activo'" [icon]="getIconoEstado(equipo.estado)"></p-tag>
         </td>
-        <td>
-          <div class="flex gap-2">
-            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" pTooltip="Editar equipo" tooltipPosition="top" (click)="editarEquipo(equipo)"></button>
-            <button pButton icon="pi pi-history" class="p-button-rounded p-button-text p-button-info" pTooltip="Historial de cambios" tooltipPosition="top" (click)="verHistorial(equipo)"></button>
-            <button pButton icon="pi pi-wrench" class="p-button-rounded p-button-text p-button-secondary" pTooltip="Programaciones de mantenimiento" tooltipPosition="top" (click)="verMantenimientos(equipo)"></button>
-            <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-help" pTooltip="Descargar ficha técnica" tooltipPosition="top" (click)="descargarFicha(equipo)"></button>
-            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" pTooltip="Eliminar equipo" tooltipPosition="top" (click)="eliminarEquipo(equipo)"></button>
-          </div>
+        <td class="text-center">
+          <button pButton icon="pi pi-ellipsis-v" 
+                  class="p-button-rounded p-button-text p-button-secondary" 
+                  (click)="abrirMenuAcciones($event, equipo)"
+                  pTooltip="Acciones" tooltipPosition="top"></button>
         </td>
       </tr>
     </ng-template>
@@ -170,7 +170,18 @@
   </p-table>
 
   <!-- Modal para registrar nuevo equipo -->
-  <p-dialog header="Registrar Nuevo Equipo" [(visible)]="mostrarModalNuevoEquipo" [modal]="true" [style]="{width: '900px'}" [closable]="false" styleClass="p-fluid">
+  <p-dialog [(visible)]="mostrarModalNuevoEquipo" [modal]="true" [style]="{width: '900px', maxHeight: '90vh'}" [closable]="false" styleClass="p-fluid" [contentStyle]="{'overflow-y': 'auto'}">
+    <ng-template pTemplate="header">
+      <div class="flex align-items-center gap-2">
+        <span class="bg-primary border-round p-2">
+          <i class="pi pi-plus-circle text-white text-xl"></i>
+        </span>
+        <div>
+          <span class="font-bold text-xl">Registrar Nuevo Equipo</span>
+          <p class="text-500 text-sm m-0">Complete los campos requeridos (*)</p>
+        </div>
+      </div>
+    </ng-template>
     <form #formEquipo="ngForm" (ngSubmit)="registrarEquipo()" autocomplete="off">
       <div *ngIf="mensaje" class="p-message p-message-success mb-3">
         <div class="p-message-wrapper">
@@ -180,9 +191,10 @@
       </div>
 
       <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-info-circle mr-2"></i>Información Básica
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-primary-100 border-round p-2 mr-2"><i class="pi pi-info-circle text-primary"></i></span>
+          Información Básica
         </h6>
         <div class="grid">
           <div class="col-12 md:col-6">
@@ -249,13 +261,37 @@
               </div>
             </div>
           </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="estado" class="font-semibold">Estado del Equipo *</label>
+              <p-dropdown id="estado" name="estado" [(ngModel)]="nuevoEquipo.estado" 
+                          [options]="estadosFormulario"
+                          optionLabel="label" optionValue="value" placeholder="Seleccione el estado"
+                          [showClear]="false" class="w-full" required>
+                <ng-template let-estado pTemplate="selectedItem">
+                  <div class="flex align-items-center gap-2" *ngIf="estado">
+                    <i [class]="estado.icon" [ngClass]="{'text-green-500': estado.value === 'Activo', 'text-500': estado.value === 'Inactivo', 'text-red-500': estado.value === 'Critico'}"></i>
+                    <span>{{ estado.label }}</span>
+                  </div>
+                </ng-template>
+                <ng-template let-estado pTemplate="item">
+                  <div class="flex align-items-center gap-2">
+                    <i [class]="estado.icon" [ngClass]="{'text-green-500': estado.value === 'Activo', 'text-500': estado.value === 'Inactivo', 'text-red-500': estado.value === 'Critico'}"></i>
+                    <span>{{ estado.label }}</span>
+                  </div>
+                </ng-template>
+              </p-dropdown>
+              <small class="text-500">Los equipos nuevos inician como "Activo" por defecto</small>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- SECCIÓN: IDENTIFICACIÓN DEL FABRICANTE -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-tag mr-2"></i>Identificación del Fabricante
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-orange-100 border-round p-2 mr-2"><i class="pi pi-tag text-orange-500"></i></span>
+          Identificación del Fabricante
         </h6>
         <div class="grid">
           <div class="col-12 md:col-4">
@@ -280,9 +316,10 @@
       </div>
 
       <!-- SECCIÓN: ESPECIFICACIONES TÉCNICAS -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-cog mr-2"></i>Especificaciones Técnicas
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-purple-100 border-round p-2 mr-2"><i class="pi pi-cog text-purple-500"></i></span>
+          Especificaciones Técnicas
         </h6>
         <div class="grid">
           <div class="col-12 md:col-6">
@@ -319,9 +356,10 @@
       <div class="grid">
         <!-- SECCIÓN: UBICACIÓN Y CONDICIONES -->
         <div class="col-12 md:col-6">
-          <div class="surface-section border-round p-3 h-full">
-            <h6 class="text-primary mb-3">
-              <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
+          <div class="surface-ground border-round p-3 h-full">
+            <h6 class="text-primary mb-3 flex align-items-center">
+              <span class="bg-teal-100 border-round p-2 mr-2"><i class="pi pi-map-marker text-teal-500"></i></span>
+              Ubicación y Condiciones
             </h6>
             <div class="field mb-3">
               <label for="ubicacion" class="font-semibold">Ubicación *</label>
@@ -342,9 +380,10 @@
 
         <!-- SECCIÓN: FOTOGRAFÍA -->
         <div class="col-12 md:col-6">
-          <div class="surface-section border-round p-3 h-full">
-            <h6 class="text-primary mb-3">
-              <i class="pi pi-image mr-2"></i>Fotografía del Equipo
+          <div class="surface-ground border-round p-3 h-full">
+            <h6 class="text-primary mb-3 flex align-items-center">
+              <span class="bg-cyan-100 border-round p-2 mr-2"><i class="pi pi-image text-cyan-500"></i></span>
+              Fotografía del Equipo
             </h6>
             <div class="field mb-3">
               <p-fileUpload #fileUpload
@@ -380,15 +419,29 @@
         </div>
       </div>
 
-      <div class="flex justify-content-end gap-2 mt-4">
-        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-secondary" (click)="cerrarModalNuevoEquipo()"></button>
-        <button pButton type="submit" label="Registrar Equipo" icon="pi pi-check" class="p-button-success" [disabled]="formEquipo.invalid"></button>
+      <div class="flex justify-content-between align-items-center mt-4 pt-3 border-top-1 surface-border">
+        <small class="text-500"><i class="pi pi-info-circle mr-1"></i>Los campos marcados con (*) son obligatorios</small>
+        <div class="flex gap-2">
+          <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="cerrarModalNuevoEquipo()"></button>
+          <button pButton type="submit" label="Registrar Equipo" icon="pi pi-check" class="p-button-success" [disabled]="formEquipo.invalid"></button>
+        </div>
       </div>
     </form>
   </p-dialog>
 
   <!-- Modal para editar equipo -->
-  <p-dialog header="Editar Equipo" [(visible)]="mostrarModalEditarEquipo" [modal]="true" [style]="{width: '900px'}" [closable]="false" styleClass="p-fluid">
+  <p-dialog [(visible)]="mostrarModalEditarEquipo" [modal]="true" [style]="{width: '900px', maxHeight: '90vh'}" [closable]="false" styleClass="p-fluid" [contentStyle]="{'overflow-y': 'auto'}">
+    <ng-template pTemplate="header">
+      <div class="flex align-items-center gap-2">
+        <span class="bg-blue-500 border-round p-2">
+          <i class="pi pi-pencil text-white text-xl"></i>
+        </span>
+        <div>
+          <span class="font-bold text-xl">Editar Equipo</span>
+          <p class="text-500 text-sm m-0" *ngIf="equipoEditando">{{ equipoEditando.nombre }} - {{ equipoEditando.codigoInacif }}</p>
+        </div>
+      </div>
+    </ng-template>
     <form #formEditarEquipo="ngForm" (ngSubmit)="actualizarEquipo()" autocomplete="off" *ngIf="equipoEditando">
       <div *ngIf="mensaje" class="p-message p-message-success mb-3">
         <div class="p-message-wrapper">
@@ -398,9 +451,10 @@
       </div>
 
       <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-info-circle mr-2"></i>Información Básica
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-primary-100 border-round p-2 mr-2"><i class="pi pi-info-circle text-primary"></i></span>
+          Información Básica
         </h6>
         <div class="grid">
           <div class="col-12 md:col-6">
@@ -435,13 +489,37 @@
               <small class="text-500">Clasificación jerárquica para agrupar los equipos</small>
             </div>
           </div>
+          <div class="col-12 md:col-6">
+            <div class="field">
+              <label for="editEstado" class="font-semibold">Estado del Equipo *</label>
+              <p-dropdown id="editEstado" name="editEstado" [(ngModel)]="equipoEditando.estado" 
+                          [options]="estadosFormulario"
+                          optionLabel="label" optionValue="value" placeholder="Seleccione el estado"
+                          [showClear]="false" class="w-full" required>
+                <ng-template let-estado pTemplate="selectedItem">
+                  <div class="flex align-items-center gap-2" *ngIf="estado">
+                    <i [class]="estado.icon" [ngClass]="{'text-green-500': estado.value === 'Activo', 'text-500': estado.value === 'Inactivo', 'text-red-500': estado.value === 'Critico'}"></i>
+                    <span>{{ estado.label }}</span>
+                  </div>
+                </ng-template>
+                <ng-template let-estado pTemplate="item">
+                  <div class="flex align-items-center gap-2">
+                    <i [class]="estado.icon" [ngClass]="{'text-green-500': estado.value === 'Activo', 'text-500': estado.value === 'Inactivo', 'text-red-500': estado.value === 'Critico'}"></i>
+                    <span>{{ estado.label }}</span>
+                  </div>
+                </ng-template>
+              </p-dropdown>
+              <small class="text-500">Cambie el estado operativo del equipo</small>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- SECCIÓN: IDENTIFICACIÓN DEL FABRICANTE -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-tag mr-2"></i>Identificación del Fabricante
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-orange-100 border-round p-2 mr-2"><i class="pi pi-tag text-orange-500"></i></span>
+          Identificación del Fabricante
         </h6>
         <div class="grid">
           <div class="col-12 md:col-4">
@@ -466,9 +544,10 @@
       </div>
 
       <!-- SECCIÓN: ESPECIFICACIONES TÉCNICAS -->
-      <div class="surface-section border-round p-3 mb-3">
-        <h6 class="text-primary mb-3">
-          <i class="pi pi-cog mr-2"></i>Especificaciones Técnicas
+      <div class="surface-ground border-round p-3 mb-3">
+        <h6 class="text-primary mb-3 flex align-items-center">
+          <span class="bg-purple-100 border-round p-2 mr-2"><i class="pi pi-cog text-purple-500"></i></span>
+          Especificaciones Técnicas
         </h6>
         <div class="grid">
           <div class="col-12 md:col-6">
@@ -505,9 +584,10 @@
       <div class="grid">
         <!-- SECCIÓN: UBICACIÓN Y CONDICIONES -->
         <div class="col-12 md:col-6">
-          <div class="surface-section border-round p-3 h-full">
-            <h6 class="text-primary mb-3">
-              <i class="pi pi-map-marker mr-2"></i>Ubicación y Condiciones
+          <div class="surface-ground border-round p-3 h-full">
+            <h6 class="text-primary mb-3 flex align-items-center">
+              <span class="bg-teal-100 border-round p-2 mr-2"><i class="pi pi-map-marker text-teal-500"></i></span>
+              Ubicación y Condiciones
             </h6>
             <div class="field mb-3">
               <label for="editUbicacion" class="font-semibold">Ubicación *</label>
@@ -528,9 +608,10 @@
 
         <!-- SECCIÓN: FOTOGRAFÍA -->
         <div class="col-12 md:col-6">
-          <div class="surface-section border-round p-3 h-full">
-            <h6 class="text-primary mb-3">
-              <i class="pi pi-image mr-2"></i>Fotografía del Equipo
+          <div class="surface-ground border-round p-3 h-full">
+            <h6 class="text-primary mb-3 flex align-items-center">
+              <span class="bg-cyan-100 border-round p-2 mr-2"><i class="pi pi-image text-cyan-500"></i></span>
+              Fotografía del Equipo
             </h6>
             <div class="field mb-3">
               <p-fileUpload #fileUploadEdit
@@ -566,9 +647,12 @@
         </div>
       </div>
 
-      <div class="flex justify-content-end gap-2 mt-4">
-        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-secondary" (click)="cerrarModalEditarEquipo()"></button>
-        <button pButton type="submit" label="Actualizar Equipo" icon="pi pi-check" class="p-button-success" [disabled]="formEditarEquipo.invalid"></button>
+      <div class="flex justify-content-between align-items-center mt-4 pt-3 border-top-1 surface-border">
+        <small class="text-500"><i class="pi pi-info-circle mr-1"></i>Los campos marcados con (*) son obligatorios</small>
+        <div class="flex gap-2">
+          <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" (click)="cerrarModalEditarEquipo()"></button>
+          <button pButton type="submit" label="Actualizar Equipo" icon="pi pi-save" class="p-button-primary" [disabled]="formEditarEquipo.invalid"></button>
+        </div>
       </div>
     </form>
   </p-dialog>

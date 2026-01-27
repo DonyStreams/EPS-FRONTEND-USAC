@@ -26,7 +26,7 @@ export class AppMenuComponent implements OnInit {
                 items: [
                     { label: 'Equipos', icon: 'pi pi-fw pi-server', routerLink: ['/administracion/equipos'] },
                     { label: 'Categorías de Equipo', icon: 'pi pi-fw pi-tags', routerLink: ['/administracion/categorias-equipos'] },
-                    { label: 'Bitácora/Historial', icon: 'pi pi-fw pi-book', routerLink: ['/administracion/equipos/historial'] }
+                    { label: 'Bitácora/Historial', icon: 'pi pi-fw pi-history', routerLink: ['/administracion/equipos/historial'] }
                 ]
             },
             {
@@ -37,7 +37,7 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Programaciones', icon: 'pi pi-fw pi-clock', routerLink: ['/administracion/programaciones'] },
                     { label: 'Ejecuciones', icon: 'pi pi-fw pi-check-circle', routerLink: ['/administracion/ejecuciones'] },
                     { label: 'Tipos de Mantenimiento', icon: 'pi pi-fw pi-list', routerLink: ['/administracion/tipos-mantenimiento'] },
-                    { label: 'Historial', icon: 'pi pi-fw pi-history', routerLink: ['/administracion/historial-programaciones'] }
+                    { label: 'Bitácora/Historial', icon: 'pi pi-fw pi-history', routerLink: ['/administracion/historial-programaciones'] }
                    
                 ]
             },
@@ -46,7 +46,7 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-ticket',
                 items: [
                     { label: 'Todos los Tickets', icon: 'pi pi-fw pi-inbox', routerLink: ['/administracion/tickets'] },
-                    
+                    { label: 'Bitácora/Historial', icon: 'pi pi-fw pi-history', routerLink: ['/administracion/tickets/historial'] }
                 ]
             },
             {

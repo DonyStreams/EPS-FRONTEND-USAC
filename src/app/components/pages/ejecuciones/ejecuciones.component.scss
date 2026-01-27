@@ -30,16 +30,6 @@
     color: var(--surface-0);
 }
 
-:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-    background: var(--surface-ground);
-    border: 1px solid var(--surface-border);
-    font-weight: 600;
-}
-
-:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-    border: 1px solid var(--surface-border);
-}
-
 :host ::ng-deep .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
     padding: 0.5rem 1rem;
 }

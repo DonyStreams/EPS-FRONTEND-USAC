@@ -9,61 +9,76 @@
     </div>
 
     <!-- Estadísticas -->
-    <div class="col-12 md:col-3">
+    <div class="col-12 md:col-6 lg:col-3 xl:col-2">
         <div class="card bg-blue-100 border-left-3 border-blue-500">
             <div class="flex justify-content-between">
                 <div>
-                    <span class="text-blue-600 font-medium">Total Programaciones</span>
+                    <span class="text-blue-600 font-medium text-sm">Total</span>
                     <div class="text-2xl font-bold text-blue-900">{{stats.total}}</div>
                 </div>
                 <div class="flex align-items-center justify-content-center bg-blue-500 border-circle"
-                    style="width:3rem;height:3rem">
-                    <i class="pi pi-calendar text-white text-xl"></i>
+                    style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-calendar text-white"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 md:col-3">
+    <div class="col-12 md:col-6 lg:col-3 xl:col-2">
         <div class="card bg-green-100 border-left-3 border-green-500">
             <div class="flex justify-content-between">
                 <div>
-                    <span class="text-green-600 font-medium">Activas</span>
+                    <span class="text-green-600 font-medium text-sm">Activas</span>
                     <div class="text-2xl font-bold text-green-900">{{stats.activas}}</div>
                 </div>
                 <div class="flex align-items-center justify-content-center bg-green-500 border-circle"
-                    style="width:3rem;height:3rem">
-                    <i class="pi pi-check-circle text-white text-xl"></i>
+                    style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-check-circle text-white"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 md:col-3">
-        <div class="card bg-orange-100 border-left-3 border-orange-500">
+    <div class="col-12 md:col-6 lg:col-3 xl:col-2">
+        <div class="card bg-cyan-100 border-left-3 border-cyan-500">
             <div class="flex justify-content-between">
                 <div>
-                    <span class="text-orange-600 font-medium">Próximas (7 días)</span>
-                    <div class="text-2xl font-bold text-orange-900">{{stats.proximas}}</div>
+                    <span class="text-cyan-600 font-medium text-sm">Próximas (7d)</span>
+                    <div class="text-2xl font-bold text-cyan-900">{{stats.proximas}}</div>
                 </div>
-                <div class="flex align-items-center justify-content-center bg-orange-500 border-circle"
-                    style="width:3rem;height:3rem">
-                    <i class="pi pi-clock text-white text-xl"></i>
+                <div class="flex align-items-center justify-content-center bg-cyan-500 border-circle"
+                    style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-clock text-white"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 md:col-3">
+    <div class="col-12 md:col-6 lg:col-3 xl:col-3">
         <div class="card bg-red-100 border-left-3 border-red-500">
             <div class="flex justify-content-between">
                 <div>
-                    <span class="text-red-600 font-medium">Vencidas</span>
-                    <div class="text-2xl font-bold text-red-900">{{stats.vencidas}}</div>
+                    <span class="text-red-600 font-medium text-sm">Fecha Vencida</span>
+                    <div class="text-2xl font-bold text-red-900">{{stats.vencidasFecha}}</div>
                 </div>
                 <div class="flex align-items-center justify-content-center bg-red-500 border-circle"
-                    style="width:3rem;height:3rem">
-                    <i class="pi pi-exclamation-triangle text-white text-xl"></i>
+                    style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-calendar-times text-white"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 md:col-6 lg:col-3 xl:col-3">
+        <div class="card bg-orange-100 border-left-3 border-orange-500">
+            <div class="flex justify-content-between">
+                <div>
+                    <span class="text-orange-600 font-medium text-sm">Contrato Vencido</span>
+                    <div class="text-2xl font-bold text-orange-900">{{stats.contratosVencidos}}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-orange-500 border-circle"
+                    style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-file-excel text-white"></i>
                 </div>
             </div>
         </div>
@@ -83,7 +98,21 @@
                 </ng-template>                
             </p-toolbar>
 
-            <p-table #dt [value]="programaciones" [loading]="loading" [paginator]="true" [rows]="10"
+            <!-- Indicador de filtro por equipo -->
+            <div *ngIf="filtroEquipoId" class="mb-3 p-3 border-round bg-blue-50 flex align-items-center justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-filter text-blue-600"></i>
+                    <span class="text-blue-800 font-medium">
+                        Mostrando programaciones del equipo: <strong>{{filtroEquipoNombre || 'ID: ' + filtroEquipoId}}</strong>
+                    </span>
+                    <p-tag [value]="programacionesFiltradas.length + ' resultado(s)'" severity="info"></p-tag>
+                </div>
+                <button pButton pRipple icon="pi pi-times" label="Limpiar filtro" 
+                    class="p-button-outlined p-button-secondary p-button-sm"
+                    (click)="limpiarFiltroEquipo()"></button>
+            </div>
+
+            <p-table #dt [value]="programacionesFiltradas" [loading]="loading" [paginator]="true" [rows]="10"
                 [rowsPerPageOptions]="[10,20,30]" [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} programaciones"
                 [globalFilterFields]="['equipo.nombre','tipoMantenimiento.nombre','contrato.descripcion']"
@@ -105,24 +134,22 @@
                         <th pSortableColumn="equipo.nombre">Equipo <p-sortIcon field="equipo.nombre"></p-sortIcon></th>
                         <th pSortableColumn="tipoMantenimiento.nombre">Tipo <p-sortIcon
                                 field="tipoMantenimiento.nombre"></p-sortIcon></th>
-                        <th pSortableColumn="contrato.descripcion">Contrato <p-sortIcon
-                                field="contrato.descripcion"></p-sortIcon></th>
-                        <th pSortableColumn="frecuenciaDias">Frecuencia <p-sortIcon field="frecuenciaDias"></p-sortIcon>
-                        </th>
-                        <th pSortableColumn="fechaProximoMantenimiento">Próximo <p-sortIcon
+                        <th pSortableColumn="frecuenciaDias">Frecuencia <p-sortIcon field="frecuenciaDias"></p-sortIcon></th>
+                        <th pSortableColumn="fechaProximoMantenimiento">Próximo Mantenimiento <p-sortIcon
                                 field="fechaProximoMantenimiento"></p-sortIcon></th>
                         <th pSortableColumn="activa">Estado <p-sortIcon field="activa"></p-sortIcon></th>
-                        <th></th>
+                        <th style="width: 100px"></th>
                     </tr>
                 </ng-template>
 
                 <ng-template pTemplate="body" let-programacion>
                     <tr>
                         <td>
-                            <div class="flex align-items-center">
+                            <div class="flex align-items-center gap-2">
+                                <i class="pi pi-desktop text-primary"></i>
                                 <div>
-                                    <div class="font-bold">{{programacion.equipo?.nombre}}</div>
-                                    <div class="text-sm text-gray-500">{{programacion.equipo?.codigoInacif}}</div>
+                                    <div class="font-semibold text-900">{{programacion.equipo?.nombre}}</div>
+                                    <div class="text-xs text-500">{{programacion.equipo?.codigoInacif}}</div>
                                 </div>
                             </div>
                         </td>
@@ -132,24 +159,42 @@
                                 [rounded]="true"></p-tag>
                         </td>
                         <td>
-                            <div>
-                                <div class="font-medium">{{programacion.contrato?.descripcion}}</div>
-                                <div class="text-sm text-gray-500">{{programacion.contrato?.proveedor?.nombre}}</div>
-                            </div>
+                            <span *ngIf="programacion.frecuenciaDias === 0" class="flex align-items-center gap-1">
+                                <i class="pi pi-calendar-times text-purple-500"></i>
+                                <span class="text-purple-700 font-medium">Único</span>
+                            </span>
+                            <span *ngIf="programacion.frecuenciaDias > 0" class="font-medium text-700">
+                                Cada {{programacion.frecuenciaDias}} días
+                            </span>
                         </td>
                         <td>
-                            <span class="font-medium">{{programacion.frecuenciaDias}}</span> días
-                        </td>
-                        <td>
-                            <div class="flex align-items-center">
-                                <span [class]="getDateClass(programacion.fechaProximoMantenimiento)">
-                                    {{programacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}
-                                </span>
-                                <p-tag *ngIf="isVencida(programacion.fechaProximoMantenimiento)" value="VENCIDA"
-                                    severity="danger" class="ml-2"></p-tag>
-                                <p-tag
-                                    *ngIf="isProxima(programacion.fechaProximoMantenimiento) && !isVencida(programacion.fechaProximoMantenimiento)"
-                                    value="PRÓXIMA" severity="warning" class="ml-2"></p-tag>
+                            <div class="flex flex-column gap-1">
+                                <div class="flex align-items-center gap-2">
+                                    <span class="font-semibold" [class]="getDateClass(programacion.fechaProximoMantenimiento)">
+                                        {{programacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}
+                                    </span>
+                                </div>
+                                <!-- Tags de estado -->
+                                <div class="flex flex-wrap gap-1">
+                                    <!-- Solo fecha vencida -->
+                                    <p-tag *ngIf="isVencida(programacion.fechaProximoMantenimiento) && !isContratoVencido(programacion)" 
+                                        value="VENCIDA"
+                                        severity="danger" [style]="{fontSize: '0.7rem'}"></p-tag>
+                                    <!-- Solo contrato vencido -->
+                                    <p-tag *ngIf="!isVencida(programacion.fechaProximoMantenimiento) && isContratoVencido(programacion)" 
+                                        value="CONTRATO VENCIDO"
+                                        severity="warning" [style]="{fontSize: '0.7rem'}"
+                                        [pTooltip]="'El contrato venció el ' + (programacion.contrato?.fechaFin | date:'dd/MM/yyyy')"></p-tag>
+                                    <!-- Ambos vencidos -->
+                                    <ng-container *ngIf="isVencida(programacion.fechaProximoMantenimiento) && isContratoVencido(programacion)">
+                                        <p-tag value="VENCIDA" severity="danger" [style]="{fontSize: '0.7rem'}"></p-tag>
+                                        <p-tag value="CONTRATO" severity="warning" [style]="{fontSize: '0.7rem'}"
+                                            pTooltip="El contrato también está vencido"></p-tag>
+                                    </ng-container>
+                                    <!-- Próxima (solo si no hay vencimientos) -->
+                                    <p-tag *ngIf="isProxima(programacion.fechaProximoMantenimiento) && !isVencida(programacion.fechaProximoMantenimiento) && !isContratoVencido(programacion)"
+                                        value="PRÓXIMA" severity="warning" [style]="{fontSize: '0.7rem'}"></p-tag>
+                                </div>
                             </div>
                         </td>
                         <td>
@@ -157,32 +202,17 @@
                                 [severity]="programacion.activa ? 'success' : 'secondary'" [rounded]="true"></p-tag>
                         </td>
                         <td>
-                            <div class="flex flex-nowrap align-items-center gap-1">
-                                <!-- Acciones principales -->
+                            <div class="flex flex-nowrap align-items-center justify-content-center">
+                                <!-- Botón único de detalle -->
                                 <button pButton pRipple icon="pi pi-eye"
-                                    class="p-button-rounded p-button-text p-button-info p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-info"
                                     (click)="verDetalle(programacion)" pTooltip="Ver detalle"></button>
-                                <button pButton pRipple icon="pi pi-pencil"
-                                    class="p-button-rounded p-button-text p-button-warning p-button-sm"
-                                    (click)="editProgramacion(programacion)" pTooltip="Editar"></button>
                                 
-                                <!-- Acción principal según estado -->
-                                <button pButton pRipple icon="pi pi-play"
-                                    class="p-button-rounded p-button-text p-button-success p-button-sm"
-                                    (click)="crearMantenimiento(programacion)" 
-                                    pTooltip="Ejecutar mantenimiento"
-                                    *ngIf="programacion.activa && !isVencida(programacion.fechaProximoMantenimiento)"></button>
-                                <button pButton pRipple icon="pi pi-forward"
-                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                    (click)="descartarProgramacion(programacion)" 
-                                    pTooltip="Descartar (vencida)"
-                                    *ngIf="programacion.activa && isVencida(programacion.fechaProximoMantenimiento)"></button>
-                                
-                                <!-- Menú de más opciones -->
+                                <!-- Menú con todas las acciones -->
                                 <button pButton pRipple icon="pi pi-ellipsis-v"
-                                    class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                                    class="p-button-rounded p-button-text p-button-secondary"
                                     (click)="openAccionesMenu($event, programacion)"
-                                    pTooltip="Más opciones"></button>
+                                    pTooltip="Acciones"></button>
                                 <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
                             </div>
                         </td>
@@ -191,7 +221,7 @@
 
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="7" class="text-center p-5">
+                        <td colspan="6" class="text-center p-5">
                             <div class="flex flex-column align-items-center">
                                 <i class="pi pi-calendar-times text-5xl text-400 mb-3"></i>
                                 <span class="text-900 font-semibold text-xl mb-2">No hay programaciones registradas</span>
@@ -347,11 +377,21 @@
                     </ng-template>
                     <ng-template pTemplate="item" let-opcion>
                         <div class="flex align-items-center">
-                            <i class="pi pi-clock mr-2" [ngClass]="{'text-orange-500': opcion.value === -1}"></i>
-                            <span [ngClass]="{'font-italic': opcion.value === -1}">{{opcion.label}}</span>
+                            <i class="pi mr-2" 
+                               [ngClass]="{
+                                   'pi-calendar-times text-purple-500': opcion.value === 0,
+                                   'pi-clock text-orange-500': opcion.value === -1,
+                                   'pi-sync': opcion.value > 0
+                               }"></i>
+                            <span [ngClass]="{'font-italic': opcion.value === -1, 'text-purple-700 font-bold': opcion.value === 0}">{{opcion.label}}</span>
                         </div>
                     </ng-template>
                 </p-dropdown>
+                <!-- Nota informativa para programación única -->
+                <small *ngIf="esUnico" class="text-purple-600 flex align-items-center mt-2">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    Esta programación se ejecutará una sola vez. Después de ejecutarse, quedará inactiva automáticamente.
+                </small>
                 <!-- Campo personalizado (aparece solo si selecciona Personalizado) -->
                 <div *ngIf="frecuenciaPersonalizada" class="mt-2">
                     <div class="p-inputgroup">
@@ -397,7 +437,7 @@
             <div class="field col-12 md:col-6">
                 <label for="fechaProximo" class="font-medium">Próximo Mantenimiento <span class="text-red-500">*</span></label>
                 <p-calendar id="fechaProximo" [(ngModel)]="programacion.fechaProximoMantenimiento" dateFormat="dd/mm/yy"
-                    [showIcon]="true" placeholder="Seleccionar fecha" styleClass="w-full">
+                    [showIcon]="true" placeholder="Seleccionar fecha" styleClass="w-full" appendTo="body">
                 </p-calendar>
                 <small class="text-500 flex align-items-center mt-1">
                     <i class="pi pi-info-circle mr-1 text-xs"></i> 
@@ -438,77 +478,168 @@
 </p-dialog>
 
 <!-- Diálogo de detalle -->
-<p-dialog header="Detalle de Programación" [(visible)]="displayDetailDialog" [modal]="true" [style]="{width: '650px'}"
-    class="p-fluid">
+<p-dialog [(visible)]="displayDetailDialog" [modal]="true" [style]="{width: '750px'}" [closable]="true"
+    [showHeader]="false" class="p-fluid" [contentStyle]="{padding: '0'}">
 
     <ng-template pTemplate="content">
-        <div class="grid" *ngIf="selectedProgramacion">
-            <div class="col-12 md:col-6">
-                <div class="surface-card p-3 border-round shadow-1 mb-3">
-                    <h6 class="text-primary flex align-items-center mb-3">
-                        <i class="pi pi-cog mr-2"></i>Información del Equipo
-                    </h6>
-                    <p class="mb-2"><strong>Nombre:</strong> {{selectedProgramacion.equipo?.nombre || 'N/A'}}</p>
-                    <p class="mb-2"><strong>Código:</strong> {{selectedProgramacion.equipo?.codigoInacif || 'N/A'}}</p>
-                    <p class="mb-0"><strong>Ubicación:</strong> {{selectedProgramacion.equipo?.ubicacion || 'N/A'}}</p>
-                </div>
-            </div>
-            <div class="col-12 md:col-6">
-                <div class="surface-card p-3 border-round shadow-1 mb-3">
-                    <h6 class="text-primary flex align-items-center mb-3">
-                        <i class="pi pi-file mr-2"></i>Información del Contrato
-                    </h6>
-                    <p class="mb-2"><strong>Descripción:</strong> {{selectedProgramacion.contrato?.descripcion || 'N/A'}}</p>
-                    <p class="mb-2"><strong>Proveedor:</strong> {{selectedProgramacion.contrato?.proveedor?.nombre || 'N/A'}}</p>
-                    <p class="mb-0"><strong>Vigencia:</strong> 
-                        <span *ngIf="selectedProgramacion.contrato?.fechaInicio">
-                            {{selectedProgramacion.contrato?.fechaInicio | date:'dd/MM/yyyy'}} - {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yyyy'}}
-                        </span>
-                        <span *ngIf="!selectedProgramacion.contrato?.fechaInicio">N/A</span>
-                    </p>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="surface-card p-3 border-round shadow-1">
-                    <h6 class="text-primary flex align-items-center mb-3">
-                        <i class="pi pi-calendar mr-2"></i>Datos de Programación
-                    </h6>
-                    <div class="grid">
-                        <div class="col-12 md:col-6">
-                            <p class="mb-2"><strong>Tipo:</strong> {{selectedProgramacion.tipoMantenimiento?.nombre || 'N/A'}}</p>
-                            <p class="mb-2"><strong>Frecuencia:</strong> {{selectedProgramacion.frecuenciaDias}} días</p>
-                            <p class="mb-2"><strong>Días de alerta:</strong> {{selectedProgramacion.diasAlertaPrevia}} días</p>
+        <div *ngIf="selectedProgramacion">
+            <!-- Header limpio -->
+            <div class="p-4 surface-50 border-bottom-1 surface-border">
+                <div class="flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-900 text-xl font-bold mb-2 flex align-items-center gap-2">
+                            <i class="pi pi-desktop text-primary"></i>
+                            {{selectedProgramacion.equipo?.nombre || 'Equipo'}}
                         </div>
-                        <div class="col-12 md:col-6">
-                            <p class="mb-2"><strong>Último mantenimiento:</strong> 
-                                <span *ngIf="selectedProgramacion.fechaUltimoMantenimiento">{{selectedProgramacion.fechaUltimoMantenimiento | date:'dd/MM/yyyy'}}</span>
-                                <span *ngIf="!selectedProgramacion.fechaUltimoMantenimiento">No registrado</span>
-                            </p>
-                            <p class="mb-2"><strong>Próximo mantenimiento:</strong> 
-                                <span *ngIf="selectedProgramacion.fechaProximoMantenimiento">{{selectedProgramacion.fechaProximoMantenimiento | date:'dd/MM/yyyy'}}</span>
-                                <span *ngIf="!selectedProgramacion.fechaProximoMantenimiento">No programado</span>
-                            </p>
-                            <p class="mb-2"><strong>Estado:</strong> 
-                                <p-tag [value]="selectedProgramacion.activa ? 'Activa' : 'Inactiva'" 
-                                       [severity]="selectedProgramacion.activa ? 'success' : 'danger'"></p-tag>
-                            </p>
+                        <div class="text-600 text-sm">
+                            <span class="mr-3"><i class="pi pi-hashtag mr-1"></i>{{selectedProgramacion.equipo?.codigoInacif}}</span>
+                            <span><i class="pi pi-map-marker mr-1"></i>{{selectedProgramacion.equipo?.ubicacion || 'Sin ubicación'}}</span>
                         </div>
-                        <div class="col-12" *ngIf="selectedProgramacion.observaciones">
-                            <p class="mb-0"><strong>Observaciones:</strong> {{selectedProgramacion.observaciones}}</p>
-                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <p-tag [value]="selectedProgramacion.tipoMantenimiento?.nombre" 
+                               [severity]="getTipoSeverity(selectedProgramacion.tipoMantenimiento?.nombre)"
+                               [style]="{fontSize: '0.85rem'}"></p-tag>
+                        <p-tag [value]="selectedProgramacion.activa ? 'ACTIVA' : 'INACTIVA'" 
+                               [severity]="selectedProgramacion.activa ? 'success' : 'danger'"
+                               [style]="{fontSize: '0.85rem'}"></p-tag>
                     </div>
                 </div>
             </div>
+
+            <!-- Contenido principal -->
+            <div class="p-4">
+                <!-- Fechas destacadas -->
+                <div class="grid mb-4">
+                    <div class="col-6">
+                        <div class="surface-100 border-round p-3 text-center h-full">
+                            <div class="text-500 text-sm mb-1">Último Mantenimiento</div>
+                            <div class="text-xl font-semibold" 
+                                 [ngClass]="selectedProgramacion.fechaUltimoMantenimiento ? 'text-700' : 'text-400'">
+                                <i class="pi pi-history mr-2"></i>
+                                {{selectedProgramacion.fechaUltimoMantenimiento ? (selectedProgramacion.fechaUltimoMantenimiento | date:'dd/MM/yyyy') : 'Sin registro'}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border-round p-3 text-center h-full"
+                             [ngClass]="{
+                                 'bg-red-100': isVencida(selectedProgramacion.fechaProximoMantenimiento),
+                                 'bg-orange-100': isProxima(selectedProgramacion.fechaProximoMantenimiento) && !isVencida(selectedProgramacion.fechaProximoMantenimiento),
+                                 'bg-green-100': !isProxima(selectedProgramacion.fechaProximoMantenimiento) && !isVencida(selectedProgramacion.fechaProximoMantenimiento)
+                             }">
+                            <div class="text-500 text-sm mb-1">Próximo Mantenimiento</div>
+                            <div class="text-xl font-semibold"
+                                 [ngClass]="{
+                                     'text-red-700': isVencida(selectedProgramacion.fechaProximoMantenimiento),
+                                     'text-orange-700': isProxima(selectedProgramacion.fechaProximoMantenimiento) && !isVencida(selectedProgramacion.fechaProximoMantenimiento),
+                                     'text-green-700': !isProxima(selectedProgramacion.fechaProximoMantenimiento) && !isVencida(selectedProgramacion.fechaProximoMantenimiento)
+                                 }">
+                                <i class="pi pi-calendar mr-2"></i>
+                                {{selectedProgramacion.fechaProximoMantenimiento ? (selectedProgramacion.fechaProximoMantenimiento | date:'dd/MM/yyyy') : 'No programado'}}
+                            </div>
+                            <!-- Alertas diferenciadas -->
+                            <div class="flex flex-wrap justify-content-center gap-1 mt-2" *ngIf="getTipoVencimiento(selectedProgramacion)">
+                                <p-tag *ngIf="isVencida(selectedProgramacion.fechaProximoMantenimiento)" 
+                                       value="VENCIDA" severity="danger"></p-tag>
+                            </div>
+                            <p-tag *ngIf="isProxima(selectedProgramacion.fechaProximoMantenimiento) && !isVencida(selectedProgramacion.fechaProximoMantenimiento) && !isContratoVencido(selectedProgramacion)" 
+                                   value="PRÓXIMA" severity="warning" class="mt-2"></p-tag>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerta de contrato vencido -->
+                <div *ngIf="isContratoVencido(selectedProgramacion)" 
+                     class="mt-3 p-3 border-round bg-orange-50 border-1 border-orange-300 flex align-items-center gap-3">
+                    <i class="pi pi-exclamation-triangle text-orange-500 text-2xl"></i>
+                    <div>
+                        <div class="font-semibold text-orange-700">Contrato Vencido</div>
+                        <div class="text-orange-600 text-sm">
+                            El contrato asociado venció el {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yyyy'}}. 
+                            Esta programación no aparecerá en el calendario hasta que se actualice el contrato.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info en dos columnas -->
+                <div class="grid">
+                    <!-- Columna izquierda: Programación -->
+                    <div class="col-12 md:col-6">
+                        <div class="text-600 font-medium mb-3 flex align-items-center">
+                            <i class="pi pi-clock mr-2 text-primary"></i>Configuración
+                        </div>
+                        <div class="flex flex-column gap-3">
+                            <div class="flex justify-content-between">
+                                <span class="text-500">Frecuencia:</span>
+                                <span class="font-medium" *ngIf="selectedProgramacion.frecuenciaDias === 0">
+                                    <span class="text-purple-600"><i class="pi pi-calendar-times mr-1"></i>Único</span>
+                                </span>
+                                <span class="font-medium" *ngIf="selectedProgramacion.frecuenciaDias > 0">
+                                    {{getFrecuenciaTexto(selectedProgramacion.frecuenciaDias)}}
+                                </span>
+                            </div>
+                            <div class="flex justify-content-between">
+                                <span class="text-500">Alerta previa:</span>
+                                <span class="font-medium">{{selectedProgramacion.diasAlertaPrevia}} días</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Contrato -->
+                    <div class="col-12 md:col-6">
+                        <div class="text-600 font-medium mb-3 flex align-items-center">
+                            <i class="pi pi-file mr-2 text-primary"></i>Contrato
+                        </div>
+                        <div class="flex flex-column gap-3">
+                            <div class="flex justify-content-between">
+                                <span class="text-500">Descripción:</span>
+                                <span class="font-medium text-right" style="max-width: 60%">{{selectedProgramacion.contrato?.descripcion || 'N/A'}}</span>
+                            </div>
+                            <div class="flex justify-content-between">
+                                <span class="text-500">Proveedor:</span>
+                                <span class="font-medium">{{selectedProgramacion.contrato?.proveedor?.nombre || 'N/A'}}</span>
+                            </div>
+                            <div class="flex justify-content-between" *ngIf="selectedProgramacion.contrato?.fechaInicio">
+                                <span class="text-500">Vigencia:</span>
+                                <div class="text-right">
+                                    <span class="font-medium text-sm" 
+                                          [ngClass]="isContratoVencido(selectedProgramacion) ? 'text-orange-600' : 'text-700'">
+                                        {{selectedProgramacion.contrato?.fechaInicio | date:'dd/MM/yy'}} - {{selectedProgramacion.contrato?.fechaFin | date:'dd/MM/yy'}}
+                                    </span>
+                                    <p-tag *ngIf="isContratoVencido(selectedProgramacion)" 
+                                           value="VENCIDO" severity="warning" 
+                                           [style]="{fontSize: '0.65rem'}" class="ml-1"></p-tag>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div *ngIf="selectedProgramacion.observaciones" class="mt-4 pt-3 border-top-1 surface-border">
+                    <div class="text-600 font-medium mb-2 flex align-items-center">
+                        <i class="pi pi-comment mr-2 text-primary"></i>Observaciones
+                    </div>
+                    <p class="text-700 m-0 line-height-3">{{selectedProgramacion.observaciones}}</p>
+                </div>
+            </div>
+
+            <!-- Footer con acciones -->
+            <div class="p-3 surface-100 border-round-bottom flex justify-content-between align-items-center">
+                <button pButton pRipple label="Cerrar" icon="pi pi-times" 
+                    class="p-button-text p-button-secondary"
+                    (click)="displayDetailDialog = false"></button>
+                <button pButton pRipple label="Ejecutar Mantenimiento" icon="pi pi-play" 
+                    class="p-button-success"
+                    *ngIf="selectedProgramacion.activa"
+                    (click)="displayDetailDialog = false; crearMantenimiento(selectedProgramacion)"></button>
+            </div>
         </div>
-        <div *ngIf="!selectedProgramacion" class="text-center p-4">
+        <div *ngIf="!selectedProgramacion" class="text-center p-5">
             <i class="pi pi-info-circle text-4xl text-500 mb-3"></i>
             <p class="text-500">No hay información disponible</p>
         </div>
-    </ng-template>
-
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cerrar" icon="pi pi-times" class="p-button-text"
-            (click)="displayDetailDialog = false"></button>
     </ng-template>
 </p-dialog>
 
@@ -526,7 +657,7 @@
                 </div>
                 <div class="text-500 text-sm">
                     Tipo: {{reprogramarData.programacion.tipoMantenimiento?.nombre}} | 
-                    Frecuencia: {{reprogramarData.programacion.frecuenciaDias}} días
+                    Frecuencia: {{getFrecuenciaTexto(reprogramarData.programacion.frecuenciaDias)}}
                 </div>
             </div>
 
@@ -546,13 +677,17 @@
                 <p-calendar 
                     id="nuevaFecha"
                     [(ngModel)]="reprogramarData.nuevaFecha" 
-                    [showIcon]="true"
+                    [inline]="true"
                     dateFormat="dd/mm/yy"
-                    [minDate]="reprogramarData.programacion.fechaProximoMantenimiento"
                     [style]="{width: '100%'}"
-                    placeholder="Seleccione la nueva fecha">
-                    
+                    [monthNavigator]="true"
+                    [yearNavigator]="true"
+                    [yearRange]="'2020:2030'">
                 </p-calendar>
+                <div *ngIf="reprogramarData.nuevaFecha" class="mt-2 text-primary font-medium">
+                    <i class="pi pi-check-circle mr-1"></i>
+                    Fecha seleccionada: {{reprogramarData.nuevaFecha | date:'dd/MM/yyyy'}}
+                </div>
             </div>
 
             <!-- Motivo -->

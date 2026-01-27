@@ -94,9 +94,6 @@
 
                 <ng-template pTemplate="header">
                     <tr>
-                        <th pSortableColumn="idTipo" style="width: 8%">
-                            ID <p-sortIcon field="idTipo"></p-sortIcon>
-                        </th>
                         <th pSortableColumn="nombre">
                             Nombre <p-sortIcon field="nombre"></p-sortIcon>
                         </th>
@@ -107,9 +104,6 @@
                 
                 <ng-template pTemplate="body" let-tipo>
                     <tr>
-                        <td>
-                            <span class="font-bold text-purple-500">#{{ tipo.idTipo }}</span>
-                        </td>
                         <td>
                             <div class="flex align-items-center">
                                 <i class="pi pi-wrench mr-2 text-500"></i>

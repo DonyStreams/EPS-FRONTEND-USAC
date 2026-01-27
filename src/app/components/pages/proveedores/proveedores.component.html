@@ -94,9 +94,6 @@
 
                 <ng-template pTemplate="header">
                     <tr>
-                        <th pSortableColumn="idProveedor" style="width: 8%">
-                            ID <p-sortIcon field="idProveedor"></p-sortIcon>
-                        </th>
                         <th pSortableColumn="nit" style="width: 15%">
                             NIT <p-sortIcon field="nit"></p-sortIcon>
                         </th>
@@ -110,9 +107,6 @@
                 
                 <ng-template pTemplate="body" let-proveedor>
                     <tr>
-                        <td>
-                            <span class="font-bold text-purple-500">#{{ proveedor.idProveedor }}</span>
-                        </td>
                         <td>
                             <span class="font-mono font-bold text-600">{{ proveedor.nit }}</span>
                         </td>

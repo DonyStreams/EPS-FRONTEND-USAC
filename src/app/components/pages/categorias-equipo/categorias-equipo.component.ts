@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService, TreeNode } from 'primeng/api';
 import { CategoriasEquipoService, CategoriaEquipo } from '../../../service/categorias-equipo.service';
+import { EquiposService } from '../../../service/equipos.service';
+import { Equipo } from '../../../api/equipos';
 
 @Component({
     selector: 'app-categorias-equipo',
@@ -22,6 +24,12 @@ export class CategoriasEquipoComponent implements OnInit {
 
     searchValue = '';
 
+    // Modal de equipos por categoría
+    displayEquiposDialog = false;
+    equiposPorCategoria: Equipo[] = [];
+    categoriaSeleccionadaEquipos: CategoriaEquipo | null = null;
+    loadingEquipos = false;
+
     stats = {
         total: 0,
         activas: 0,
@@ -31,6 +39,7 @@ export class CategoriasEquipoComponent implements OnInit {
 
     constructor(
         private categoriasService: CategoriasEquipoService,
+        private equiposService: EquiposService,
         private fb: FormBuilder,
         private confirmationService: ConfirmationService,
         private messageService: MessageService
@@ -214,6 +223,44 @@ export class CategoriasEquipoComponent implements OnInit {
             summary: 'Error',
             detail: error?.error?.error || `No se pudo ${action} la categoría`
         });
+    }
+
+    showEquiposPorCategoria(categoria: CategoriaEquipo): void {
+        if (!categoria.id || !categoria.totalEquipos || categoria.totalEquipos === 0) {
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Sin equipos',
+                detail: 'Esta categoría no tiene equipos asociados'
+            });
+            return;
+        }
+        
+        this.categoriaSeleccionadaEquipos = categoria;
+        this.loadingEquipos = true;
+        this.displayEquiposDialog = true;
+        
+        this.equiposService.getEquiposByCategoria(categoria.id).subscribe({
+            next: (equipos) => {
+                this.equiposPorCategoria = equipos;
+                this.loadingEquipos = false;
+            },
+            error: (error) => {
+                console.error('Error al cargar equipos:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron cargar los equipos de esta categoría'
+                });
+                this.loadingEquipos = false;
+                this.displayEquiposDialog = false;
+            }
+        });
+    }
+
+    closeEquiposDialog(): void {
+        this.displayEquiposDialog = false;
+        this.equiposPorCategoria = [];
+        this.categoriaSeleccionadaEquipos = null;
     }
 
     getEstadoSeverity(estado?: boolean): 'success' | 'danger' | 'info' {
