@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { Table } from 'primeng/table';
 import { Menu } from 'primeng/menu';
+import { FileUpload } from 'primeng/fileupload';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EjecucionesService, EjecucionMantenimiento, GuardarEjecucionRequest, CambioEstadoRequest } from '../../../service/ejecuciones.service';
 import { ContratosService, Contrato } from '../../../service/contratos.service';
 import { EvidenciasService, Evidencia, UploadProgress } from '../../../service/evidencias.service';
@@ -16,6 +18,29 @@ import { environment } from '../../../../environments/environment';
     styleUrls: ['./ejecuciones.component.scss']
 })
 export class EjecucionesComponent implements OnInit {
+            // Devuelve la fecha formateada para comentarios
+            getFechaComentario(fecha: string | Date | undefined): string {
+                if (!fecha) return '-';
+                
+                let d: Date;
+                if (fecha instanceof Date) {
+                    d = fecha;
+                } else {
+                    // Limpiar el sufijo [UTC] que viene del backend
+                    const fechaLimpia = fecha.replace(/\[UTC\]$/, '');
+                    d = new Date(fechaLimpia);
+                }
+                
+                if (isNaN(d.getTime())) return '-';
+                
+                // Formato dd/MM/yyyy HH:mm:ss
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+            }
+        // Utilidad para convertir string ISO a Date
+        fechaToDate(fecha: string | Date): Date {
+            return (fecha instanceof Date) ? fecha : new Date(fecha);
+        }
     @ViewChild('dt') dt!: Table;
     @ViewChild('menuAcciones') menuAcciones!: Menu;
 
@@ -74,6 +99,8 @@ export class EjecucionesComponent implements OnInit {
     nuevoEstadoSeleccionado: string | null = null;
     ejecucionGestion: EjecucionMantenimiento | null = null;
     
+    @ViewChild('fileUploadGestion') fileUploadGestion!: FileUpload;
+    
     tiposComentario = [
         { label: 'Seguimiento', value: 'SEGUIMIENTO' },
         { label: 'Técnico', value: 'TECNICO' },
@@ -88,6 +115,7 @@ export class EjecucionesComponent implements OnInit {
     usuarioActual?: Usuario;
     
     // Filtros
+    filtroIdEjecucion: number | null = null;
     filtroEstado: string = '';
     estadosFiltro = [
         { label: 'Todos los estados', value: '' },
@@ -116,10 +144,27 @@ export class EjecucionesComponent implements OnInit {
         private usuariosService: UsuariosService,
         private keycloakService: KeycloakService,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService,
+        private route: ActivatedRoute,
+        private router: Router
     ) {}
 
     ngOnInit() {
+        console.log('🚀 Iniciando componente ejecuciones');
+        
+        // Suscribirse a cambios en los queryParams
+        this.route.queryParams.subscribe(params => {
+            console.log('📋 QueryParams recibidos:', params);
+            
+            if (params['idEjecucion']) {
+                this.filtroIdEjecucion = +params['idEjecucion'];
+                console.log('🔍 Filtro por ejecución ID:', this.filtroIdEjecucion);
+            } else {
+                this.filtroIdEjecucion = null;
+                console.log('❌ No hay filtro de ejecución');
+            }
+        });
+        
         this.loadEjecuciones();
         this.loadContratos();
         this.cargarUsuarioActual();
@@ -127,37 +172,67 @@ export class EjecucionesComponent implements OnInit {
 
     cargarUsuarioActual() {
         const keycloakId = this.keycloakService.getUserId();
+        console.log('🔑 Cargando usuario actual...');
+        console.log('   Keycloak ID:', keycloakId);
+        
         if (keycloakId) {
             this.usuariosService.getActivos().subscribe({
                 next: (usuarios) => {
-                    this.usuarioActual = usuarios.find(u => u.keycloakId === keycloakId);
+                    console.log('   👥 Usuarios activos recibidos:', usuarios.length);
+                    console.log('   📋 KeycloakIds en BD:', usuarios.map(u => ({
+                        id: u.id,
+                        nombre: u.nombreCompleto,
+                        keycloakId: u.keycloakId
+                    })));
+                    
+                    // Comparación case-insensitive para keycloakId
+                    this.usuarioActual = usuarios.find(u => 
+                        u.keycloakId?.toLowerCase() === keycloakId.toLowerCase()
+                    );
+                    
+                    console.log('   ✅ Usuario actual encontrado:', this.usuarioActual);
+                    
+                    if (!this.usuarioActual) {
+                        console.warn('   ⚠️ Tu keycloakId no coincide con ningún usuario en BD');
+                        console.warn('   ⚠️ Verifica que tu usuario esté registrado en la tabla Usuarios');
+                    }
                 },
-                error: (err) => console.error('Error cargando usuario actual:', err)
+                error: (err) => {
+                    console.error('   ❌ Error cargando usuarios:', err);
+                }
             });
+        } else {
+            console.log('   ⚠️ No hay keycloakId');
         }
     }
 
     loadEjecuciones() {
+        console.log('📥 Cargando ejecuciones...', { filtroActivo: this.filtroIdEjecucion });
         this.loading = true;
         this.ejecucionesService.getAll().subscribe({
             next: (data) => {
                 this.ejecuciones = data;
                 this.loading = false;
-                console.log('Ejecuciones cargadas:', this.ejecuciones);
+                console.log('✅ Ejecuciones cargadas:', this.ejecuciones.length, 'registros');
                 
-                // Debug de cada ejecución
-                this.ejecuciones.forEach((ejecucion, index) => {
-                    console.log(`Ejecución ${index + 1}:`, {
-                        id: ejecucion.idEjecucion,
-                        fechaEjecucion: ejecucion.fechaEjecucion,
-                        contratoDescripcion: ejecucion.contratoDescripcion,
-                        equipoNombre: ejecucion.equipoNombre,
-                        bitacora: ejecucion.bitacora
-                    });
-                });
+                // Si hay un filtro activo por ID, abrir automáticamente el detalle
+                if (this.filtroIdEjecucion) {
+                    console.log('🔎 Buscando ejecución con ID:', this.filtroIdEjecucion);
+                    const ejecucion = this.ejecuciones.find(e => e.idEjecucion === this.filtroIdEjecucion);
+                    if (ejecucion) {
+                        console.log('✅ Ejecución encontrada:', ejecucion);
+                        setTimeout(() => {
+                            console.log('🔓 Abriendo detalle...');
+                            this.verDetalle(ejecucion);
+                        }, 300);
+                    } else {
+                        console.log('❌ Ejecución NO encontrada con ID:', this.filtroIdEjecucion);
+                        console.log('📋 IDs disponibles:', this.ejecuciones.map(e => e.idEjecucion));
+                    }
+                }
             },
             error: (error) => {
-                console.error('Error al cargar ejecuciones:', error);
+                console.error('❌ Error al cargar ejecuciones:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -229,37 +304,36 @@ export class EjecucionesComponent implements OnInit {
     deleteEjecucion(ejecucion: EjecucionMantenimiento) {
         const estaFinalizada = ejecucion.estado === 'COMPLETADO' || ejecucion.estado === 'CANCELADO';
         const mensaje = estaFinalizada 
-            ? '⚠️ Esta ejecución ya está finalizada. ¿Está seguro de que desea eliminarla? Se eliminarán también todas sus evidencias.'
-            : '¿Está seguro de que desea eliminar esta ejecución de mantenimiento? Se eliminarán también todas sus evidencias.';
+            ? `⚠️ Esta ejecución ya está finalizada. ¿Está seguro de que desea eliminar la ejecución de "${ejecucion.equipoNombre}"?`
+            : `¿Está seguro de que desea eliminar la ejecución de "${ejecucion.equipoNombre}"?`;
         
-        this.confirmationService.confirm({
-            message: mensaje,
-            header: estaFinalizada ? 'Eliminar Ejecución Finalizada' : 'Confirmar Eliminación',
-            icon: 'pi pi-exclamation-triangle',
-            acceptButtonStyleClass: 'p-button-danger',
-            accept: () => {
-                if (ejecucion.idEjecucion) {
-                    this.ejecucionesService.delete(ejecucion.idEjecucion).subscribe({
-                        next: () => {
-                            this.ejecuciones = this.ejecuciones.filter(e => e.idEjecucion !== ejecucion.idEjecucion);
-                            this.messageService.add({
-                                severity: 'success',
-                                summary: 'Éxito',
-                                detail: 'Ejecución eliminada exitosamente'
-                            });
-                        },
-                        error: (error) => {
-                            console.error('Error al eliminar ejecución:', error);
-                            this.messageService.add({
-                                severity: 'error',
-                                summary: 'Error',
-                                detail: 'Error al eliminar la ejecución'
-                            });
+        if (confirm(mensaje)) {
+            if (ejecucion.idEjecucion) {
+                this.ejecucionesService.delete(ejecucion.idEjecucion).subscribe({
+                    next: () => {
+                        this.ejecuciones = this.ejecuciones.filter(e => e.idEjecucion !== ejecucion.idEjecucion);
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Ejecución eliminada exitosamente'
+                        });
+                    },
+                    error: (error) => {
+                        console.error('Error al eliminar ejecución:', error);
+                        
+                        // Extraer mensaje de error del backend
+                        let motivo = 'Error desconocido';
+                        if (error?.error?.error) {
+                            motivo = error.error.error;
+                        } else if (error?.message) {
+                            motivo = error.message;
                         }
-                    });
-                }
+                        
+                        alert(`❌ No se pudo eliminar la ejecución:\n\n${ejecucion.equipoNombre}\n\nMotivo: ${motivo}`);
+                    }
+                });
             }
-        });
+        }
     }
 
     cambiarEstadoRapido(ejecucion: EjecucionMantenimiento, nuevoEstado: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO') {
@@ -303,7 +377,12 @@ export class EjecucionesComponent implements OnInit {
     }
 
     saveEjecucion() {
-        if (this.selectedEjecucion.idContrato && this.selectedEjecucion.idEquipo && this.selectedEjecucion.fechaEjecucion) {
+        // Validación diferente según el modo
+        const esValido = this.isEditMode 
+            ? this.selectedEjecucion.fechaEjecucion  // En edición solo validar fecha
+            : (this.selectedEjecucion.idContrato && this.selectedEjecucion.idEquipo && this.selectedEjecucion.fechaEjecucion); // En creación validar todo
+        
+        if (esValido) {
             const payload: GuardarEjecucionRequest = {
                 idContrato: this.selectedEjecucion.idContrato,
                 idEquipo: this.selectedEjecucion.idEquipo,
@@ -417,8 +496,42 @@ export class EjecucionesComponent implements OnInit {
         if (date instanceof Date) {
             return date;
         }
-        const parsed = new Date(date);
+        // Limpiar el sufijo [UTC] si existe
+        const dateStr = typeof date === 'string' ? date.replace(/\[UTC\]$/, '') : date;
+        const parsed = new Date(dateStr);
         return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    formatDateTime(date: any): string {
+        if (!date) return '';
+        
+        try {
+            let d: Date;
+            if (typeof date === 'string') {
+                let cleanDate = date.replace('Z[UTC]', 'Z');
+                d = new Date(cleanDate);
+            } else if (date instanceof Date) {
+                d = date;
+            } else if (typeof date === 'number') {
+                d = new Date(date);
+            } else {
+                return '';
+            }
+            
+            if (isNaN(d.getTime())) {
+                return '';
+            }
+            
+            return d.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return '';
+        }
     }
 
     formatCurrency(value: number): string {
@@ -487,8 +600,17 @@ export class EjecucionesComponent implements OnInit {
     
     abrirIniciarDialog(ejecucion: EjecucionMantenimiento) {
         this.selectedEjecucion = ejecucion;
-        this.iniciarBitacora = ejecucion.bitacora || '';
-        this.showIniciarDialog = true;
+        this.confirmationService.confirm({
+            message: `¿Iniciar trabajo de mantenimiento para <strong>${ejecucion.equipoNombre}</strong>?<br><br>Se registrará la fecha y hora actual como inicio del trabajo.`,
+            header: '🔧 Iniciar Trabajo',
+            icon: 'pi pi-play-circle',
+            acceptLabel: 'Sí, Iniciar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-info',
+            accept: () => {
+                this.confirmarIniciar();
+            }
+        });
     }
     
     confirmarIniciar() {
@@ -499,7 +621,7 @@ export class EjecucionesComponent implements OnInit {
             estado: 'EN_PROCESO',
             fechaReferencia: new Date(),
             fechaInicio: new Date(),
-            bitacora: this.iniciarBitacora
+            bitacora: ''
         };
         
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
@@ -509,9 +631,7 @@ export class EjecucionesComponent implements OnInit {
                 const comentarioRequest: CrearComentarioRequest = {
                     idEjecucion: this.selectedEjecucion.idEjecucion!,
                     tipoComentario: 'SEGUIMIENTO',
-                    comentario: this.iniciarBitacora 
-                        ? `🔧 Trabajo iniciado.\n\nNotas: ${this.iniciarBitacora}`
-                        : '🔧 Trabajo iniciado.',
+                    comentario: '🔧 Trabajo iniciado.',
                     estadoAnterior: estadoAnterior,
                     estadoNuevo: 'EN_PROCESO',
                     usuarioId: this.usuarioActual?.id
@@ -523,7 +643,6 @@ export class EjecucionesComponent implements OnInit {
                     summary: 'Trabajo iniciado',
                     detail: 'El mantenimiento está ahora en proceso'
                 });
-                this.hideIniciarDialog();
                 this.loadEjecuciones();
             },
             error: (error) => {
@@ -549,25 +668,29 @@ export class EjecucionesComponent implements OnInit {
     
     abrirCompletarDialog(ejecucion: EjecucionMantenimiento) {
         this.selectedEjecucion = ejecucion;
-        this.completarBitacora = ejecucion.bitacora || '';
-        this.completarObservaciones = '';
-        this.showCompletarDialog = true;
+        this.confirmationService.confirm({
+            message: `¿Completar mantenimiento de <strong>${ejecucion.equipoNombre}</strong>?<br><br>Se marcará como finalizado y se registrará la fecha de completado. Puede agregar observaciones y evidencias desde la Gestión de Ejecución.`,
+            header: '✅ Completar Mantenimiento',
+            icon: 'pi pi-check-circle',
+            acceptLabel: 'Sí, Completar',
+            rejectLabel: 'Cancelar',
+            acceptButtonStyleClass: 'p-button-success',
+            accept: () => {
+                this.confirmarCompletar();
+            }
+        });
     }
     
     confirmarCompletar() {
         if (!this.selectedEjecucion.idEjecucion) return;
         
         const estadoAnterior = this.selectedEjecucion.estado || 'EN_PROCESO';
-        let bitacoraFinal = this.completarBitacora;
-        if (this.completarObservaciones) {
-            bitacoraFinal += `\n\n--- CIERRE (${new Date().toLocaleDateString('es-GT')}) ---\n${this.completarObservaciones}`;
-        }
         
         const payload: CambioEstadoRequest = {
             estado: 'COMPLETADO',
             fechaReferencia: new Date(),
             fechaInicio: this.parseToDate(this.selectedEjecucion.fechaInicioTrabajo) ?? new Date(),
-            bitacora: bitacoraFinal
+            bitacora: this.selectedEjecucion.bitacora || ''
         };
         
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
@@ -577,9 +700,7 @@ export class EjecucionesComponent implements OnInit {
                 const comentarioRequest: CrearComentarioRequest = {
                     idEjecucion: this.selectedEjecucion.idEjecucion!,
                     tipoComentario: 'RESOLUCION',
-                    comentario: this.completarObservaciones 
-                        ? `✅ Mantenimiento completado.\n\nObservaciones: ${this.completarObservaciones}`
-                        : '✅ Mantenimiento completado exitosamente.',
+                    comentario: '✅ Mantenimiento completado exitosamente.',
                     estadoAnterior: estadoAnterior,
                     estadoNuevo: 'COMPLETADO',
                     usuarioId: this.usuarioActual?.id
@@ -591,7 +712,6 @@ export class EjecucionesComponent implements OnInit {
                     summary: 'Mantenimiento completado',
                     detail: 'El mantenimiento ha sido finalizado exitosamente'
                 });
-                this.hideCompletarDialog();
                 this.loadEjecuciones();
             },
             error: (error) => {
@@ -618,28 +738,28 @@ export class EjecucionesComponent implements OnInit {
     
     abrirCancelarDialog(ejecucion: EjecucionMantenimiento) {
         this.selectedEjecucion = ejecucion;
-        this.cancelarMotivo = '';
-        this.showCancelarDialog = true;
+        this.confirmationService.confirm({
+            message: `¿Está seguro de cancelar el mantenimiento de <strong>${ejecucion.equipoNombre}</strong>?<br><br>Esta acción marcará la ejecución como cancelada. Puede agregar comentarios explicativos desde la Gestión de Ejecución.`,
+            header: '⚠️ Cancelar Mantenimiento',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, Cancelar',
+            rejectLabel: 'No',
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.confirmarCancelar();
+            }
+        });
     }
     
     confirmarCancelar() {
-        if (!this.selectedEjecucion.idEjecucion || !this.cancelarMotivo.trim()) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Motivo requerido',
-                detail: 'Debe indicar el motivo de cancelación'
-            });
-            return;
-        }
+        if (!this.selectedEjecucion.idEjecucion) return;
         
         const estadoAnterior = this.selectedEjecucion.estado || 'PROGRAMADO';
-        let bitacoraFinal = this.selectedEjecucion.bitacora || '';
-        bitacoraFinal += `\n\n--- CANCELADO (${new Date().toLocaleDateString('es-GT')}) ---\nMotivo: ${this.cancelarMotivo}`;
         
         const payload: CambioEstadoRequest = {
             estado: 'CANCELADO',
             fechaReferencia: new Date(),
-            bitacora: bitacoraFinal
+            bitacora: this.selectedEjecucion.bitacora || ''
         };
         
         this.accionLoadingId = this.selectedEjecucion.idEjecucion;
@@ -649,7 +769,7 @@ export class EjecucionesComponent implements OnInit {
                 const comentarioRequest: CrearComentarioRequest = {
                     idEjecucion: this.selectedEjecucion.idEjecucion!,
                     tipoComentario: 'ALERTA',
-                    comentario: `❌ Mantenimiento cancelado.\n\nMotivo: ${this.cancelarMotivo}`,
+                    comentario: '❌ Mantenimiento cancelado.',
                     estadoAnterior: estadoAnterior,
                     estadoNuevo: 'CANCELADO',
                     usuarioId: this.usuarioActual?.id
@@ -661,7 +781,6 @@ export class EjecucionesComponent implements OnInit {
                     summary: 'Mantenimiento cancelado',
                     detail: 'El mantenimiento ha sido cancelado'
                 });
-                this.hideCancelarDialog();
                 this.loadEjecuciones();
             },
             error: (error) => {
@@ -694,8 +813,19 @@ export class EjecucionesComponent implements OnInit {
     }
     
     get ejecucionesFiltradas(): EjecucionMantenimiento[] {
-        if (!this.filtroEstado) return this.ejecuciones;
-        return this.ejecuciones.filter(e => e.estado === this.filtroEstado);
+        let resultado = this.ejecuciones;
+        
+        // Filtrar por ID si está activo (tiene prioridad)
+        if (this.filtroIdEjecucion) {
+            resultado = resultado.filter(e => e.idEjecucion === this.filtroIdEjecucion);
+        }
+        
+        // Filtrar por estado
+        if (this.filtroEstado) {
+            resultado = resultado.filter(e => e.estado === this.filtroEstado);
+        }
+        
+        return resultado;
     }
     
     // Contadores por estado para las tarjetas
@@ -728,6 +858,15 @@ export class EjecucionesComponent implements OnInit {
     setFiltroEstado(estado: string) {
         this.filtroEstado = estado;
         this.onFiltroEstadoChange();
+    }
+    
+    limpiarFiltroId() {
+        this.filtroIdEjecucion = null;
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { idEjecucion: null },
+            queryParamsHandling: 'merge'
+        });
     }
     
     // ==================== UTILIDADES ====================
@@ -805,17 +944,11 @@ export class EjecucionesComponent implements OnInit {
     
     openAccionesMenu(event: Event, ejecucion: EjecucionMantenimiento): void {
         this.ejecucionSeleccionadaMenu = ejecucion;
-        
         this.accionesMenuItems = [
             {
                 label: 'Gestionar',
                 icon: 'pi pi-comments',
                 command: () => this.abrirGestion(ejecucion)
-            },
-            {
-                label: 'Ver Detalle',
-                icon: 'pi pi-eye',
-                command: () => this.verDetalle(ejecucion)
             },
             { separator: true },
             {
@@ -849,7 +982,6 @@ export class EjecucionesComponent implements OnInit {
                 command: () => this.deleteEjecucion(ejecucion)
             }
         ];
-
         this.menuAcciones.toggle(event);
     }
 
@@ -997,6 +1129,19 @@ export class EjecucionesComponent implements OnInit {
                             detail: 'Evidencia eliminada'
                         });
                         this.loadEvidencias();
+                        
+                        // Agregar comentario automático de eliminación
+                        if (this.ejecucionGestion?.idEjecucion) {
+                            const comentarioAuto: CrearComentarioRequest = {
+                                idEjecucion: this.ejecucionGestion.idEjecucion,
+                                tipoComentario: 'SEGUIMIENTO',
+                                comentario: `Se eliminó evidencia: ${evidencia.nombreOriginal}`,
+                                usuarioId: this.usuarioActual?.id
+                            };
+                            this.comentariosService.create(comentarioAuto).subscribe(() => {
+                                this.loadComentarios();
+                            });
+                        }
                     },
                     error: (error) => {
                         console.error('Error al eliminar evidencia:', error);
@@ -1125,12 +1270,16 @@ export class EjecucionesComponent implements OnInit {
             usuarioId: this.usuarioActual?.id
         };
 
-        // Si hay cambio de estado
-        if (this.nuevoEstadoSeleccionado && this.nuevoEstadoSeleccionado !== this.ejecucionGestion.estado) {
-            request.estadoAnterior = this.ejecucionGestion.estado;
-            request.estadoNuevo = this.nuevoEstadoSeleccionado;
-        }
+        console.log('📝 Agregando comentario:', request);
+        console.log('   Usuario actual:', this.usuarioActual);
 
+        // Mostrar el comentario de inmediato en la lista local
+        const now = new Date();
+        this.comentarios.unshift({
+            ...request,
+            usuario: this.usuarioActual?.nombreCompleto || 'Sistema',
+            fechaCreacion: now.toISOString()
+        });
         this.comentariosService.create(request).subscribe({
             next: () => {
                 this.messageService.add({
@@ -1138,15 +1287,7 @@ export class EjecucionesComponent implements OnInit {
                     summary: 'Éxito',
                     detail: 'Comentario agregado correctamente'
                 });
-                
-                // Actualizar estado local si cambió
-                if (request.estadoNuevo && this.ejecucionGestion) {
-                    this.ejecucionGestion.estado = request.estadoNuevo as any;
-                }
-                
                 this.nuevoComentario = '';
-                this.nuevoEstadoSeleccionado = null;
-                this.loadComentarios();
                 this.loadEjecuciones(); // Refrescar lista principal
             },
             error: (error) => {
@@ -1155,6 +1296,108 @@ export class EjecucionesComponent implements OnInit {
                     severity: 'error',
                     summary: 'Error',
                     detail: 'No se pudo agregar el comentario'
+                });
+            }
+        });
+    }
+
+    // Nueva función para cambiar estado desde gestión
+    renderComentarioConEnlaces(comentario: string): string {
+        if (!comentario) return '';
+        
+        // Detectar si el comentario menciona archivos adjuntos
+        if (comentario.includes('Se adjuntó evidencia:')) {
+            const partes = comentario.split('Se adjuntó evidencia:');
+            return `${partes[0]}Se adjuntó evidencia: <strong class="text-primary"><i class="pi pi-paperclip"></i> ${partes[1]}</strong>`;
+        }
+        
+        if (comentario.includes('archivos de evidencia:')) {
+            const partes = comentario.split('archivos de evidencia:');
+            return `${partes[0]}archivos de evidencia: <strong class="text-primary"><i class="pi pi-paperclip"></i> ${partes[1]}</strong>`;
+        }
+        
+        return comentario;
+    }
+
+    cambiarEstadoGestion() {
+        if (!this.ejecucionGestion?.idEjecucion || !this.nuevoEstadoSeleccionado || this.nuevoEstadoSeleccionado === this.ejecucionGestion.estado) {
+            return;
+        }
+        const estadoAnterior = this.ejecucionGestion.estado;
+        const payload: CambioEstadoRequest = {
+            estado: this.nuevoEstadoSeleccionado as 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO',
+            fechaReferencia: new Date()
+        };
+        this.accionLoadingId = this.ejecucionGestion.idEjecucion;
+        this.ejecucionesService.actualizarEstado(this.ejecucionGestion.idEjecucion, payload).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Estado actualizado',
+                    detail: `La ejecución pasó de ${this.getEstadoLabel(estadoAnterior)} a ${this.getEstadoLabel(this.nuevoEstadoSeleccionado)}`
+                });
+                this.ejecucionGestion.estado = this.nuevoEstadoSeleccionado as any;
+                // Agregar comentario automático al historial localmente
+                const now = new Date();
+                this.comentarios.unshift({
+                    idEjecucion: this.ejecucionGestion.idEjecucion!,
+                    tipoComentario: 'SEGUIMIENTO',
+                    comentario: `Estado cambiado de ${this.getEstadoLabel(estadoAnterior)} a ${this.getEstadoLabel(this.nuevoEstadoSeleccionado)}.`,
+                    estadoAnterior: estadoAnterior,
+                    estadoNuevo: this.nuevoEstadoSeleccionado,
+                    usuario: this.usuarioActual?.nombreCompleto || 'Sistema',
+                    fechaCreacion: now.toISOString()
+                });
+                this.comentariosService.create({
+                    idEjecucion: this.ejecucionGestion.idEjecucion!,
+                    tipoComentario: 'SEGUIMIENTO',
+                    comentario: `Estado cambiado de ${this.getEstadoLabel(estadoAnterior)} a ${this.getEstadoLabel(this.nuevoEstadoSeleccionado)}.`,
+                    estadoAnterior: estadoAnterior,
+                    estadoNuevo: this.nuevoEstadoSeleccionado,
+                    usuarioId: this.usuarioActual?.id
+                }).subscribe();
+                this.nuevoEstadoSeleccionado = null;
+                this.loadEjecuciones();
+            },
+            error: (error) => {
+                console.error('Error al actualizar estado:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo actualizar el estado'
+                });
+            },
+            complete: () => {
+                this.accionLoadingId = null;
+            }
+        });
+    }
+
+    guardarObservaciones() {
+        if (!this.ejecucionGestion?.idEjecucion) {
+            return;
+        }
+
+        const payload = {
+            ...this.ejecucionGestion,
+            bitacora: this.ejecucionGestion.bitacora || ''
+        };
+
+        this.ejecucionesService.update(this.ejecucionGestion.idEjecucion, payload).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Observaciones guardadas',
+                    detail: 'Las observaciones se han actualizado correctamente'
+                });
+                this.loadEjecuciones();
+            },
+            error: (error) => {
+                console.error('Error al guardar observaciones:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudieron guardar las observaciones'
                 });
             }
         });
@@ -1192,6 +1435,7 @@ export class EjecucionesComponent implements OnInit {
         
         let completedCount = 0;
         const totalFiles = files.length;
+        const fileNames: string[] = files.map(f => f.name);
         
         // Subir archivos uno por uno
         files.forEach((file: File) => {
@@ -1211,6 +1455,14 @@ export class EjecucionesComponent implements OnInit {
                             this.uploading = false;
                             this.uploadProgress = 0;
                             this.nuevaDescripcion = '';
+                            
+                            // Limpiar el componente de upload para que no se vuelvan a subir los mismos archivos
+                            setTimeout(() => {
+                                if (this.fileUploadGestion) {
+                                    this.fileUploadGestion.clear();
+                                }
+                            }, 100);
+                            
                             this.messageService.add({
                                 severity: 'success',
                                 summary: 'Éxito',
@@ -1218,11 +1470,16 @@ export class EjecucionesComponent implements OnInit {
                             });
                             this.loadEvidencias();
                             
-                            // Agregar comentario automático sobre las evidencias
+                            // Agregar comentario automático con los nombres de los archivos
+                            let comentarioTexto = totalFiles === 1 
+                                ? `Se adjuntó evidencia: ${fileNames[0]}`
+                                : `Se adjuntaron ${totalFiles} archivos de evidencia: ${fileNames.join(', ')}`;
+                            
                             const comentarioAuto: CrearComentarioRequest = {
                                 idEjecucion: this.ejecucionGestion!.idEjecucion!,
                                 tipoComentario: 'SEGUIMIENTO',
-                                comentario: `Se adjuntaron ${totalFiles} archivo(s) de evidencia.`
+                                comentario: comentarioTexto,
+                                usuarioId: this.usuarioActual?.id
                             };
                             this.comentariosService.create(comentarioAuto).subscribe(() => {
                                 this.loadComentarios();
@@ -1236,6 +1493,13 @@ export class EjecucionesComponent implements OnInit {
                     if (completedCount === totalFiles) {
                         this.uploading = false;
                         this.uploadProgress = 0;
+                        
+                        // Limpiar también en caso de error
+                        setTimeout(() => {
+                            if (this.fileUploadGestion) {
+                                this.fileUploadGestion.clear();
+                            }
+                        }, 100);
                     }
                     this.messageService.add({
                         severity: 'error',

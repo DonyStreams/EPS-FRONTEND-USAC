@@ -171,7 +171,7 @@
                 </div>
                 <ul class="m-0 pl-4 text-sm text-600">
                     <li>El calendario muestra <strong>cuándo toca</strong> cada mantenimiento programado</li>
-                    <li>Los <strong>colores</strong> indican el tipo: verde (preventivo), rojo (correctivo), azul (calibración), naranja (predictivo)</li>
+                    <li>Los <strong>colores</strong> indican el tipo: verde (preventivo), rojo (correctivo), azul (calibración)</li>
                     <li>Haz clic en un <strong>evento</strong> para ver detalles y crear una ejecución</li>
                     <li>Usa el <strong>filtro</strong> para ver solo un tipo de mantenimiento</li>
                     <li>Las <strong>ejecuciones realizadas</strong> se consultan en el módulo de Ejecuciones</li>
@@ -198,7 +198,13 @@
     
     <ng-template pTemplate="content">
         <div *ngIf="selectedEvent" class="flex flex-column gap-3">
-            
+            <!-- Alerta de evento vencido -->
+            <div *ngIf="isEventoVencido(selectedEvent)" class="p-3 border-round bg-gray-50 border-1 border-gray-300 flex align-items-center gap-3">
+                <i class="pi pi-exclamation-triangle text-red-600 text-2xl"></i>
+                <div>
+                    <div class="font-semibold text-red-700">Este mantenimiento está vencido.</div>
+                </div>
+            </div>
             <!-- Alerta de contrato vencido -->
             <div *ngIf="selectedEvent.extendedProps?.contratoVencido" 
                  class="p-3 border-round bg-orange-50 border-1 border-orange-300 flex align-items-center gap-3">

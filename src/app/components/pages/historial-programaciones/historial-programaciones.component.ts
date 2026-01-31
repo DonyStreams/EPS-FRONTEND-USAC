@@ -27,6 +27,7 @@ export interface HistorialProgramacion {
 })
 export class HistorialProgramacionesComponent implements OnInit {
     historial: HistorialProgramacion[] = [];
+    registrosSeleccionados: HistorialProgramacion[] = [];
     loading: boolean = false;
     programacionIdFiltro: number | null = null;
     equipoNombreFiltro: string | null = null;
@@ -43,6 +44,7 @@ export class HistorialProgramacionesComponent implements OnInit {
     constructor(
         private programacionesService: ProgramacionesService,
         private messageService: MessageService,
+        private confirmationService: ConfirmationService,
         private route: ActivatedRoute
     ) { }
 
@@ -146,7 +148,8 @@ export class HistorialProgramacionesComponent implements OnInit {
             'EDITADO': 'Editado',
             'PAUSADO': 'Pausado',
             'ACTIVADO': 'Activado',
-            'EJECUTADO': 'Ejecutado',
+            'EJECUTADO': 'Completado',
+            'EJECUTADO_PROGRAMADO': 'Ejecución Programada',
             'SALTADO': 'Descartado',
             'REPROGRAMADO': 'Reprogramado'
         };
@@ -160,6 +163,7 @@ export class HistorialProgramacionesComponent implements OnInit {
             'PAUSADO': 'warning',
             'ACTIVADO': 'success',
             'EJECUTADO': 'success',
+            'EJECUTADO_PROGRAMADO': 'info',
             'SALTADO': 'danger',
             'REPROGRAMADO': 'warning'
         };
@@ -173,6 +177,7 @@ export class HistorialProgramacionesComponent implements OnInit {
             'PAUSADO': 'pi pi-pause',
             'ACTIVADO': 'pi pi-play',
             'EJECUTADO': 'pi pi-check-circle',
+            'EJECUTADO_PROGRAMADO': 'pi pi-calendar-plus',
             'SALTADO': 'pi pi-forward',
             'REPROGRAMADO': 'pi pi-calendar-plus'
         };
@@ -183,5 +188,53 @@ export class HistorialProgramacionesComponent implements OnInit {
         this.programacionIdFiltro = null;
         this.equipoNombreFiltro = null;
         this.loadHistorial();
+    }
+
+    eliminarSeleccionados() {
+        if (!this.registrosSeleccionados || this.registrosSeleccionados.length === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Selecciona al menos un registro para eliminar'
+            });
+            return;
+        }
+
+        this.confirmationService.confirm({
+            message: `¿Estás seguro de que deseas eliminar ${this.registrosSeleccionados.length} registro(s) del historial?`,
+            header: 'Confirmar Eliminación',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.procesarEliminacionMasiva();
+            }
+        });
+    }
+
+    private procesarEliminacionMasiva() {
+        this.loading = true;
+        const idsAEliminar = this.registrosSeleccionados.map(r => r.idHistorial);
+        
+        this.programacionesService.deleteHistorialMultiple(idsAEliminar).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: `${this.registrosSeleccionados.length} registro(s) eliminado(s) correctamente`
+                });
+                
+                this.registrosSeleccionados = [];
+                this.loadHistorial();
+                this.loadMetricas();
+            },
+            error: (error) => {
+                console.error('Error al eliminar registros:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al eliminar los registros seleccionados'
+                });
+                this.loading = false;
+            }
+        });
     }
 }

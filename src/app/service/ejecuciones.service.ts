@@ -27,6 +27,7 @@ export interface EjecucionMantenimiento {
 
     usuarioResponsableId?: number;
     usuarioResponsableNombre?: string;
+    fechaCreacion?: string | Date;
 }
 
 export interface GuardarEjecucionRequest {

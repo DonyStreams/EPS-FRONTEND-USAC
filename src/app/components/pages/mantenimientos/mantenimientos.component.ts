@@ -48,6 +48,19 @@ interface CalendarEvent {
 })
 export class MantenimientosComponent implements OnInit {
 
+    /**
+     * Determina si un evento está vencido (fecha anterior a hoy)
+     */
+    isEventoVencido(event: any): boolean {
+        if (!event?.start) {
+            return false;
+        }
+        const fecha = new Date(event.start);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return fecha < hoy;
+    }
+
     calendarOptions: CalendarOptions = {};
     events: CalendarEvent[] = [];
     
@@ -106,18 +119,17 @@ export class MantenimientosComponent implements OnInit {
 
     private initCalendar(): void {
         this.calendarOptions = {
-            plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+            plugins: [dayGridPlugin, interactionPlugin],
             initialView: 'dayGridMonth',
             locale: esLocale,
             headerToolbar: {
                 left: 'prev,today,next',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek'
+                right: 'dayGridMonth'
             },
             buttonText: {
                 today: 'Hoy',
-                month: 'Mes',
-                week: 'Semana'
+                month: 'Mes'
             },
             editable: false,
             selectable: true,
@@ -171,9 +183,8 @@ export class MantenimientosComponent implements OnInit {
         const eventos: CalendarEvent[] = [];
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
-        // Mostrar eventos: 3 meses atrás y 6 meses adelante
+        // Mostrar eventos: 3 meses atrás y hasta la fecha de fin de contrato (o 6 meses si no hay contrato)
         const tresMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate());
-        const seisMesesAdelante = new Date(hoy.getFullYear(), hoy.getMonth() + 6, hoy.getDate());
 
         console.log('🔄 Generando eventos del calendario...');
         console.log('📅 Programaciones activas:', this.programaciones.filter(p => p.activa).length);
@@ -186,8 +197,15 @@ export class MantenimientosComponent implements OnInit {
                 if (contratoVencido) {
                     console.log(`⚠️ Programación ${prog.idProgramacion}: contrato vencido (se mostrará con color gris)`);
                 }
-                
-                const eventosRecurrentes = this.generarEventosRecurrentes(prog, tresMesesAtras, seisMesesAdelante, contratoVencido);
+                // Determinar el límite superior: fecha de fin de contrato si existe, si no, 6 meses adelante
+                let fechaLimiteSuperior: Date;
+                if (prog.contrato?.fechaFin) {
+                    const fechaFinContrato = this.parsearFecha(prog.contrato.fechaFin);
+                    fechaLimiteSuperior = fechaFinContrato && !isNaN(fechaFinContrato.getTime()) ? fechaFinContrato : new Date(hoy.getFullYear(), hoy.getMonth() + 6, hoy.getDate());
+                } else {
+                    fechaLimiteSuperior = new Date(hoy.getFullYear(), hoy.getMonth() + 6, hoy.getDate());
+                }
+                const eventosRecurrentes = this.generarEventosRecurrentes(prog, tresMesesAtras, fechaLimiteSuperior, contratoVencido);
                 eventos.push(...eventosRecurrentes);
             }
         });
@@ -356,14 +374,28 @@ export class MantenimientosComponent implements OnInit {
             const equipoNombre = prog.equipo?.nombre || 'Equipo';
             const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
             const contratoDesc = prog.contrato?.descripcion || '';
-            
+            // Determinar si el evento está vencido (antes de hoy)
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const esVencido = fecha < hoy;
+            // Si está vencido, usar color gris y agregar texto/icono de vencido
+            let colorEvento = colores;
+            let textColor = '#ffffff';
+            let icono = '';
+            let titulo = equipoNombre;
+            if (esVencido) {
+                icono = '⚠️ ';
+                titulo = `${icono}${equipoNombre}`;
+            } else if (contratoVencido) {
+                icono = '⚠️ ';
+                titulo = `${icono}${equipoNombre}`;
+            }
             eventos.push({
                 id: `prog-${prog.idProgramacion}-${fecha.getTime()}`,
-                title: contratoVencido ? `⚠️ ${equipoNombre}` : equipoNombre,
+                title: titulo,
                 start: new Date(fecha),
-                backgroundColor: colores.bg,
-                borderColor: colores.border,
-                textColor: '#ffffff',
+                backgroundColor: colorEvento.bg,
+                borderColor: colorEvento.border,
+                textColor: textColor,
                 extendedProps: {
                     tipo: 'programacion',
                     tipoMantenimiento: tipoMantenimientoNombre,
@@ -407,20 +439,31 @@ export class MantenimientosComponent implements OnInit {
 
         const tipoMantenimientoNombre = prog.tipoMantenimiento?.nombre || '';
         // Si el contrato está vencido, usar color gris; si no, usar color según tipo
-        const colores = contratoVencido 
+        let colores = contratoVencido 
             ? { bg: '#6c757d', border: '#495057' }  // Gris para contrato vencido
             : this.getColorByTipoMantenimiento(tipoMantenimientoNombre);
         const equipoNombre = prog.equipo?.nombre || 'Equipo';
         const proveedorNombre = prog.contrato?.proveedor?.nombre || '';
         const contratoDesc = prog.contrato?.descripcion || '';
-
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const esVencido = fechaProxima < hoy;
+        let textColor = '#ffffff';
+        let icono = '';
+        let titulo = `${equipoNombre} (Único)`;
+        if (esVencido) {
+            icono = '⚠️ ';
+            titulo = `${icono}${equipoNombre} (Único)`;
+        } else if (contratoVencido) {
+            icono = '⚠️ ';
+            titulo = `${icono}${equipoNombre} (Único)`;
+        }
         eventos.push({
             id: `prog-${prog.idProgramacion}-unico`,
-            title: contratoVencido ? `⚠️ ${equipoNombre} (Único)` : `${equipoNombre} (Único)`,
+            title: titulo,
             start: new Date(fechaProxima),
             backgroundColor: colores.bg,
             borderColor: colores.border,
-            textColor: '#ffffff',
+            textColor: textColor,
             extendedProps: {
                 tipo: 'programacion',
                 tipoMantenimiento: tipoMantenimientoNombre,
@@ -693,25 +736,28 @@ export class MantenimientosComponent implements OnInit {
      */
     verProgramacion(): void {
         if (!this.selectedEvent?.extendedProps) return;
-        
+
         const props = this.selectedEvent.extendedProps;
-        const idProgramacion = props.idProgramacion;
         const idEquipo = props.idEquipo;
         const equipoNombre = props.equipoNombre;
-        
+        const tipoMantenimiento = props.tipoMantenimiento;
+        const idProgramacion = props.idProgramacion;
+
         this.closeDetailDialog();
-        
-        // Navegar a programaciones con filtro por equipo
+
+        // Navegar a programaciones con filtro por equipo, tipo de mantenimiento e id de programación
+        const queryParams: any = {};
         if (idEquipo) {
-            this.router.navigate(['/administracion/programaciones'], {
-                queryParams: { 
-                    equipoId: idEquipo,
-                    equipoNombre: equipoNombre
-                }
-            });
-        } else {
-            this.router.navigate(['/administracion/programaciones']);
+            queryParams.equipoId = idEquipo;
+            queryParams.equipoNombre = equipoNombre;
         }
+        if (tipoMantenimiento) {
+            queryParams.tipoMantenimiento = tipoMantenimiento;
+        }
+        if (idProgramacion) {
+            queryParams.idProgramacion = idProgramacion;
+        }
+        this.router.navigate(['/administracion/programaciones'], { queryParams });
     }
 
     crearDesdeProgamacion(): void {
@@ -747,12 +793,44 @@ export class MantenimientosComponent implements OnInit {
                 this.closeDetailDialog();
                 
                 this.programacionesService.crearMantenimiento(idProgramacion).subscribe({
-                    next: () => {
+                    next: (response) => {
+                        console.log('📝 Respuesta crearMantenimiento:', response);
+                        const idEjecucion = response?.idEjecucion || response?.id;
+                        console.log('🆔 ID Ejecución obtenido:', idEjecucion);
                         this.messageService.add({
                             severity: 'success',
-                            summary: 'Éxito',
-                            detail: `Se registró la ejecución para ${equipoNombre}`
+                            summary: '✓ Ejecución Creada',
+                            detail: `Se registró exitosamente la ejecución para ${equipoNombre}`,
+                            life: 3000,
+                            sticky: false
                         });
+                        
+                        // Confirmar si desea ver la ejecución (mostrar inmediatamente)
+                        setTimeout(() => {
+                            this.confirmationService.confirm({
+                                message: `<div class="p-3">
+                                    <p class="text-lg mb-3">✓ Ejecución de mantenimiento creada exitosamente</p>
+                                    <p class="text-600">¿Deseas ver los detalles de la ejecución ahora?</p>
+                                </div>`,
+                                header: 'Ejecución Creada',
+                                icon: 'pi pi-check-circle',
+                                acceptLabel: 'Ver Ejecución',
+                                rejectLabel: 'Cerrar',
+                                acceptButtonStyleClass: 'p-button-success',
+                                rejectButtonStyleClass: 'p-button-text',
+                                accept: () => {
+                                    console.log('🚀 Navegando a ejecuciones con ID:', idEjecucion);
+                                    if (idEjecucion) {
+                                        this.router.navigate(['/administracion/ejecuciones'], { 
+                                            queryParams: { idEjecucion: idEjecucion } 
+                                        });
+                                    } else {
+                                        this.router.navigate(['/administracion/ejecuciones']);
+                                    }
+                                }
+                            });
+                        }, 500);
+                        
                         this.loadData();
                     },
                     error: (error) => {

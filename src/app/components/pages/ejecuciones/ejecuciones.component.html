@@ -78,6 +78,17 @@
     <!-- Tabla de ejecuciones -->
     <div class="col-12">
         <div class="card">
+            <!-- Banner de filtro activo -->
+            <div *ngIf="filtroIdEjecucion" class="mb-3 p-3 border-round surface-ground flex align-items-center justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-filter text-primary"></i>
+                    <span class="font-medium">Mostrando ejecución específica ID: {{filtroIdEjecucion}}</span>
+                </div>
+                <button pButton pRipple label="Ver Todo" icon="pi pi-times" 
+                    class="p-button-text p-button-sm"
+                    (click)="limpiarFiltroId()"></button>
+            </div>
+            
             <!-- Barra de herramientas -->
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
@@ -99,7 +110,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dt [value]="ejecuciones" [loading]="loading" [paginator]="true" [rows]="10"
+            <p-table #dt [value]="ejecucionesFiltradas" [loading]="loading" [paginator]="true" [rows]="10"
                 [rowsPerPageOptions]="[10,20,50]" [showCurrentPageReport]="true"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ejecuciones"
                 [globalFilterFields]="['equipoNombre','contratoDescripcion','tipoMantenimiento','estado']"
@@ -121,6 +132,7 @@
                         <th pSortableColumn="equipoNombre">Equipo <p-sortIcon field="equipoNombre"></p-sortIcon></th>
                         <th pSortableColumn="tipoMantenimiento">Tipo <p-sortIcon field="tipoMantenimiento"></p-sortIcon></th>
                         <th pSortableColumn="fechaEjecucion">Fecha Programada <p-sortIcon field="fechaEjecucion"></p-sortIcon></th>
+                        <th pSortableColumn="fechaCreacion">Fecha Creación <p-sortIcon field="fechaCreacion"></p-sortIcon></th>
                         <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
                         <th style="width: 100px"></th>
                     </tr>
@@ -157,20 +169,26 @@
                             </div>
                         </td>
                         
+                        <!-- Fecha Creación -->
+                        <td>
+                            <div class="text-sm">
+                                <div class="text-600">{{formatDateTime(ejecucion.fechaCreacion)}}</div>
+                            </div>
+                        </td>
+                        
                         <!-- Estado -->
                         <td>
-                            <p-tag [value]="getEstadoLabel(ejecucion.estado)"
-                                   [severity]="getEstadoSeverity(ejecucion.estado)"
-                                   [rounded]="true"></p-tag>
+                            <div class="flex align-items-center gap-2">
+                                <i *ngIf="ejecucion.estado === 'EN_PROCESO'" class="pi pi-spin pi-spinner text-blue-500"></i>
+                                <p-tag [value]="getEstadoLabel(ejecucion.estado)"
+                                       [severity]="getEstadoSeverity(ejecucion.estado)"
+                                       [rounded]="true"></p-tag>
+                            </div>
                         </td>
                         
                         <!-- Acciones -->
                         <td>
                             <div class="flex flex-nowrap align-items-center justify-content-center">
-                                <button pButton pRipple icon="pi pi-eye"
-                                    class="p-button-rounded p-button-text p-button-info"
-                                    (click)="verDetalle(ejecucion)" pTooltip="Ver detalle"></button>
-                                
                                 <button pButton pRipple icon="pi pi-ellipsis-v"
                                     class="p-button-rounded p-button-text p-button-secondary"
                                     (click)="openAccionesMenu($event, ejecucion)"
@@ -204,278 +222,15 @@
 </div>
 
 
-<!-- ==================== DIALOG DETALLE ==================== -->
-<p-dialog [(visible)]="showDetalleDialog" [style]="{width: '650px'}" 
-    header="Detalle de Ejecución" [modal]="true">
-    
-    <ng-template pTemplate="content">
-        <div *ngIf="ejecucionDetalle" class="flex flex-column gap-4">
-            <!-- Estado destacado -->
-            <div class="text-center p-3 surface-100 border-round">
-                <p-tag [value]="getEstadoLabel(ejecucionDetalle.estado)"
-                       [severity]="getEstadoSeverity(ejecucionDetalle.estado)"
-                       styleClass="text-lg px-3 py-2"></p-tag>
-            </div>
-            
-            <!-- Info del equipo -->
-            <div class="flex align-items-center gap-3 p-3 surface-50 border-round border-left-3 border-primary">
-                <i class="pi pi-cog text-3xl text-primary"></i>
-                <div>
-                    <div class="font-bold text-lg">{{ ejecucionDetalle.equipoNombre }}</div>
-                    <div class="text-500">{{ ejecucionDetalle.equipoCodigo }}</div>
-                </div>
-            </div>
-            
-            <!-- Datos principales -->
-            <div class="grid">
-                <div class="col-6">
-                    <div class="surface-100 p-3 border-round">
-                        <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-wrench mr-1"></i>Tipo de Mantenimiento
-                        </label>
-                        <p-tag [value]="ejecucionDetalle.tipoMantenimiento || 'N/A'"
-                               [severity]="getTipoSeverity(ejecucionDetalle.tipoMantenimiento)"
-                               [rounded]="true"></p-tag>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="surface-100 p-3 border-round">
-                        <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-calendar mr-1"></i>Fecha Programada
-                        </label>
-                        <div class="font-medium text-lg">{{ formatDate(ejecucionDetalle.fechaEjecucion) || 'No definida' }}</div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="surface-100 p-3 border-round">
-                        <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-file mr-1"></i>Contrato
-                        </label>
-                        <div class="font-medium">{{ ejecucionDetalle.contratoDescripcion || 'N/A' }}</div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="surface-100 p-3 border-round">
-                        <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-building mr-1"></i>Proveedor
-                        </label>
-                        <div class="font-medium">{{ ejecucionDetalle.proveedorNombre || 'N/A' }}</div>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="surface-100 p-3 border-round">
-                        <label class="text-500 text-sm block mb-1">
-                            <i class="pi pi-map-marker mr-1"></i>Ubicación del Equipo
-                        </label>
-                        <div class="font-medium">{{ ejecucionDetalle.equipoUbicacion || 'N/A' }}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Fechas de ejecución -->
-            <div class="grid" *ngIf="ejecucionDetalle.fechaInicioTrabajo || ejecucionDetalle.fechaCierre">
-                <div class="col-6" *ngIf="ejecucionDetalle.fechaInicioTrabajo">
-                    <div class="p-3 bg-blue-50 border-round border-left-3 border-blue-500">
-                        <label class="text-blue-600 text-sm block mb-1">
-                            <i class="pi pi-play mr-1"></i>Inicio de Trabajo
-                        </label>
-                        <div class="font-bold text-blue-900">{{ formatDate(ejecucionDetalle.fechaInicioTrabajo) }}</div>
-                    </div>
-                </div>
-                <div class="col-6" *ngIf="ejecucionDetalle.fechaCierre">
-                    <div class="p-3 bg-green-50 border-round border-left-3 border-green-500">
-                        <label class="text-green-600 text-sm block mb-1">
-                            <i class="pi pi-check mr-1"></i>Fecha de Cierre
-                        </label>
-                        <div class="font-bold text-green-900">{{ formatDate(ejecucionDetalle.fechaCierre) }}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Bitácora -->
-            <div *ngIf="ejecucionDetalle.bitacora">
-                <label class="text-500 text-sm block mb-2">
-                    <i class="pi pi-book mr-1"></i>Bitácora / Observaciones
-                </label>
-                <div class="p-3 surface-100 border-round white-space-pre-wrap border-left-3 border-300">
-                    {{ ejecucionDetalle.bitacora }}
-                </div>
-            </div>
-        </div>
-    </ng-template>
-    
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cerrar" icon="pi pi-times" 
-            class="p-button-text" (click)="hideDetalleDialog()"></button>
-    </ng-template>
-</p-dialog>
 
 
-<!-- ==================== DIALOG INICIAR ==================== -->
-<p-dialog [(visible)]="showIniciarDialog" [style]="{width: '500px'}" 
-    header="Iniciar Trabajo de Mantenimiento" [modal]="true">
-    
-    <ng-template pTemplate="content">
-        <div class="flex flex-column gap-4">
-            <!-- Info del equipo -->
-            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
-                <i class="pi pi-cog text-2xl text-primary"></i>
-                <div>
-                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
-                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
-                </div>
-            </div>
-            
-            <div class="p-3 bg-blue-50 border-round border-left-3 border-blue-500">
-                <div class="flex align-items-center gap-2 mb-2">
-                    <i class="pi pi-info-circle text-blue-500"></i>
-                    <span class="font-medium text-blue-700">Información</span>
-                </div>
-                <p class="m-0 text-sm text-blue-600">
-                    Al iniciar el trabajo, se registrará la fecha y hora actual como inicio del mantenimiento.
-                </p>
-            </div>
-            
-            <div class="field">
-                <label for="iniciarBitacora" class="font-medium">Notas iniciales (opcional)</label>
-                <textarea id="iniciarBitacora" 
-                    pInputTextarea 
-                    [(ngModel)]="iniciarBitacora"
-                    rows="3" 
-                    placeholder="Observaciones al iniciar el trabajo..."
-                    class="w-full">
-                </textarea>
-            </div>
-        </div>
-    </ng-template>
-    
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
-            class="p-button-text" (click)="hideIniciarDialog()"></button>
-        <button pButton pRipple label="Iniciar Trabajo" icon="pi pi-play" 
-            class="p-button-info" 
-            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
-            (click)="confirmarIniciar()"></button>
-    </ng-template>
-</p-dialog>
+<!-- ==================== DIALOG INICIAR (ELIMINADO - USO CONFIRMACIÓN DIRECTA) ==================== -->
 
 
-<!-- ==================== DIALOG COMPLETAR ==================== -->
-<p-dialog [(visible)]="showCompletarDialog" [style]="{width: '550px'}" 
-    header="Completar Mantenimiento" [modal]="true">
-    
-    <ng-template pTemplate="content">
-        <div class="flex flex-column gap-4">
-            <!-- Info del equipo -->
-            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
-                <i class="pi pi-cog text-2xl text-primary"></i>
-                <div>
-                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
-                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
-                </div>
-            </div>
-            
-            <!-- Tiempo de trabajo -->
-            <div *ngIf="selectedEjecucion.fechaInicioTrabajo" class="p-3 bg-green-50 border-round border-left-3 border-green-500">
-                <div class="flex align-items-center gap-2 mb-1">
-                    <i class="pi pi-clock text-green-500"></i>
-                    <span class="font-medium text-green-700">Tiempo de trabajo</span>
-                </div>
-                <p class="m-0 text-sm text-green-600">
-                    Iniciado: {{ formatDate(selectedEjecucion.fechaInicioTrabajo) }}
-                </p>
-            </div>
-            
-            <div class="field">
-                <label for="completarObservaciones" class="font-medium">
-                    Observaciones de cierre <span class="text-red-500">*</span>
-                </label>
-                <textarea id="completarObservaciones" 
-                    pInputTextarea 
-                    [(ngModel)]="completarObservaciones"
-                    rows="4" 
-                    placeholder="Describa el trabajo realizado, hallazgos, recomendaciones..."
-                    class="w-full">
-                </textarea>
-                <small class="text-500">Estas observaciones se agregarán a la bitácora</small>
-            </div>
-            
-            <div class="p-3 bg-orange-50 border-round border-left-3 border-orange-500">
-                <div class="flex align-items-center gap-2">
-                    <i class="pi pi-exclamation-triangle text-orange-500"></i>
-                    <span class="text-sm text-orange-700">
-                        No olvide adjuntar evidencias antes de completar el mantenimiento.
-                    </span>
-                </div>
-            </div>
-        </div>
-    </ng-template>
-    
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cancelar" icon="pi pi-times" 
-            class="p-button-text" (click)="hideCompletarDialog()"></button>
-        <button pButton pRipple label="Adjuntar Evidencias" icon="pi pi-paperclip" 
-            class="p-button-outlined p-button-help" 
-            (click)="hideCompletarDialog(); openEvidencias(selectedEjecucion)"></button>
-        <button pButton pRipple label="Completar" icon="pi pi-check" 
-            class="p-button-success" 
-            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
-            (click)="confirmarCompletar()"></button>
-    </ng-template>
-</p-dialog>
+<!-- ==================== DIALOG COMPLETAR (ELIMINADO - USO CONFIRMACIÓN DIRECTA) ==================== -->
 
 
-<!-- ==================== DIALOG CANCELAR ==================== -->
-<p-dialog [(visible)]="showCancelarDialog" [style]="{width: '500px'}" 
-    header="Cancelar Ejecución" [modal]="true">
-    
-    <ng-template pTemplate="content">
-        <div class="flex flex-column gap-4">
-            <!-- Info del equipo -->
-            <div class="flex align-items-center gap-3 p-3 surface-100 border-round border-left-3 border-primary">
-                <i class="pi pi-cog text-2xl text-primary"></i>
-                <div>
-                    <div class="font-bold">{{ selectedEjecucion.equipoNombre }}</div>
-                    <small class="text-500">{{ selectedEjecucion.contratoDescripcion }}</small>
-                </div>
-            </div>
-            
-            <div class="p-3 bg-red-50 border-round border-left-3 border-red-500">
-                <div class="flex align-items-center gap-2 mb-2">
-                    <i class="pi pi-exclamation-triangle text-red-500"></i>
-                    <span class="font-medium text-red-700">Atención</span>
-                </div>
-                <p class="m-0 text-sm text-red-600">
-                    Esta acción cancelará la ejecución del mantenimiento. 
-                    Deberá indicar el motivo de la cancelación.
-                </p>
-            </div>
-            
-            <div class="field">
-                <label for="cancelarMotivo" class="font-medium">
-                    Motivo de cancelación <span class="text-red-500">*</span>
-                </label>
-                <textarea id="cancelarMotivo" 
-                    pInputTextarea 
-                    [(ngModel)]="cancelarMotivo"
-                    rows="3" 
-                    placeholder="Indique por qué se cancela este mantenimiento..."
-                    class="w-full">
-                </textarea>
-            </div>
-        </div>
-    </ng-template>
-    
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Volver" icon="pi pi-arrow-left" 
-            class="p-button-text" (click)="hideCancelarDialog()"></button>
-        <button pButton pRipple label="Confirmar Cancelación" icon="pi pi-times" 
-            class="p-button-danger" 
-            [disabled]="!cancelarMotivo.trim()"
-            [loading]="accionLoadingId === selectedEjecucion.idEjecucion"
-            (click)="confirmarCancelar()"></button>
-    </ng-template>
-</p-dialog>
+<!-- ==================== DIALOG CANCELAR (ELIMINADO - USO CONFIRMACIÓN DIRECTA) ==================== -->
 
 
 <!-- ==================== DIALOG EDITAR ==================== -->
@@ -492,16 +247,49 @@
         <div class="formgrid grid">
             <!-- Info del contrato y equipo (solo lectura en edición) -->
             <div *ngIf="isEditMode" class="field col-12">
-                <div class="surface-100 border-round p-3">
-                    <div class="flex align-items-center gap-2 mb-2">
-                        <i class="pi pi-file-edit text-primary"></i>
-                        <span class="font-semibold">{{ selectedEjecucion.contratoDescripcion }}</span>
+                <div class="surface-100 border-round-lg p-3 mb-3">
+                    <div class="grid">
+                        <div class="col-12 md:col-6">
+                            <div class="flex align-items-start gap-2 mb-3">
+                                <i class="pi pi-file-edit text-primary mt-1"></i>
+                                <div>
+                                    <small class="text-500 block mb-1">Contrato</small>
+                                    <span class="font-semibold text-900">{{ selectedEjecucion.contratoDescripcion }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 md:col-6">
+                            <div class="flex align-items-start gap-2 mb-3">
+                                <i class="pi pi-building text-primary mt-1"></i>
+                                <div>
+                                    <small class="text-500 block mb-1">Proveedor</small>
+                                    <span class="font-semibold text-900">{{ selectedEjecucion.proveedorNombre }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="flex align-items-start gap-2">
+                                <i class="pi pi-cog text-primary mt-1"></i>
+                                <div>
+                                    <small class="text-500 block mb-1">Equipo</small>
+                                    <span class="font-semibold text-900">{{ selectedEjecucion.equipoNombre }}</span>
+                                    <small class="text-500 block mt-1">{{ selectedEjecucion.equipoCodigo }}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex align-items-center gap-2">
-                        <i class="pi pi-cog text-500"></i>
-                        <span>{{ selectedEjecucion.equipoNombre }}</span>
-                        <span class="text-500">|</span>
-                        <span class="text-500">{{ selectedEjecucion.proveedorNombre }}</span>
+                </div>
+                
+                <div class="p-3 bg-blue-50 border-round border-left-3 border-blue-500 mb-3">
+                    <div class="flex align-items-start gap-2">
+                        <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                        <div>
+                            <p class="m-0 text-sm text-blue-700">
+                                <strong>Nota:</strong> El contrato y equipo no pueden modificarse. 
+                                Para cambiar el estado use los botones específicos (Iniciar, Completar, Cancelar) 
+                                o el modal de Gestión.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -560,36 +348,23 @@
             </div>
             
             <!-- Fecha de ejecución -->
-            <div class="field col-12 md:col-6">
-                <label for="fechaEjecucion" class="font-medium">Fecha Programada <span class="text-red-500">*</span></label>
+            <div class="field col-12">
+                <label for="fechaEjecucion" class="font-medium">
+                    <i class="pi pi-calendar mr-1"></i>
+                    Fecha Programada <span class="text-red-500">*</span>
+                </label>
                 <p-calendar id="fechaEjecucion" 
                     [(ngModel)]="selectedEjecucion.fechaEjecucion"
                     dateFormat="dd/mm/yy"
                     [showIcon]="true"
-                    styleClass="w-full">
+                    [showTime]="false"
+                    styleClass="w-full"
+                    appendTo="body">
                 </p-calendar>
-            </div>
-            
-            <!-- Estado -->
-            <div class="field col-12 md:col-6">
-                <label for="estado" class="font-medium">Estado</label>
-                <p-dropdown id="estado"
-                    [(ngModel)]="selectedEjecucion.estado"
-                    [options]="estadoOptions"
-                    placeholder="Seleccione estado"
-                    styleClass="w-full">
-                </p-dropdown>
-            </div>
-            
-            <!-- Bitácora -->
-            <div class="field col-12">
-                <label for="bitacora" class="font-medium">Bitácora / Observaciones</label>
-                <textarea id="bitacora" 
-                    pInputTextarea 
-                    [(ngModel)]="selectedEjecucion.bitacora"
-                    rows="4" 
-                    placeholder="Descripción del mantenimiento, observaciones, hallazgos...">
-                </textarea>
+                <small *ngIf="isEditMode" class="text-500">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    Modifique si necesita reprogramar la fecha del mantenimiento. Use el modal de Gestión para agregar observaciones.
+                </small>
             </div>
         </div>
     </ng-template>
@@ -605,109 +380,178 @@
 
 
 <!-- ==================== DIALOG DE GESTIÓN (COMENTARIOS + EVIDENCIAS + ESTADOS) ==================== -->
-<p-dialog [(visible)]="showGestionDialog" [style]="{width: '90vw', height: '90vh'}" 
-    header="💬 Gestión de Ejecución" [modal]="true" [maximizable]="true" [draggable]="true" [resizable]="true">
+<p-dialog [(visible)]="showGestionDialog" [style]="{width: '90vw', height: '95vh'}" 
+    header="💬 Gestión de Ejecución" [modal]="true" [maximizable]="true" [draggable]="true" [resizable]="true"
+    [contentStyle]="{'overflow': 'auto', 'padding': '1rem'}">
     
     <ng-template pTemplate="content">
         <div class="gestion-container" *ngIf="ejecucionGestion">
             <!-- HEADER DE LA EJECUCIÓN -->
-            <div class="ejecucion-header mb-4">
-                <div class="surface-100 border-round-lg p-4 shadow-1">
-                    <div class="flex flex-wrap justify-content-between align-items-center gap-3">
-                        <div class="flex align-items-center">
-                            <div class="bg-primary border-circle w-3rem h-3rem flex align-items-center justify-content-center mr-3">
-                                <i class="pi pi-cog text-white text-xl"></i>
+            <div class="ejecucion-header mb-3">
+                <div class="surface-card border-round-lg p-3 shadow-2">
+                    <!-- Primera fila: Equipo y Estados -->
+                    <div class="flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                        <div class="flex align-items-start gap-3 flex-grow-1">
+                            <div class="bg-primary border-circle w-3rem h-3rem flex align-items-center justify-content-center flex-shrink-0">
+                                <i class="pi pi-wrench text-white text-xl"></i>
                             </div>
-                            <div>
-                                <h5 class="m-0 text-primary">{{ ejecucionGestion.equipoNombre }}</h5>
-                                <p class="text-600 mt-1 mb-0">{{ ejecucionGestion.equipoCodigo }}</p>
-                                <small class="text-500">
-                                    <i class="pi pi-calendar mr-1"></i>
-                                    Programado: {{ formatDate(ejecucionGestion.fechaEjecucion) }}
-                                </small>
+                            <div class="flex-grow-1">
+                                <div class="flex align-items-center gap-2 mb-1">
+                                    <h5 class="m-0 text-primary">{{ ejecucionGestion.equipoNombre }}</h5>
+                                    <p-tag [value]="getEstadoLabel(ejecucionGestion.estado)" 
+                                           [severity]="getEstadoSeverity(ejecucionGestion.estado)" 
+                                           [rounded]="true" class="text-xs"></p-tag>
+                                    <p-tag *ngIf="ejecucionGestion.tipoMantenimiento"
+                                           [value]="ejecucionGestion.tipoMantenimiento" 
+                                           [severity]="getTipoSeverity(ejecucionGestion.tipoMantenimiento)" 
+                                           [rounded]="true" class="text-xs"></p-tag>
+                                </div>
+                                
+                                <div class="grid mt-2">
+                                    <div class="col-12 md:col-6 lg:col-3">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-tag text-500"></i>
+                                            <div>
+                                                <small class="text-500 block">Código</small>
+                                                <span class="text-900 font-medium text-sm">{{ ejecucionGestion.equipoCodigo }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6 lg:col-3">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-calendar text-500"></i>
+                                            <div>
+                                                <small class="text-500 block">Fecha Programada</small>
+                                                <span class="text-900 font-medium text-sm">{{ formatDate(ejecucionGestion.fechaEjecucion) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6 lg:col-3" *ngIf="ejecucionGestion.fechaEjecucionReal">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-check-circle text-500"></i>
+                                            <div>
+                                                <small class="text-500 block">Fecha Ejecutada</small>
+                                                <span class="text-900 font-medium text-sm">{{ formatDate(ejecucionGestion.fechaEjecucionReal) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 md:col-6 lg:col-3" *ngIf="ejecucionGestion.tecnicoResponsable">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-user text-500"></i>
+                                            <div>
+                                                <small class="text-500 block">Técnico</small>
+                                                <span class="text-900 font-medium text-sm">{{ ejecucionGestion.tecnicoResponsable }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex flex-column align-items-end gap-2">
-                            <p-tag [value]="getEstadoLabel(ejecucionGestion.estado)" 
-                                   [severity]="getEstadoSeverity(ejecucionGestion.estado)" 
-                                   [rounded]="true" class="text-sm"></p-tag>
-                            <p-tag *ngIf="ejecucionGestion.tipoMantenimiento"
-                                   [value]="ejecucionGestion.tipoMantenimiento" 
-                                   [severity]="getTipoSeverity(ejecucionGestion.tipoMantenimiento)" 
-                                   [rounded]="true" class="text-sm"></p-tag>
+                    </div>
+
+                    <!-- Segunda fila: Mensaje informativo -->
+                    <div class="surface-50 border-round p-2">
+                        <div class="flex align-items-center gap-2">
+                            <i class="pi pi-info-circle text-blue-500"></i>
+                            <p class="m-0 text-sm text-700">
+                                <strong>Importante:</strong> Puede agregar comentarios de seguimiento, cambiar el estado del mantenimiento y 
+                                <strong class="text-primary">subir evidencias fotográficas o documentos</strong> que respalden la ejecución 
+                                (formatos: PDF, Word, Excel, imágenes).
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- OBSERVACIONES EDITABLES -->
+            <div class="mb-3">
+                <div class="surface-card border-round-lg shadow-1">
+                    <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
+                        <div class="flex align-items-center justify-content-between">
+                            <div class="flex align-items-center">
+                                <i class="pi pi-book text-purple-500 mr-2"></i>
+                                <h6 class="m-0 text-sm">Observaciones / Bitácora</h6>
+                            </div>
+                            <button pButton icon="pi pi-save" label="Guardar" class="p-button-sm p-button-success"
+                                    (click)="guardarObservaciones()"
+                                    pTooltip="Guardar cambios en observaciones"></button>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <textarea pInputTextarea [(ngModel)]="ejecucionGestion.bitacora" rows="3" 
+                                  placeholder="Agregue observaciones, hallazgos, recomendaciones sobre la ejecución..." 
+                                  class="w-full"></textarea>
+                        <small class="text-500">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Las observaciones se almacenan en la bitácora general de la ejecución.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOS COLUMNAS -->
             <div class="grid">
                 <!-- PANEL DE COMENTARIOS -->
                 <div class="col-12 lg:col-7">
                     <div class="surface-card border-round-lg shadow-1 h-full">
-                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                        <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
                             <div class="flex align-items-center">
                                 <i class="pi pi-comments text-primary mr-2"></i>
-                                <h6 class="m-0">Historial de Seguimiento</h6>
+                                <h6 class="m-0 text-sm">Historial de Seguimiento</h6>
                                 <p-badge [value]="comentarios.length.toString()" severity="info" class="ml-2"></p-badge>
                             </div>
                         </div>
                         
-                        <div class="p-3">
-                            <div class="comentarios-scroll" style="max-height: 400px; overflow-y: auto; padding-right: 8px;">
-                                <!-- ESTADO VACÍO -->
-                                <div *ngIf="comentarios.length === 0 && !loadingComentarios" class="text-center py-6">
-                                    <div class="surface-100 border-circle w-6rem h-6rem flex align-items-center justify-content-center mx-auto mb-3">
-                                        <i class="pi pi-comment text-4xl text-400"></i>
-                                    </div>
-                                    <h6 class="text-600">No hay comentarios</h6>
-                                    <p class="text-500 text-sm m-0">Agregue el primer comentario de seguimiento</p>
+                        <!-- Área de scroll de comentarios -->
+                        <div class="p-3" style="max-height: 350px; overflow-y: auto;">
+                            <!-- ESTADO VACÍO -->
+                            <div *ngIf="comentarios.length === 0 && !loadingComentarios" class="text-center py-4">
+                                <div class="surface-100 border-circle w-4rem h-4rem flex align-items-center justify-content-center mx-auto mb-2">
+                                    <i class="pi pi-comment text-3xl text-400"></i>
                                 </div>
+                                <h6 class="text-600 m-0">No hay comentarios</h6>
+                                <p class="text-500 text-sm m-0">Agregue el primer comentario</p>
+                            </div>
 
-                                <!-- LOADING -->
-                                <div *ngIf="loadingComentarios" class="text-center py-6">
-                                    <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-                                    <p class="text-500 mt-2">Cargando comentarios...</p>
-                                </div>
+                            <!-- LOADING -->
+                            <div *ngIf="loadingComentarios" class="text-center py-4">
+                                <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+                                <p class="text-500 mt-2 m-0">Cargando...</p>
+                            </div>
 
-                                <!-- COMENTARIOS -->
-                                <div *ngFor="let comentario of comentarios; let i = index" class="comentario-card mb-3">
-                                    <div class="surface-50 border-round-lg p-3 border-left-3 border-primary shadow-1">
-                                        <!-- Header del comentario -->
-                                        <div class="flex justify-content-between align-items-start mb-2">
-                                            <div class="flex align-items-center">
-                                                <div class="bg-primary-reverse border-circle w-2rem h-2rem flex align-items-center justify-content-center mr-2">
-                                                    <i class="pi pi-user text-primary text-sm"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-bold text-primary text-sm">{{ comentario.usuario || 'Sistema' }}</div>
-                                                    <small class="text-500">
-                                                        <i class="pi pi-clock mr-1"></i>
-                                                        {{ comentario.fechaCreacion | date:'short' }}
-                                                    </small>
-                                                </div>
+                            <!-- COMENTARIOS -->
+                            <div *ngFor="let comentario of comentarios; let i = index" class="comentario-card mb-3">
+                                <div class="surface-50 border-round-lg p-3 border-left-3 border-primary shadow-1">
+                                    <div class="flex justify-content-between align-items-start mb-2">
+                                        <div class="flex align-items-center">
+                                            <div class="bg-primary-reverse border-circle w-2rem h-2rem flex align-items-center justify-content-center mr-2">
+                                                <i class="pi pi-user text-primary text-sm"></i>
                                             </div>
-                                            <p-tag [value]="comentario.tipoComentario" 
-                                                   [severity]="getTipoComentarioSeverity(comentario.tipoComentario)"
-                                                   [rounded]="true" class="text-xs"></p-tag>
+                                            <div>
+                                                <div class="font-bold text-primary text-sm">{{ comentario.usuario || 'Sistema' }}</div>
+                                                <small class="text-500">
+                                                    <i class="pi pi-clock mr-1"></i>
+                                                    {{ getFechaComentario(comentario.fechaCreacion) }}
+                                                </small>
+                                            </div>
                                         </div>
-                                        
-                                        <!-- Contenido del comentario -->
-                                        <div class="comment-content">
-                                            <p class="line-height-3 text-700 m-0">{{ comentario.comentario }}</p>
-                                            
-                                            <!-- MOSTRAR CAMBIO DE ESTADO SI EXISTE -->
-                                            <div *ngIf="comentario.estadoAnterior && comentario.estadoNuevo" class="mt-3 p-2 surface-200 border-round">
-                                                <div class="flex align-items-center text-sm flex-wrap gap-2">
-                                                    <i class="pi pi-arrow-right text-orange-500"></i>
-                                                    <span class="text-600">Estado cambió de</span>
-                                                    <p-tag [value]="getEstadoLabel(comentario.estadoAnterior)" 
-                                                           [severity]="getEstadoSeverity(comentario.estadoAnterior)" 
-                                                           [rounded]="true" class="text-xs"></p-tag>
-                                                    <span class="text-600">a</span>
-                                                    <p-tag [value]="getEstadoLabel(comentario.estadoNuevo)" 
-                                                           [severity]="getEstadoSeverity(comentario.estadoNuevo)" 
-                                                           [rounded]="true" class="text-xs"></p-tag>
-                                                </div>
+                                        <p-tag [value]="comentario.tipoComentario" 
+                                               [severity]="getTipoComentarioSeverity(comentario.tipoComentario)"
+                                               [rounded]="true" class="text-xs"></p-tag>
+                                    </div>
+                                    <div class="comment-content">
+                                        <div class="line-height-3 text-700 m-0" [innerHTML]="renderComentarioConEnlaces(comentario.comentario)"></div>
+                                        <div *ngIf="comentario.estadoAnterior && comentario.estadoNuevo" class="mt-2 p-2 surface-200 border-round">
+                                            <div class="flex align-items-center text-sm flex-wrap gap-2">
+                                                <i class="pi pi-arrow-right text-orange-500"></i>
+                                                <span class="text-600">Estado:</span>
+                                                <p-tag [value]="getEstadoLabel(comentario.estadoAnterior)" 
+                                                       [severity]="getEstadoSeverity(comentario.estadoAnterior)" 
+                                                       [rounded]="true" class="text-xs"></p-tag>
+                                                <i class="pi pi-arrow-right"></i>
+                                                <p-tag [value]="getEstadoLabel(comentario.estadoNuevo)" 
+                                                       [severity]="getEstadoSeverity(comentario.estadoNuevo)" 
+                                                       [rounded]="true" class="text-xs"></p-tag>
                                             </div>
                                         </div>
                                     </div>
@@ -717,136 +561,106 @@
                     </div>
                 </div>
 
-                <!-- PANEL DE AGREGAR COMENTARIO -->
+                <!-- PANEL DERECHO: NUEVO COMENTARIO, ESTADO Y EVIDENCIAS -->
                 <div class="col-12 lg:col-5">
+                    <!-- NUEVO COMENTARIO -->
                     <div class="surface-card border-round-lg shadow-1 mb-3">
-                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                        <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
                             <div class="flex align-items-center">
                                 <i class="pi pi-plus-circle text-green-500 mr-2"></i>
-                                <h6 class="m-0">Nuevo Comentario</h6>
+                                <h6 class="m-0 text-sm">Nuevo Comentario</h6>
                             </div>
                         </div>
-                        
-                        <div class="p-4">
-                            <!-- CAMBIO DE ESTADO -->
-                            <div class="field mb-3">
-                                <label for="nuevoEstado" class="block text-900 font-medium mb-2">
-                                    <i class="pi pi-refresh mr-1"></i>
-                                    Cambiar Estado (Opcional)
-                                </label>
-                                <p-dropdown id="nuevoEstado"
-                                            [(ngModel)]="nuevoEstadoSeleccionado" 
-                                            [options]="estadosEdicion" 
-                                            placeholder="Mantener estado actual"
-                                            [showClear]="true"
-                                            styleClass="w-full">
-                                    <ng-template pTemplate="selectedItem" let-option>
-                                        <div class="flex align-items-center" *ngIf="option">
-                                            <p-tag [value]="getEstadoLabel(option)" 
-                                                   [severity]="getEstadoSeverity(option)" 
-                                                   [rounded]="true" class="mr-2"></p-tag>
-                                        </div>
-                                    </ng-template>
-                                    <ng-template pTemplate="item" let-option>
-                                        <div class="flex align-items-center">
-                                            <p-tag [value]="getEstadoLabel(option)" 
-                                                   [severity]="getEstadoSeverity(option)" 
-                                                   [rounded]="true" class="mr-2"></p-tag>
-                                        </div>
-                                    </ng-template>
-                                </p-dropdown>
-                            </div>
-
-                            <!-- TIPO DE COMENTARIO -->
-                            <div class="field mb-3">
-                                <label for="tipoComentario" class="block text-900 font-medium mb-2">
-                                    <i class="pi pi-tag mr-1"></i>
-                                    Tipo de Comentario
-                                </label>
-                                <p-dropdown id="tipoComentario"
-                                            [(ngModel)]="tipoComentarioSeleccionado" 
+                        <div class="p-3">
+                            <div class="field mb-2">
+                                <label class="block text-900 font-medium mb-1 text-sm"><i class="pi pi-tag mr-1"></i>Tipo</label>
+                                <p-dropdown [(ngModel)]="tipoComentarioSeleccionado" 
                                             [options]="tiposComentario" 
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            placeholder="Seleccionar tipo"
-                                            styleClass="w-full">
+                                            optionLabel="label" optionValue="value"
+                                            placeholder="Seleccionar tipo" styleClass="w-full">
                                     <ng-template pTemplate="selectedItem" let-option>
-                                        <div class="flex align-items-center" *ngIf="option">
-                                            <p-tag [value]="option.label || option" 
-                                                   [severity]="getTipoComentarioSeverity(option.value || option)" 
-                                                   [rounded]="true" class="mr-2"></p-tag>
-                                        </div>
+                                        <p-tag *ngIf="option" [value]="option.label || option" 
+                                               [severity]="getTipoComentarioSeverity(option.value || option)" [rounded]="true"></p-tag>
                                     </ng-template>
                                     <ng-template pTemplate="item" let-option>
-                                        <div class="flex align-items-center">
-                                            <p-tag [value]="option.label" 
-                                                   [severity]="getTipoComentarioSeverity(option.value)" 
-                                                   [rounded]="true" class="mr-2"></p-tag>
-                                        </div>
+                                        <p-tag [value]="option.label" [severity]="getTipoComentarioSeverity(option.value)" [rounded]="true"></p-tag>
                                     </ng-template>
                                 </p-dropdown>
                             </div>
-
-                            <!-- TEXTO DEL COMENTARIO -->
-                            <div class="field mb-3">
-                                <label for="comentarioTexto" class="block text-900 font-medium mb-2">
-                                    <i class="pi pi-pencil mr-1"></i>
-                                    Comentario *
-                                </label>
-                                <textarea pInputTextarea 
-                                          id="comentarioTexto" 
-                                          [(ngModel)]="nuevoComentario" 
-                                          rows="4" 
-                                          placeholder="Escribe tu comentario aquí..."
-                                          class="w-full"
-                                          [autoResize]="true"></textarea>
-                                <small class="text-500">{{ (nuevoComentario || '').length }} caracteres</small>
+                            <div class="field mb-2">
+                                <label class="block text-900 font-medium mb-1 text-sm"><i class="pi pi-pencil mr-1"></i>Comentario *</label>
+                                <textarea pInputTextarea [(ngModel)]="nuevoComentario" rows="2" 
+                                          placeholder="Escribe tu comentario..." class="w-full"></textarea>
                             </div>
-
-                            <!-- BOTÓN DE AGREGAR -->
                             <div class="flex justify-content-end">
-                                <button pButton pRipple 
-                                        label="Agregar Comentario" 
-                                        icon="pi pi-send" 
-                                        class="p-button-primary"
+                                <button pButton label="Agregar" icon="pi pi-send" class="p-button-primary p-button-sm"
                                         (click)="agregarComentario()"
-                                        [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)">
-                                </button>
+                                        [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)"></button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- SECCIÓN DE EVIDENCIAS -->
-                    <div class="surface-card border-round-lg shadow-1">
-                        <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
-                            <div class="flex align-items-center justify-content-between">
-                                <div class="flex align-items-center">
-                                    <i class="pi pi-paperclip text-orange-500 mr-2"></i>
-                                    <h6 class="m-0">Evidencias</h6>
-                                    <p-badge [value]="evidencias.length.toString()" severity="warning" class="ml-2"></p-badge>
-                                </div>
+                    <!-- CAMBIO DE ESTADO -->
+                    <div class="surface-card border-round-lg shadow-1 mb-3">
+                        <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
+                            <div class="flex align-items-center">
+                                <i class="pi pi-refresh text-orange-500 mr-2"></i>
+                                <h6 class="m-0 text-sm">Cambiar Estado</h6>
                             </div>
                         </div>
-                        
                         <div class="p-3">
-                            <!-- Upload de archivos -->
-                            <div class="mb-3">
-                                <p-fileUpload mode="basic" 
+                            <div class="flex gap-2 align-items-center">
+                                <p-dropdown [(ngModel)]="nuevoEstadoSeleccionado" 
+                                            [options]="estadosEdicion" 
+                                            placeholder="Seleccionar estado" [showClear]="true" styleClass="flex-grow-1">
+                                    <ng-template pTemplate="selectedItem" let-option>
+                                        <p-tag *ngIf="option" [value]="getEstadoLabel(option)" 
+                                               [severity]="getEstadoSeverity(option)" [rounded]="true"></p-tag>
+                                    </ng-template>
+                                    <ng-template pTemplate="item" let-option>
+                                        <p-tag [value]="getEstadoLabel(option)" [severity]="getEstadoSeverity(option)" [rounded]="true"></p-tag>
+                                    </ng-template>
+                                </p-dropdown>
+                                <button pButton icon="pi pi-refresh" class="p-button-warning p-button-sm"
+                                        (click)="cambiarEstadoGestion()"
+                                        [disabled]="!nuevoEstadoSeleccionado || nuevoEstadoSeleccionado === ejecucionGestion?.estado"
+                                        pTooltip="Cambiar"></button>
+                            </div>
+                            <small class="text-500 mt-2 block">
+                                <i class="pi pi-info-circle mr-1"></i>
+                                Estado actual: <p-tag [value]="getEstadoLabel(ejecucionGestion?.estado || '')" [severity]="getEstadoSeverity(ejecucionGestion?.estado || '')" [rounded]="true" class="text-xs"></p-tag>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- EVIDENCIAS -->
+                    <div class="surface-card border-round-lg shadow-1">
+                        <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
+                            <div class="flex align-items-center justify-content-between">
+                                <div class="flex align-items-center">
+                                    <i class="pi pi-paperclip text-blue-500 mr-2"></i>
+                                    <h6 class="m-0 text-sm">Evidencias</h6>
+                                    <p-badge [value]="evidencias.length.toString()" severity="warning" class="ml-2"></p-badge>
+                                </div>
+                                <p-fileUpload #fileUploadGestion
+                                              mode="basic" 
                                               [multiple]="true" 
                                               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                                               [maxFileSize]="10000000"
-                                              chooseLabel="Subir Archivos"
+                                              chooseLabel="Subir"
                                               chooseIcon="pi pi-upload"
                                               (uploadHandler)="subirEvidenciaGestion($event)"
                                               [auto]="true"
                                               [customUpload]="true"
-                                              styleClass="w-full">
+                                              class="p-button-sm">
                                 </p-fileUpload>
-                                <p-progressBar *ngIf="uploading" [value]="uploadProgress" [showValue]="true" class="mt-2"></p-progressBar>
                             </div>
-
+                        </div>
+                        <div class="p-3">
+                            <p-progressBar *ngIf="uploading" [value]="uploadProgress" [showValue]="true" class="mb-2"></p-progressBar>
+                            
                             <!-- Lista de evidencias -->
-                            <div *ngIf="evidencias.length > 0" class="evidencias-list" style="max-height: 200px; overflow-y: auto;">
+                            <div *ngIf="evidencias.length > 0" class="evidencias-list" style="max-height: 150px; overflow-y: auto;">
                                 <div *ngFor="let evidencia of evidencias" 
                                      class="flex align-items-center justify-content-between p-2 surface-50 border-round mb-2">
                                     <div class="flex align-items-center min-w-0 flex-grow-1">
@@ -858,20 +672,18 @@
                                     </div>
                                     <div class="flex-shrink-0 flex gap-1">
                                         <button pButton pRipple icon="pi pi-download" 
-                                                class="p-button-rounded p-button-text p-button-sm"
-                                                (click)="downloadEvidencia(evidencia)"
-                                                pTooltip="Descargar"></button>
+                                                class="p-button-rounded p-button-text p-button-sm p-button-info"
+                                                (click)="downloadEvidencia(evidencia)" pTooltip="Descargar"></button>
                                         <button pButton pRipple icon="pi pi-trash" 
-                                                class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                                (click)="deleteEvidencia(evidencia)"
-                                                pTooltip="Eliminar"></button>
+                                                class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                                                (click)="deleteEvidencia(evidencia)" pTooltip="Eliminar"></button>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div *ngIf="evidencias.length === 0" class="text-center py-3">
-                                <i class="pi pi-folder-open text-3xl text-400"></i>
-                                <p class="text-500 text-sm m-0 mt-2">Sin evidencias adjuntas</p>
+                            <div *ngIf="evidencias.length === 0" class="text-center py-2">
+                                <i class="pi pi-folder-open text-2xl text-400"></i>
+                                <p class="text-500 text-sm m-0 mt-1">Sin evidencias</p>
                             </div>
                         </div>
                     </div>

@@ -51,7 +51,7 @@ export class KeycloakService {
     // Renovar token cada 5 minutos si expira en menos de 10 minutos
     setInterval(() => {
       if (this.isLoggedIn() && !this.isTokenExpired(600)) { // 10 minutos
-        this.updateToken(300).then((refreshed) => { // Renovar si expira en 5 minutos
+        this.updateToken(300).then((refreshed) => {
           if (refreshed) {
             console.log('[Keycloak Real] Token renovado automáticamente');
           }
@@ -62,7 +62,7 @@ export class KeycloakService {
     }, 300000); // Cada 5 minutos
 
     // Renovar token cuando la pestaña vuelve a estar activa
-    // Esto soluciona el problema de que setInterval no se ejecuta cuando la pestaña está en segundo plano
+    // Solo mostrar mensaje de sesión expirada si realmente ya no está autenticado
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.keycloakInstance?.authenticated) {
         console.log('[Keycloak] Pestaña activa, verificando token...');
@@ -73,13 +73,17 @@ export class KeycloakService {
             console.log('[Keycloak] Token aún válido');
           }
         }).catch((error) => {
-          console.error('[Keycloak] Error al renovar token (sesión expirada):', error);
-          // Notificar que la sesión expiró
-          this.sessionExpired$.next(true);
-          // Dar tiempo para que el interceptor muestre el mensaje
-          setTimeout(() => {
-            this.login();
-          }, 2500);
+          // Solo notificar si realmente la sesión expiró
+          if (!this.isLoggedIn() || this.isTokenExpired()) {
+            console.error('[Keycloak] Sesión expirada, redirigiendo a login:', error);
+            this.sessionExpired$.next(true);
+            setTimeout(() => {
+              this.login();
+            }, 2500);
+          } else {
+            // Si no está expirada, solo loguear el error
+            console.error('[Keycloak] Error al renovar token (pero sesión sigue activa):', error);
+          }
         });
       }
     });

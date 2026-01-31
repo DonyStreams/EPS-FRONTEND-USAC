@@ -1,12 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
 import { TicketsService, Ticket, ComentarioTicketResponse, EvidenciaTicket } from '../../../service/tickets.service';
 import { EquiposService } from '../../../service/equipos.service';
 import { UsuariosService, Usuario } from '../../../service/usuarios.service';
 import { KeycloakService } from '../../../service/keycloak.service';
 import { Equipo } from '../../../api/equipos';
 import { FileUpload } from 'primeng/fileupload';
+import { Menu } from 'primeng/menu';
 
 @Component({
     selector: 'app-tickets',
@@ -16,6 +17,11 @@ import { FileUpload } from 'primeng/fileupload';
 export class TicketsComponent implements OnInit {
 
     @ViewChild('fileUploadEvidencia') fileUploadEvidencia?: FileUpload;
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    ticketSeleccionadoMenu: Ticket | null = null;
 
     // Datos principales
     tickets: Ticket[] = [];
@@ -33,7 +39,7 @@ export class TicketsComponent implements OnInit {
     
     // Opciones para dropdowns
     estados: string[] = ['Abierto', 'Asignado', 'En Proceso', 'Resuelto', 'Cerrado'];
-    estadosEdicion: string[] = ['Abierto', 'Asignado', 'En Proceso', 'Resuelto', 'Cerrado', 'Inactivo'];
+    estadosEdicion: string[] = ['Abierto', 'Asignado', 'En Proceso', 'Resuelto', 'Cerrado'];
     prioridades: string[] = ['Baja', 'Media', 'Alta', 'Crítica'];
     
     // Modal nuevo ticket
@@ -295,6 +301,151 @@ export class TicketsComponent implements OnInit {
                     severity: 'error',
                     summary: 'Error',
                     detail: errorMessage
+                });
+            }
+        });
+    }
+
+    /**
+     * Abre el menú contextual de acciones para un ticket
+     */
+    openAccionesMenu(event: Event, ticket: Ticket): void {
+        this.ticketSeleccionadoMenu = ticket;
+        
+        this.accionesMenuItems = [
+            {
+                label: 'Gestionar',
+                icon: 'pi pi-comments',
+                command: () => this.verComentarios(ticket)
+            },
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => this.editarTicket(ticket)
+            },
+            { separator: true },
+            {
+                label: 'Iniciar Trabajo',
+                icon: 'pi pi-play',
+                visible: ticket.estado === 'Abierto' || ticket.estado === 'Asignado',
+                command: () => this.cambiarEstadoDirecto(ticket, 'En Proceso')
+            },
+            {
+                label: 'Marcar Resuelto',
+                icon: 'pi pi-check',
+                visible: ticket.estado === 'En Proceso',
+                command: () => this.cambiarEstadoDirecto(ticket, 'Resuelto')
+            },
+            {
+                label: 'Cerrar Ticket',
+                icon: 'pi pi-lock',
+                visible: ticket.estado === 'Resuelto',
+                command: () => this.cambiarEstadoDirecto(ticket, 'Cerrado')
+            },
+            { separator: true },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                command: () => this.confirmarEliminarTicket(ticket)
+            }
+        ];
+        
+        this.menuAcciones.toggle(event);
+    }
+
+    /**
+     * Cambia el estado de un ticket directamente desde el menú
+     */
+    cambiarEstadoDirecto(ticket: Ticket, nuevoEstado: string): void {
+        this.confirmationService.confirm({
+            message: `¿Cambiar el ticket a <strong>${nuevoEstado}</strong>?`,
+            header: 'Confirmar cambio de estado',
+            icon: 'pi pi-refresh',
+            acceptLabel: 'Sí, Cambiar',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                const estadoAnterior = ticket.estado;
+                const ticketActualizado: Partial<Ticket> = {
+                    ...ticket,
+                    estado: nuevoEstado as 'Abierto' | 'Asignado' | 'En Proceso' | 'Resuelto' | 'Cerrado'
+                };
+
+                this.ticketsService.update(ticket.id!, ticketActualizado).subscribe({
+                    next: () => {
+                        // Crear comentario automático de cambio de estado
+                        this.ticketsService.addComentario(ticket.id!, {
+                            comentario: `Estado cambiado de ${estadoAnterior} a ${nuevoEstado}`,
+                            tipoComentario: 'Seguimiento',
+                            estadoAnterior: estadoAnterior,
+                            nuevoEstado: nuevoEstado
+                        }).subscribe();
+
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Estado actualizado',
+                            detail: `El ticket ahora está ${nuevoEstado}`
+                        });
+                        this.cargarDatos();
+                    },
+                    error: (error) => {
+                        console.error('Error al cambiar estado:', error);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'No se pudo cambiar el estado'
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Cambia el estado rápidamente desde el modal de comentarios
+     */
+    cambiarEstadoRapido(): void {
+        if (!this.ticketSeleccionado?.id || !this.nuevoEstadoSeleccionado || this.nuevoEstadoSeleccionado === this.ticketSeleccionado.estado) {
+            return;
+        }
+
+        const estadoAnterior = this.ticketSeleccionado.estado;
+        const ticketActualizado: Partial<Ticket> = {
+            ...this.ticketSeleccionado,
+            estado: this.nuevoEstadoSeleccionado as 'Abierto' | 'Asignado' | 'En Proceso' | 'Resuelto' | 'Cerrado'
+        };
+
+        this.ticketsService.update(this.ticketSeleccionado.id, ticketActualizado).subscribe({
+            next: () => {
+                // Crear comentario automático de cambio de estado
+                this.ticketsService.addComentario(this.ticketSeleccionado!.id!, {
+                    comentario: `Estado cambiado de ${estadoAnterior} a ${this.nuevoEstadoSeleccionado}`,
+                    tipoComentario: 'Seguimiento',
+                    estadoAnterior: estadoAnterior,
+                    nuevoEstado: this.nuevoEstadoSeleccionado
+                }).subscribe({
+                    next: () => {
+                        this.cargarComentarios(this.ticketSeleccionado!.id!);
+                    }
+                });
+
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Estado actualizado',
+                    detail: `El ticket ahora está ${this.nuevoEstadoSeleccionado}`
+                });
+                
+                // Actualizar el estado localmente
+                this.ticketSeleccionado!.estado = this.nuevoEstadoSeleccionado as 'Abierto' | 'Asignado' | 'En Proceso' | 'Resuelto' | 'Cerrado';
+                this.nuevoEstadoSeleccionado = '';
+                this.cargarDatos();
+            },
+            error: (error) => {
+                console.error('Error al cambiar estado:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo cambiar el estado'
                 });
             }
         });
@@ -761,6 +912,11 @@ export class TicketsComponent implements OnInit {
             this.ticketEditando.equipoId = this.equipoSeleccionado.idEquipo;
         }
 
+        // Guardar prioridad anterior para detectar cambio a crítica
+        const ticketOriginal = this.tickets.find(t => t.id === this.ticketEditando.id);
+        const prioridadAnterior = ticketOriginal?.prioridad;
+        const esCambioCritico = this.ticketEditando.prioridad === 'Crítica' && prioridadAnterior !== 'Crítica';
+
         const payload: Partial<Ticket> = {
             ...this.ticketEditando,
             equipoId: this.ticketEditando.equipoId ? Number(this.ticketEditando.equipoId) : undefined,
@@ -778,6 +934,19 @@ export class TicketsComponent implements OnInit {
                     summary: 'Éxito',
                     detail: 'Ticket actualizado correctamente'
                 });
+                
+                // Mostrar mensaje adicional si se cambió a prioridad crítica
+                if (esCambioCritico) {
+                    setTimeout(() => {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: '📧 Notificación Enviada',
+                            detail: 'Se ha enviado un correo de alerta por prioridad CRÍTICA',
+                            life: 5000
+                        });
+                    }, 500);
+                }
+                
                 this.dialogEditarTicket = false;
                 this.cargarDatos(); // Recargar la lista
             },
@@ -1024,6 +1193,173 @@ export class TicketsComponent implements OnInit {
     }
 
     /**
+     * Sube evidencia directamente desde el file upload (sin modal previo)
+     */
+    subirEvidenciaDirecta(event: any): void {
+        if (!this.ticketSeleccionado?.id) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Debe seleccionar un ticket primero'
+            });
+            return;
+        }
+
+        const files = event.files;
+        if (!files || files.length === 0) {
+            return;
+        }
+
+        const ticketId = this.ticketSeleccionado.id;
+        let archivosSubidos = 0;
+        let errores = 0;
+
+        this.subiendoEvidencias = true;
+
+        const nombresArchivos: string[] = [];
+        
+        files.forEach((file: File) => {
+            this.ticketsService.uploadEvidenciaArchivo(ticketId, file, '').subscribe({
+                next: (response) => {
+                    console.log('✅ Archivo subido:', response);
+                    archivosSubidos++;
+                    nombresArchivos.push(file.name);
+                    
+                    if (archivosSubidos + errores === files.length) {
+                        this.finalizarSubidaDirecta(archivosSubidos, errores, event, nombresArchivos);
+                    }
+                },
+                error: (error) => {
+                    console.error('❌ Error al subir evidencia:', error);
+                    errores++;
+                    
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error al subir archivo',
+                        detail: `${file.name}: ${error.error?.error || error.message || 'Error desconocido'}`
+                    });
+                    
+                    if (archivosSubidos + errores === files.length) {
+                        this.finalizarSubidaDirecta(archivosSubidos, errores, event, nombresArchivos);
+                    }
+                }
+            });
+        });
+    }
+
+    private finalizarSubidaDirecta(exitosos: number, errores: number, event: any, nombresArchivos: string[] = []): void {
+        this.subiendoEvidencias = false;
+        
+        console.log('🏁 finalizarSubidaDirecta:', { exitosos, errores, nombresArchivos });
+        
+        // Limpiar el componente de upload
+        if (event.files) {
+            event.files.length = 0;
+        }
+
+        if (exitosos > 0 && errores === 0) {
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `${exitosos} archivo(s) subido(s) correctamente`
+            });
+            this.cargarEvidencias(this.ticketSeleccionado!.id!);
+            
+            // Agregar comentario automático de evidencia subida
+            if (nombresArchivos.length > 0) {
+                this.agregarComentarioEvidencia('subida', nombresArchivos);
+            }
+            
+        } else if (exitosos > 0 && errores > 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Parcialmente completado',
+                detail: `${exitosos} archivo(s) subido(s), ${errores} error(es)`
+            });
+            this.cargarEvidencias(this.ticketSeleccionado!.id!);
+            
+            // Agregar comentario automático de evidencia subida
+            if (nombresArchivos.length > 0) {
+                this.agregarComentarioEvidencia('subida', nombresArchivos);
+            }
+        }
+    }
+
+    /**
+     * Agrega un comentario automático cuando se sube o elimina una evidencia
+     */
+    private agregarComentarioEvidencia(accion: 'subida' | 'eliminada', archivos: string[]): void {
+        // Filtrar archivos vacíos, undefined y limpiar caracteres problemáticos
+        const archivosValidos = archivos
+            .filter(a => a && a.trim().length > 0)
+            .map(a => a.replace(/["'\\]/g, '').trim()) // Eliminar comillas y backslashes
+            .filter(a => a.length > 0);
+        
+        console.log('📝 agregarComentarioEvidencia llamado:', { accion, archivos, archivosValidos, ticketId: this.ticketSeleccionado?.id });
+        
+        if (!this.ticketSeleccionado?.id || archivosValidos.length === 0) {
+            console.log('⚠️ No se puede agregar comentario: ticketId o archivos vacíos');
+            return;
+        }
+
+        const archivosTexto = archivosValidos.length === 1 
+            ? archivosValidos[0]
+            : archivosValidos.join(', ');
+        
+        // Agregar timestamp para hacer el comentario único y evitar validación anti-spam
+        const hora = new Date().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        // Construir comentario sin caracteres que puedan romper JSON
+        const comentario = accion === 'subida'
+            ? `Evidencia adjuntada (${hora}) - ${archivosTexto}`
+            : `Evidencia eliminada (${hora}) - ${archivosTexto}`;
+
+        console.log('📝 Enviando comentario:', comentario);
+
+        this.ticketsService.addComentario(this.ticketSeleccionado.id, {
+            comentario: comentario,
+            tipoComentario: 'Seguimiento'
+        }).subscribe({
+            next: (response) => {
+                console.log('✅ Comentario de evidencia agregado:', response);
+                this.cargarComentarios(this.ticketSeleccionado!.id!);
+            },
+            error: (error) => {
+                console.error('❌ Error al agregar comentario de evidencia:', error);
+            }
+        });
+    }
+
+    /**
+     * Obtiene el ícono según el tipo de archivo
+     */
+    getFileIconTicket(evidencia: any): string {
+        const nombre = evidencia.nombreOriginal || evidencia.nombreArchivo || evidencia.descripcion || '';
+        if (!nombre) {
+            return 'pi pi-file text-gray-500';
+        }
+        const ext = nombre.toLowerCase().split('.').pop();
+        switch (ext) {
+            case 'pdf':
+                return 'pi pi-file-pdf text-red-500';
+            case 'doc':
+            case 'docx':
+                return 'pi pi-file-word text-blue-500';
+            case 'xls':
+            case 'xlsx':
+                return 'pi pi-file-excel text-green-500';
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'gif':
+            case 'webp':
+                return 'pi pi-image text-purple-500';
+            default:
+                return 'pi pi-file text-gray-500';
+        }
+    }
+
+    /**
      * Sube una nueva evidencia al ticket
      */
     subirEvidencia(): void {
@@ -1125,6 +1461,8 @@ export class TicketsComponent implements OnInit {
         if (!this.ticketSeleccionado?.id) {
             return;
         }
+        const nombreArchivo = evidencia.nombreOriginal || evidencia.nombreArchivo || evidencia.descripcion || 'archivo';
+        
         this.confirmationService.confirm({
             message: '¿Está seguro de eliminar esta evidencia?',
             header: 'Confirmar',
@@ -1138,6 +1476,9 @@ export class TicketsComponent implements OnInit {
                             detail: 'Evidencia eliminada correctamente'
                         });
                         this.cargarEvidencias(this.ticketSeleccionado!.id!);
+                        
+                        // Agregar comentario automático de evidencia eliminada
+                        this.agregarComentarioEvidencia('eliminada', [nombreArchivo]);
                     },
                     error: (error) => {
                         console.error('❌ Error al eliminar evidencia:', error);

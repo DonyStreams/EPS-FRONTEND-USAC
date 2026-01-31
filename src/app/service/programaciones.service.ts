@@ -216,4 +216,13 @@ export class ProgramacionesService {
     }> {
         return this.http.get<any>(`${this.apiUrl}/programaciones/metricas`);
     }
+
+    /**
+     * Elimina múltiples registros del historial de programaciones
+     */
+    deleteHistorialMultiple(ids: number[]): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/programaciones/historial/batch`, {
+            body: { ids }
+        });
+    }
 }

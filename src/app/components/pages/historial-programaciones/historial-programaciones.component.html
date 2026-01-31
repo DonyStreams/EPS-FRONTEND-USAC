@@ -95,6 +95,7 @@
         styleClass="p-datatable-sm"
         [rowHover]="true"
         responsiveLayout="scroll"
+        [(selection)]="registrosSeleccionados"
         dataKey="idHistorial">
         
         <ng-template pTemplate="caption">
@@ -108,17 +109,30 @@
                         placeholder="Buscar en historial..."
                         class="w-full" />
                 </span>
-                <button 
-                    pButton 
-                    label="Recargar" 
-                    icon="pi pi-refresh" 
-                    class="p-button-outlined"
-                    (click)="loadHistorial(); loadMetricas()"></button>
+                <div class="flex gap-2">
+                    <button 
+                        pButton 
+                        label="Eliminar Seleccionados" 
+                        icon="pi pi-trash" 
+                        class="p-button-danger"
+                        [disabled]="!registrosSeleccionados || registrosSeleccionados.length === 0"
+                        (click)="eliminarSeleccionados()">
+                    </button>
+                    <button 
+                        pButton 
+                        label="Recargar" 
+                        icon="pi pi-refresh" 
+                        class="p-button-outlined"
+                        (click)="loadHistorial(); loadMetricas()"></button>
+                </div>
             </div>
         </ng-template>
 
         <ng-template pTemplate="header">
             <tr>
+                <th style="width: 3rem">
+                    <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                </th>
                 <th pSortableColumn="fechaRegistro" style="width: 160px">
                     Fecha <p-sortIcon field="fechaRegistro"></p-sortIcon>
                 </th>
@@ -139,6 +153,9 @@
 
         <ng-template pTemplate="body" let-registro>
             <tr>
+                <td>
+                    <p-tableCheckbox [value]="registro"></p-tableCheckbox>
+                </td>
                 <td>
                     <div class="text-sm">
                         <i class="pi pi-clock text-500 mr-1"></i>
@@ -181,7 +198,7 @@
 
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="5" class="text-center p-5">
+                <td colspan="6" class="text-center p-5">
                     <div class="flex flex-column align-items-center">
                         <i class="pi pi-inbox text-4xl text-300 mb-3"></i>
                         <span class="text-600">No hay registros en el historial</span>
@@ -192,3 +209,9 @@
         </ng-template>
     </p-table>
 </div>
+
+<!-- Diálogo de confirmación -->
+<p-confirmDialog></p-confirmDialog>
+
+<!-- Toast para mensajes -->
+<p-toast></p-toast>

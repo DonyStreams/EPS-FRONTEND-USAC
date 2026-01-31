@@ -111,7 +111,10 @@
                         </td>
                         <td style="width:14%; min-width:10rem;">
                             <span class="p-column-title">Estado</span>
-                            <p-tag [value]="ticket.estado" [severity]="getSeverity(ticket.estado)"></p-tag>
+                            <div class="flex align-items-center gap-2">
+                                <i *ngIf="ticket.estado === 'En Proceso'" class="pi pi-spin pi-spinner text-purple-500"></i>
+                                <p-tag [value]="ticket.estado" [severity]="getSeverity(ticket.estado)"></p-tag>
+                            </div>
                         </td>
                         <td style="width:14%; min-width:10rem;">
                             <span class="p-column-title">Prioridad</span>
@@ -122,10 +125,11 @@
                             {{ticket.fechaCreacion | date:'short'}}
                         </td>
                         <td>
-                            <div class="flex gap-2">
-                                <button pButton pRipple icon="pi pi-comments" class="p-button-rounded p-button-text p-button-success" (click)="verComentarios(ticket)" pTooltip="Ver comentarios"></button>
-                                <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-warning" (click)="editarTicket(ticket)" pTooltip="Editar"></button>
-                                <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="confirmarEliminarTicket(ticket)" pTooltip="Eliminar"></button>
+                            <div class="flex flex-nowrap align-items-center justify-content-center">
+                                <button pButton pRipple icon="pi pi-ellipsis-v"
+                                    class="p-button-rounded p-button-text p-button-secondary"
+                                    (click)="openAccionesMenu($event, ticket)"
+                                    pTooltip="Acciones"></button>
                             </div>
                         </td>
                     </tr>
@@ -142,6 +146,9 @@
                     </tr>
                 </ng-template>
             </p-table>
+            
+            <!-- Menú popup de acciones (fuera de la tabla) -->
+            <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
         </div>
 
         <p-dialog [(visible)]="dialogNuevoTicket" [style]="{width: '450px'}" header="Nuevo Ticket" [modal]="true" class="p-fluid">
@@ -467,195 +474,151 @@
                             </div>
                         </div>
 
-                        <!-- PANEL DE AGREGAR COMENTARIO -->
+                        <!-- PANEL DERECHO: NUEVO COMENTARIO Y CAMBIO DE ESTADO -->
                         <div class="col-12 lg:col-5">
-                            <div class="surface-card border-round-lg shadow-1 h-full">
-                                <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
+                            <!-- NUEVO COMENTARIO -->
+                            <div class="surface-card border-round-lg shadow-1 mb-3">
+                                <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
                                     <div class="flex align-items-center">
                                         <i class="pi pi-plus-circle text-green-500 mr-2"></i>
-                                        <h6 class="m-0">Nuevo Comentario</h6>
+                                        <h6 class="m-0 text-sm">Nuevo Comentario</h6>
                                     </div>
                                 </div>
                                 
-                                <div class="p-4">
-                                    <form class="formgrid grid">
-                                        <!-- CAMBIO DE ESTADO -->
-                                        <div class="field col-12">
-                                            <label for="nuevoEstado" class="block text-900 font-medium mb-2">
-                                                <i class="pi pi-refresh mr-1"></i>
-                                                Cambiar Estado (Opcional)
-                                            </label>
-                                            <p-dropdown 
-                                                id="nuevoEstado"
-                                                name="nuevoEstado"
-                                                [(ngModel)]="nuevoEstadoSeleccionado" 
-                                                [options]="estadosEdicion" 
-                                                placeholder="Mantener estado actual"
-                                                [showClear]="true"
-                                                styleClass="w-full"
-                                                [filter]="true">
-                                                <ng-template pTemplate="selectedItem" let-option>
-                                                    <div class="flex align-items-center" *ngIf="option">
-                                                        <p-tag [value]="option" [severity]="getSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
-                                                        <span>{{option}}</span>
-                                                    </div>
-                                                </ng-template>
-                                                <ng-template pTemplate="item" let-option>
-                                                    <div class="flex align-items-center">
-                                                        <p-tag [value]="option" [severity]="getSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
-                                                        <span>{{option}}</span>
-                                                    </div>
-                                                </ng-template>
-                                            </p-dropdown>
-                                        </div>
+                                <div class="p-3">
+                                    <div class="field mb-2">
+                                        <label class="block text-900 font-medium mb-1 text-sm">
+                                            <i class="pi pi-tag mr-1"></i>Tipo
+                                        </label>
+                                        <p-dropdown 
+                                            [(ngModel)]="tipoComentarioSeleccionado" 
+                                            [options]="tiposComentario" 
+                                            placeholder="Seleccionar tipo"
+                                            styleClass="w-full">
+                                            <ng-template pTemplate="selectedItem" let-option>
+                                                <p-tag *ngIf="option" [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true"></p-tag>
+                                            </ng-template>
+                                            <ng-template pTemplate="item" let-option>
+                                                <p-tag [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true"></p-tag>
+                                            </ng-template>
+                                        </p-dropdown>
+                                    </div>
 
-                                        <!-- TIPO DE COMENTARIO -->
-                                        <div class="field col-12">
-                                            <label for="tipoComentario" class="block text-900 font-medium mb-2">
-                                                <i class="pi pi-tag mr-1"></i>
-                                                Tipo de Comentario *
-                                            </label>
-                                            <p-dropdown 
-                                                id="tipoComentario"
-                                                name="tipoComentario"
-                                                [(ngModel)]="tipoComentarioSeleccionado" 
-                                                [options]="tiposComentario" 
-                                                placeholder="Seleccionar tipo"
-                                                styleClass="w-full"
-                                                required>
-                                                <ng-template pTemplate="selectedItem" let-option>
-                                                    <div class="flex align-items-center" *ngIf="option">
-                                                        <p-tag [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
-                                                        <span>{{option}}</span>
-                                                    </div>
-                                                </ng-template>
-                                                <ng-template pTemplate="item" let-option>
-                                                    <div class="flex align-items-center">
-                                                        <p-tag [value]="option" [severity]="getTipoComentarioSeverity(option)" [rounded]="true" class="mr-2"></p-tag>
-                                                        <span>{{option}}</span>
-                                                    </div>
-                                                </ng-template>
-                                            </p-dropdown>
-                                        </div>
+                                    <div class="field mb-2">
+                                        <label class="block text-900 font-medium mb-1 text-sm">
+                                            <i class="pi pi-pencil mr-1"></i>Comentario *
+                                        </label>
+                                        <textarea 
+                                            pInputTextarea 
+                                            [(ngModel)]="nuevoComentario" 
+                                            rows="3" 
+                                            placeholder="Escribe tu comentario aquí..."
+                                            class="w-full"></textarea>
+                                        <small class="text-500">
+                                            {{(nuevoComentario || '').length}} caracteres
+                                        </small>
+                                    </div>
 
-                                        <!-- TEXTO DEL COMENTARIO -->
-                                        <div class="field col-12">
-                                            <label for="comentarioTexto" class="block text-900 font-medium mb-2">
-                                                <i class="pi pi-pencil mr-1"></i>
-                                                Comentario *
-                                            </label>
-                                            <textarea 
-                                                pInputTextarea 
-                                                id="comentarioTexto" 
-                                                name="comentarioTexto"
-                                                [(ngModel)]="nuevoComentario" 
-                                                rows="5" 
-                                                placeholder="Escribe tu comentario aquí..."
-                                                class="w-full"
-                                                [autoResize]="true"
-                                                required></textarea>
-                                            <small class="text-500">
-                                                {{(nuevoComentario || '').length}} caracteres
-                                            </small>
-                                        </div>
-
-                                        <!-- BOTONES DE ACCIÓN -->
-                                        <div class="field col-12">
-                                            <div class="flex justify-content-end">
-                                                <button 
-                                                    pButton 
-                                                    pRipple 
-                                                    label="Agregar Comentario" 
-                                                    icon="pi pi-send" 
-                                                    class="p-button-primary"
-                                                    (click)="agregarComentario()"
-                                                    [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)">
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <!-- INFORMACIÓN DE AYUDA -->
-                                        <div class="field col-12">
-                                            <div class="surface-100 border-round p-3">
-                                                <div class="flex align-items-start">
-                                                    <i class="pi pi-info-circle text-blue-500 mr-2 mt-1"></i>
-                                                    <div>
-                                                        <h6 class="m-0 mb-2 text-blue-700">Información</h6>
-                                                        <ul class="text-sm text-600 m-0 pl-3">
-                                                            <li>El comentario se guardará con la fecha y hora actual</li>
-                                                            <li>Si cambias el estado, se registrará en el historial</li>
-                                                            <li>Los campos marcados con * son obligatorios</li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
+                                    <div class="flex justify-content-end">
+                                        <button 
+                                            pButton 
+                                            pRipple 
+                                            label="Agregar" 
+                                            icon="pi pi-send" 
+                                            class="p-button-primary p-button-sm"
+                                            (click)="agregarComentario()"
+                                            [disabled]="!(nuevoComentario && nuevoComentario.trim().length > 0)">
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- SECCIÓN DE EVIDENCIAS -->
-                    <div class="mt-4">
-                        <div class="surface-card border-round-lg shadow-1">
-                            <div class="surface-50 border-round-top-lg p-3 border-bottom-1 surface-border">
-                                <div class="flex align-items-center justify-content-between">
+                            <!-- CAMBIO DE ESTADO -->
+                            <div class="surface-card border-round-lg shadow-1">
+                                <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
                                     <div class="flex align-items-center">
-                                        <i class="pi pi-paperclip text-orange-500 mr-2"></i>
-                                        <h6 class="m-0">Evidencias Adjuntas</h6>
-                                        <p-badge [value]="evidencias.length" severity="warning" class="ml-2"></p-badge>
+                                        <i class="pi pi-refresh text-orange-500 mr-2"></i>
+                                        <h6 class="m-0 text-sm">Cambiar Estado</h6>
                                     </div>
-                                    <button 
-                                        pButton 
-                                        pRipple 
-                                        label="Subir Evidencia" 
-                                        icon="pi pi-upload" 
-                                        class="p-button-sm p-button-outlined p-button-warning"
-                                        (click)="mostrarDialogEvidencia()">
-                                    </button>
+                                </div>
+                                <div class="p-3">
+                                    <div class="flex gap-2 align-items-center">
+                                        <p-dropdown 
+                                            [(ngModel)]="nuevoEstadoSeleccionado" 
+                                            [options]="estadosEdicion" 
+                                            placeholder="Seleccionar estado"
+                                            [showClear]="true"
+                                            styleClass="flex-grow-1">
+                                            <ng-template pTemplate="selectedItem" let-option>
+                                                <p-tag *ngIf="option" [value]="option" [severity]="getSeverity(option)" [rounded]="true"></p-tag>
+                                            </ng-template>
+                                            <ng-template pTemplate="item" let-option>
+                                                <p-tag [value]="option" [severity]="getSeverity(option)" [rounded]="true"></p-tag>
+                                            </ng-template>
+                                        </p-dropdown>
+                                        <button pButton icon="pi pi-refresh" class="p-button-warning p-button-sm"
+                                                (click)="cambiarEstadoRapido()"
+                                                [disabled]="!nuevoEstadoSeleccionado || nuevoEstadoSeleccionado === ticketSeleccionado?.estado"
+                                                pTooltip="Cambiar estado"></button>
+                                    </div>
+                                    <small class="text-500 mt-2 block">
+                                        <i class="pi pi-info-circle mr-1"></i>
+                                        Estado actual: <p-tag [value]="ticketSeleccionado?.estado" [severity]="getSeverity(ticketSeleccionado?.estado || '')" [rounded]="true" class="text-xs"></p-tag>
+                                    </small>
                                 </div>
                             </div>
-                            
-                            <div class="p-3">
-                                <!-- ESTADO VACÍO -->
-                                <div *ngIf="evidencias.length === 0" class="text-center py-4">
-                                    <div class="surface-100 border-circle w-4rem h-4rem flex align-items-center justify-content-center mx-auto mb-2">
-                                        <i class="pi pi-image text-3xl text-400"></i>
-                                    </div>
-                                    <p class="text-500 text-sm m-0">No hay evidencias adjuntas</p>
-                                </div>
 
-                                <!-- LISTA DE EVIDENCIAS -->
-                                <div class="grid">
-                                    <div *ngFor="let evidencia of evidencias" class="col-12 md:col-6 lg:col-4">
-                                        <div class="surface-50 border-round-lg p-3 shadow-1 hover:shadow-3 transition-all transition-duration-200">
-                                            <div class="flex justify-content-between align-items-start mb-2">
-                                                <i class="pi pi-file text-2xl text-orange-500"></i>
-                                                <button 
-                                                    pButton 
-                                                    pRipple 
-                                                    icon="pi pi-trash" 
-                                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                                    (click)="eliminarEvidencia(evidencia)"
-                                                    pTooltip="Eliminar evidencia">
-                                                </button>
-                                            </div>
-                                            <div class="mb-2">
-                                                <p class="text-sm font-medium text-900 m-0 mb-1">{{evidencia.descripcion || 'Sin descripción'}}</p>
-                                                <small class="text-500">
-                                                    <i class="pi pi-calendar mr-1"></i>
-                                                    {{evidencia.fechaCreacion | date:'short'}}
-                                                </small>
-                                            </div>
-                                            <a 
-                                                [href]="evidencia.archivoUrl" 
-                                                target="_blank" 
-                                                class="text-primary text-sm">
-                                                <i class="pi pi-external-link mr-1"></i>
-                                                Ver archivo
-                                            </a>
+                            <!-- EVIDENCIAS -->
+                            <div class="surface-card border-round-lg shadow-1 mt-3">
+                                <div class="surface-50 border-round-top-lg p-2 border-bottom-1 surface-border">
+                                    <div class="flex align-items-center justify-content-between">
+                                        <div class="flex align-items-center">
+                                            <i class="pi pi-paperclip text-blue-500 mr-2"></i>
+                                            <h6 class="m-0 text-sm">Evidencias</h6>
+                                            <p-badge [value]="evidencias.length.toString()" severity="warning" class="ml-2"></p-badge>
                                         </div>
+                                        <p-fileUpload #fileUploadTicket
+                                                      mode="basic" 
+                                                      [multiple]="true" 
+                                                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                                                      [maxFileSize]="10000000"
+                                                      chooseLabel="Subir"
+                                                      chooseIcon="pi pi-upload"
+                                                      (uploadHandler)="subirEvidenciaDirecta($event)"
+                                                      [auto]="true"
+                                                      [customUpload]="true"
+                                                      class="p-button-sm">
+                                        </p-fileUpload>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <p-progressBar *ngIf="subiendoEvidencias" mode="indeterminate" class="mb-2"></p-progressBar>
+                                    
+                                    <!-- Lista de evidencias -->
+                                    <div *ngIf="evidencias.length > 0" class="evidencias-list" style="max-height: 150px; overflow-y: auto;">
+                                        <div *ngFor="let evidencia of evidencias" 
+                                             class="flex align-items-center justify-content-between p-2 surface-50 border-round mb-2">
+                                            <div class="flex align-items-center min-w-0 flex-grow-1">
+                                                <i [class]="getFileIconTicket(evidencia) + ' mr-2 text-xl'"></i>
+                                                <span class="text-overflow-ellipsis overflow-hidden white-space-nowrap text-sm" 
+                                                      [pTooltip]="evidencia.nombreOriginal || evidencia.descripcion">
+                                                    {{ evidencia.nombreOriginal || evidencia.descripcion || 'Archivo' }}
+                                                </span>
+                                            </div>
+                                            <div class="flex-shrink-0 flex gap-1">
+                                                <button pButton pRipple icon="pi pi-download" 
+                                                        class="p-button-rounded p-button-text p-button-sm"
+                                                        (click)="descargarEvidencia(evidencia)" pTooltip="Descargar"></button>
+                                                <button pButton pRipple icon="pi pi-trash" 
+                                                        class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                                                        (click)="eliminarEvidencia(evidencia)" pTooltip="Eliminar"></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div *ngIf="evidencias.length === 0" class="text-center py-2">
+                                        <i class="pi pi-folder-open text-2xl text-400"></i>
+                                        <p class="text-500 text-sm m-0 mt-1">Sin evidencias</p>
                                     </div>
                                 </div>
                             </div>
@@ -675,105 +638,6 @@
                         (click)="cerrarModalComentarios()">
                     </button>
                 </div>
-            </ng-template>
-        </p-dialog>
-
-        <!-- DIALOG PARA SUBIR EVIDENCIA -->
-        <p-dialog [(visible)]="dialogEvidencia" [style]="{width: '600px'}" header="📎 Adjuntar Evidencias al Ticket" [modal]="true" class="p-fluid">
-            <ng-template pTemplate="content">
-                <div class="surface-card border-1 surface-border border-round p-3">
-                    <div class="flex align-items-center justify-content-between mb-3">
-                        <div class="flex align-items-center gap-2">
-                            <i class="pi pi-paperclip text-xl text-primary"></i>
-                            <h6 class="m-0">Archivos a Subir</h6>
-                        </div>
-                        <p-tag [value]="archivosEvidenciaSeleccionados.length.toString()" 
-                               [severity]="archivosEvidenciaSeleccionados.length > 0 ? 'success' : 'secondary'"
-                               [rounded]="true"></p-tag>
-                    </div>
-                    
-                    <p class="text-sm text-600 mb-3">
-                        <i class="pi pi-info-circle mr-1"></i>
-                        Adjunte archivos de evidencia (PDF, DOC, DOCX, XLS, XLSX, imágenes - máx. 10MB cada uno)
-                    </p>
-
-                    <!-- Upload de archivos en modo básico -->
-                    <p-fileUpload #fileUploadEvidencia
-                                  name="files" 
-                                  [multiple]="true" 
-                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
-                                  [maxFileSize]="10485760" 
-                                  (onSelect)="onArchivoSeleccionado($event)"
-                                  (onRemove)="onArchivoEliminado($event)"
-                                  [showUploadButton]="false" 
-                                  [showCancelButton]="false"
-                                  [auto]="false"
-                                  mode="basic"
-                                  chooseLabel="Seleccionar Archivos"
-                                  chooseIcon="pi pi-plus">
-                    </p-fileUpload>
-                    
-                    <!-- Lista de archivos seleccionados -->
-                    <div *ngIf="archivosEvidenciaSeleccionados.length > 0" class="mt-3">
-                        <div class="flex align-items-center justify-content-between mb-2">
-                            <span class="font-semibold text-sm">Archivos seleccionados:</span>
-                            <button pButton pRipple 
-                                    label="Limpiar todo" 
-                                    icon="pi pi-times" 
-                                    class="p-button-text p-button-sm p-button-danger"
-                                    (click)="limpiarArchivosEvidencia()"></button>
-                        </div>
-                        
-                        <div *ngFor="let file of archivosEvidenciaSeleccionados; let i = index" 
-                             class="flex align-items-center justify-content-between p-2 mb-2 surface-50 border-round">
-                            <div class="flex align-items-center gap-2 flex-1">
-                                <i [class]="obtenerIconoArchivo(file.name)" class="text-2xl"></i>
-                                <div class="flex-1">
-                                    <div class="font-medium text-sm">{{file.name}}</div>
-                                    <div class="text-xs text-500">{{formatearTamano(file.size)}}</div>
-                                </div>
-                            </div>
-                            <button pButton pRipple 
-                                    icon="pi pi-times" 
-                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                    (click)="eliminarArchivoSeleccionado(i)"
-                                    pTooltip="Eliminar"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field mt-3">
-                    <label for="descripcionEvidencia">Descripción (opcional)</label>
-                    <textarea 
-                        pInputTextarea 
-                        id="descripcionEvidencia" 
-                        [(ngModel)]="descripcionEvidencia" 
-                        rows="3" 
-                        placeholder="Añada una descripción general para estos archivos"></textarea>
-                </div>
-
-                <p-progressBar *ngIf="subiendoEvidencias" mode="indeterminate" styleClass="mt-2"></p-progressBar>
-            </ng-template>
-
-            <ng-template pTemplate="footer">
-                <button 
-                    pButton 
-                    pRipple 
-                    label="Cancelar" 
-                    icon="pi pi-times" 
-                    class="p-button-text"
-                    (click)="dialogEvidencia = false"
-                    [disabled]="subiendoEvidencias">
-                </button>
-                <button 
-                    pButton 
-                    pRipple 
-                    label="Subir Evidencias" 
-                    icon="pi pi-upload" 
-                    class="p-button-success"
-                    (click)="subirEvidencia()"
-                    [disabled]="subiendoEvidencias || archivosEvidenciaSeleccionados.length === 0">
-                </button>
             </ng-template>
         </p-dialog>
     </div>

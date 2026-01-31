@@ -126,9 +126,12 @@ export class ProgramacionesComponent implements OnInit {
     accionesMenuItems: MenuItem[] = [];
     programacionSeleccionadaMenu: ProgramacionMantenimiento | null = null;
 
-    // Filtro por equipo desde queryParams
+    // Filtro por equipo y tipo desde queryParams
     filtroEquipoId: number | null = null;
     filtroEquipoNombre: string | null = null;
+    filtroTipoMantenimientoId: number | null = null;
+    filtroTipoMantenimientoNombre: string | null = null;
+    filtroProgramacionId: number | null = null;
 
     // Opciones de frecuencia para dropdown
     frecuenciaOpciones = [
@@ -157,14 +160,32 @@ export class ProgramacionesComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        // Verificar si hay filtro por equipo en los queryParams
+        // Verificar si hay filtro por equipo y tipo en los queryParams
         this.route.queryParams.subscribe(params => {
             if (params['equipoId']) {
                 this.filtroEquipoId = +params['equipoId'];
                 this.filtroEquipoNombre = params['equipoNombre'] || null;
                 console.log('🔍 Filtro por equipo:', this.filtroEquipoId, this.filtroEquipoNombre);
+            } else {
+                this.filtroEquipoId = null;
+                this.filtroEquipoNombre = null;
             }
-            
+            if (params['tipoMantenimiento']) {
+                this.filtroTipoMantenimientoId = +params['tipoMantenimiento'];
+                // Buscar el nombre del tipo si está en la lista
+                const tipo = this.tiposMantenimiento.find(t => t.idTipo === this.filtroTipoMantenimientoId);
+                this.filtroTipoMantenimientoNombre = tipo ? tipo.nombre : null;
+                console.log('🔍 Filtro por tipo:', this.filtroTipoMantenimientoId, this.filtroTipoMantenimientoNombre);
+            } else {
+                this.filtroTipoMantenimientoId = null;
+                this.filtroTipoMantenimientoNombre = null;
+            }
+            if (params['idProgramacion']) {
+                this.filtroProgramacionId = +params['idProgramacion'];
+                console.log('🔍 Filtro por programación ID:', this.filtroProgramacionId);
+            } else {
+                this.filtroProgramacionId = null;
+            }
             // Si viene desde el calendario con nuevaProgramacion=true
             if (params['nuevaProgramacion'] === 'true') {
                 console.log('📅 Nueva programación desde calendario');
@@ -224,6 +245,9 @@ export class ProgramacionesComponent implements OnInit {
     limpiarFiltroEquipo(): void {
         this.filtroEquipoId = null;
         this.filtroEquipoNombre = null;
+        this.filtroTipoMantenimientoId = null;
+        this.filtroTipoMantenimientoNombre = null;
+        this.filtroProgramacionId = null;
         // Actualizar la URL sin el queryParam
         this.router.navigate([], {
             relativeTo: this.route,
@@ -237,12 +261,24 @@ export class ProgramacionesComponent implements OnInit {
      * Obtiene las programaciones filtradas
      */
     get programacionesFiltradas(): ProgramacionMantenimiento[] {
-        if (this.filtroEquipoId) {
-            return this.programaciones.filter(p => 
-                p.equipoId === this.filtroEquipoId || p.equipo?.idEquipo === this.filtroEquipoId
-            );
+        let filtradas = this.programaciones;
+        if (this.filtroProgramacionId) {
+            // Si hay filtro por ID, mostrar solo esa programación
+            filtradas = filtradas.filter(p => p.idProgramacion === this.filtroProgramacionId);
+        } else {
+            // Si no hay filtro por ID, aplicar filtros normales
+            if (this.filtroEquipoId) {
+                filtradas = filtradas.filter(p => 
+                    p.equipoId === this.filtroEquipoId || p.equipo?.idEquipo === this.filtroEquipoId
+                );
+            }
+            if (this.filtroTipoMantenimientoId) {
+                filtradas = filtradas.filter(p => 
+                    p.tipoMantenimientoId === this.filtroTipoMantenimientoId || p.tipoMantenimiento?.idTipo === this.filtroTipoMantenimientoId
+                );
+            }
         }
-        return this.programaciones;
+        return filtradas;
     }
 
     /**
@@ -908,16 +944,50 @@ export class ProgramacionesComponent implements OnInit {
             accept: () => {
                 this.loading = true;
                 this.programacionesService.crearMantenimiento(programacion.idProgramacion!).subscribe({
-                    next: () => {
+                    next: (response) => {
+                        console.log('📝 Respuesta crearMantenimiento:', response);
+                        const idEjecucion = response?.idEjecucion || response?.id;
+                        console.log('🆔 ID Ejecución obtenido:', idEjecucion);
+                        const equipoNombre = programacion.equipo?.nombre || 'el equipo';
+                        
                         this.messageService.add({
                             severity: 'success',
-                            summary: 'Éxito',
-                            detail: `Se generó el mantenimiento para ${programacion.equipo?.nombre || 'el equipo'}`
+                            summary: '✓ Ejecución Creada',
+                            detail: `Se generó exitosamente la ejecución para ${equipoNombre}`,
+                            life: 3000,
+                            sticky: false
                         });
+                        
+                        // Mostrar dialog de confirmación para navegar (inmediatamente)
+                        setTimeout(() => {
+                            this.confirmationService.confirm({
+                                message: `<div class="p-3">
+                                    <p class="text-lg mb-3">✓ Ejecución de mantenimiento creada exitosamente</p>
+                                    <p class="text-600 mb-2"><strong>Equipo:</strong> ${equipoNombre}</p>
+                                    <p class="text-600">¿Deseas ver los detalles de la ejecución ahora?</p>
+                                </div>`,
+                                header: 'Ejecución Creada',
+                                icon: 'pi pi-check-circle',
+                                acceptLabel: 'Ver Ejecución',
+                                rejectLabel: 'Cerrar',
+                                acceptButtonStyleClass: 'p-button-success',
+                                rejectButtonStyleClass: 'p-button-text',
+                                accept: () => {
+                                    if (idEjecucion) {
+                                        this.router.navigate(['/administracion/ejecuciones'], { 
+                                            queryParams: { idEjecucion: idEjecucion } 
+                                        });
+                                    } else {
+                                        this.router.navigate(['/administracion/ejecuciones']);
+                                    }
+                                }
+                            });
+                        }, 500);
+                        
                         this.loadProgramaciones();
                     },
                     error: (error) => {
-                        console.error('❌ Error creando mantenimiento:', error);
+                        console.error('❌ Error creando ejecucion:', error);
                         this.loading = false;
                         const detail = error?.error?.message || error?.error || 'No se pudo crear el mantenimiento';
                         this.messageService.add({

@@ -94,6 +94,9 @@ export class EquiposListComponent implements OnInit {
   // Variable para el menú de acciones
   equipoSeleccionadoMenu: Equipo | null = null;
   menuItemsAcciones: MenuItem[] = [];
+  
+  // Variable para detectar cambio a estado crítico
+  estadoAnteriorEquipo: string | null = null;
 
   constructor(
     private equiposService: EquiposService, 
@@ -369,6 +372,7 @@ export class EquiposListComponent implements OnInit {
 
   editarEquipo(equipo: Equipo) {
     this.equipoEditando = { ...equipo };
+    this.estadoAnteriorEquipo = equipo.estado || null; // Guardar estado anterior para detectar cambio a crítico
     this.mostrarModalEditarEquipo = true;
     
     // Manejar la previsualización de la imagen existente
@@ -488,6 +492,9 @@ export class EquiposListComponent implements OnInit {
   guardarCambiosEquipo() {
     if (!this.equipoEditando) return;
 
+    // Detectar si cambia a estado crítico
+    const esCambioCritico = this.equipoEditando.estado === 'Critico' && this.estadoAnteriorEquipo !== 'Critico';
+
     this.equiposService.editarEquipo(this.equipoEditando).subscribe({
       next: () => {
         // Primero ocultar el modal
@@ -506,6 +513,7 @@ export class EquiposListComponent implements OnInit {
         // Usar setTimeout para limpiar equipoEditando después de que Angular procese el cierre
         setTimeout(() => {
           this.equipoEditando = null;
+          this.estadoAnteriorEquipo = null;
         }, 0);
         
         // Mostrar notificación de éxito
@@ -515,6 +523,18 @@ export class EquiposListComponent implements OnInit {
           detail: 'Equipo actualizado correctamente',
           life: 3000
         });
+        
+        // Mostrar mensaje adicional si se cambió a estado crítico
+        if (esCambioCritico) {
+          setTimeout(() => {
+            this.messageService.add({
+              severity: 'warn',
+              summary: '📧 Notificación Enviada',
+              detail: 'Se ha enviado un correo de alerta por estado CRÍTICO del equipo',
+              life: 5000
+            });
+          }, 500);
+        }
       },
       error: (error) => {
         console.error('Error al actualizar equipo:', error);

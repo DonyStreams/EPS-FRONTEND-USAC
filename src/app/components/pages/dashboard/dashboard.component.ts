@@ -188,24 +188,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.contratosVencidos = this.contratos.filter((c: any) => {
             const fechaFin = parseFecha(c.fechaFin || c.fecha_fin);
             if (!fechaFin) return false;
-            fechaFin.setHours(23, 59, 59, 999);
-            return fechaFin < hoy;
+            const fechaFinNorm = new Date(fechaFin);
+            fechaFinNorm.setHours(23, 59, 59, 999);
+            return fechaFinNorm < hoy;
         }).length;
         
         // Contratos por vencer: fecha_fin está entre hoy y 30 días
         this.contratosPorVencer = this.contratos.filter((c: any) => {
             const fechaFin = parseFecha(c.fechaFin || c.fecha_fin);
             if (!fechaFin) return false;
-            fechaFin.setHours(23, 59, 59, 999);
-            return fechaFin >= hoy && fechaFin <= treintaDias;
+            const fechaFinNorm = new Date(fechaFin);
+            fechaFinNorm.setHours(0, 0, 0, 0);
+            return fechaFinNorm >= hoy && fechaFinNorm <= treintaDias;
         }).length;
         
-        // Contratos vigentes: fecha_fin > 30 días desde hoy
+        // Contratos vigentes: TODOS los contratos no vencidos (fecha_fin >= hoy)
         this.contratosActivos = this.contratos.filter((c: any) => {
             const fechaFin = parseFecha(c.fechaFin || c.fecha_fin);
             if (!fechaFin) return false;
-            fechaFin.setHours(0, 0, 0, 0);
-            return fechaFin > treintaDias;
+            const fechaFinNorm = new Date(fechaFin);
+            fechaFinNorm.setHours(23, 59, 59, 999);
+            return fechaFinNorm >= hoy;
         }).length;
 
         // Ejecuciones
@@ -467,6 +470,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         
         const hoy = new Date();
         
+        // Función para parsear fechas quitando [UTC]
+        const parseFecha = (fechaRaw: any): Date | null => {
+            if (!fechaRaw) return null;
+            const fechaLimpia = String(fechaRaw).replace(/\[UTC\]$/, '');
+            const fecha = new Date(fechaLimpia);
+            return isNaN(fecha.getTime()) ? null : fecha;
+        };
+        
         for (let i = 5; i >= 0; i--) {
             const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
             const mesNombre = fecha.toLocaleDateString('es-GT', { month: 'short', year: '2-digit' });
@@ -474,16 +485,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
             
             const mesInicio = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
             const mesFin = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+            mesFin.setHours(23, 59, 59, 999);
             
-            const completadosMes = this.ejecuciones.filter(e => {
-                if (!e.fechaCierre) return false;
-                const fechaCierre = new Date(e.fechaCierre);
-                return e.estado === 'COMPLETADO' && fechaCierre >= mesInicio && fechaCierre <= mesFin;
+            // Completados: usar fecha_cierre o fechaCierre
+            const completadosMes = this.ejecuciones.filter((e: any) => {
+                const fechaCierre = parseFecha(e.fechaCierre || e.fecha_cierre);
+                if (!fechaCierre) return false;
+                return (e.estado === 'COMPLETADO' || e.estado === 'Completado') && 
+                       fechaCierre >= mesInicio && fechaCierre <= mesFin;
             }).length;
             
-            const programadosMes = this.ejecuciones.filter(e => {
-                if (!e.fechaEjecucion) return false;
-                const fechaEjecucion = new Date(e.fechaEjecucion);
+            // Programados: usar fecha_ejecucion o fechaEjecucion
+            const programadosMes = this.ejecuciones.filter((e: any) => {
+                const fechaEjecucion = parseFecha(e.fechaEjecucion || e.fecha_ejecucion);
+                if (!fechaEjecucion) return false;
                 return fechaEjecucion >= mesInicio && fechaEjecucion <= mesFin;
             }).length;
             

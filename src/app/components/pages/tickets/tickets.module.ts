@@ -25,6 +25,7 @@ import { TabViewModule } from 'primeng/tabview';
 import { AccordionModule } from 'primeng/accordion';
 import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
+import { MenuModule } from 'primeng/menu';
 
 // Componentes
 import { TicketsComponent } from './tickets.component';
@@ -60,6 +61,7 @@ import { HistorialTicketsComponent } from './historial-tickets/historial-tickets
         AccordionModule,
         ChipModule,
         BadgeModule,
+        MenuModule,
         RouterModule.forChild([
             { path: '', component: TicketsComponent },
             { path: 'historial', component: HistorialTicketsComponent }

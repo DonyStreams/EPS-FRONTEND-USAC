@@ -177,7 +177,7 @@
             </div>
         </div>
 
-        <div class="col-12 md:col-6 xl:col-4">
+        <div class="col-12 md:col-6 xl:col-6">
             <div class="card chart-container">
                 <h6 class="text-700 font-semibold mb-3">Equipos por Estado</h6>
                 <div class="chart-wrapper">
@@ -186,11 +186,11 @@
             </div>
         </div>
 
-        <div class="col-12 md:col-6 xl:col-8">
+        <div class="col-12 md:col-6 xl:col-6">
             <div class="card chart-container">
-                <h6 class="text-700 font-semibold mb-3">Equipos por Área/Laboratorio</h6>
+                <h6 class="text-700 font-semibold mb-3">Contratos por Estado</h6>
                 <div class="chart-wrapper">
-                    <p-chart type="bar" [data]="equiposPorAreaData" [options]="equiposPorAreaOptions" *ngIf="equiposPorAreaData"></p-chart>
+                    <p-chart type="doughnut" [data]="contratosPorEstadoData" [options]="contratosPorEstadoOptions" *ngIf="contratosPorEstadoData"></p-chart>
                 </div>
             </div>
         </div>

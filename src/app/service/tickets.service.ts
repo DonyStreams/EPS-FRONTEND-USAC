@@ -190,13 +190,38 @@ export class TicketsService {
 
     // Servicios para comentarios
     getComentarios(ticketId: number): Observable<ComentarioTicketResponse[]> {
-        return this.http.get<{comentarios: ComentarioTicketResponse[], total: number, success: boolean}>(`${this.apiUrl}/${ticketId}/comentarios`)
+        console.log('🔍 Solicitando comentarios para ticket:', ticketId);
+        return this.http.get(`${this.apiUrl}/${ticketId}/comentarios`, { responseType: 'text' })
             .pipe(
-                map(response => response.comentarios || [])
+                map(text => {
+                    console.log('📥 Respuesta RAW del backend (primeros 300 chars):', text?.substring(0, 300));
+                    try {
+                        const response = JSON.parse(text);
+                        console.log('✅ Comentarios encontrados:', response.comentarios?.length || 0);
+                        return response.comentarios || [];
+                    } catch (e) {
+                        console.warn('⚠️ Error parseando JSON, intentando limpiar...');
+                        try {
+                            // Limpiar varios patrones problemáticos
+                            let cleanedText = text
+                                .replace(/: "\\/g, ': "archivo')  // Comilla escapada
+                                .replace(/: ""/g, ': "archivo"')  // Comillas vacías
+                                .replace(/"""/g, '"')             // Triple comilla
+                                .replace(/\\+"/g, '"')            // Backslash antes de comilla
+                                .replace(/: "([^"]*)\\",/g, ': "$1",'); // Backslash al final
+                            const response = JSON.parse(cleanedText);
+                            console.log('✅ JSON limpiado y parseado, comentarios:', response.comentarios?.length || 0);
+                            return response.comentarios || [];
+                        } catch (e2) {
+                            console.error('❌ No se pudo parsear comentarios:', e2);
+                            return [];
+                        }
+                    }
+                })
             );
     }
 
-    addComentario(ticketId: number, data: {comentario: string, tipoComentario?: string, nuevoEstado?: string}): Observable<{message: string, success: boolean}> {
+    addComentario(ticketId: number, data: {comentario: string, tipoComentario?: string, estadoAnterior?: string, nuevoEstado?: string}): Observable<{message: string, success: boolean}> {
         return this.http.post<{message: string, success: boolean}>(`${this.apiUrl}/${ticketId}/comentarios`, data);
     }
 
