@@ -21,6 +21,19 @@
                     tooltipPosition="bottom">
                 <i class="pi" [ngClass]="isDarkMode ? 'pi-sun' : 'pi-moon'"></i>
             </button>
+
+            <!-- Botón Notificaciones -->
+            <button class="p-link layout-topbar-button topbar-notificaciones"
+                    type="button"
+                    (click)="goToNotificaciones()"
+                    [pTooltip]="'Notificaciones'"
+                    tooltipPosition="bottom"
+                    *ngIf="puedeVerNotificaciones()">
+                <i class="pi pi-bell"></i>
+                <span class="notification-badge">
+                    {{ unreadNotificaciones ?? 0 }}
+                </span>
+            </button>
             
             <!-- Botón Usuario -->
             <button class="p-link layout-topbar-button" 

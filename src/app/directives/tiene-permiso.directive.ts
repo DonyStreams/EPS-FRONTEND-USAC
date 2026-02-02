@@ -211,7 +211,6 @@ export class TienePermisoDirective implements OnInit {
         // Obtener roles permitidos para esta acción en este módulo
         const moduloPermisos = MATRIZ_PERMISOS[modulo];
         if (!moduloPermisos) {
-            console.warn(`[TienePermiso] Módulo no definido: ${modulo}`);
             return false;
         }
 

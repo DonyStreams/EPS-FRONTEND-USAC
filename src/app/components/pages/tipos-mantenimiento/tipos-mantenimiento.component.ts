@@ -61,7 +61,6 @@ export class TiposMantenimientoComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar tipos:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -135,7 +134,6 @@ export class TiposMantenimientoComponent implements OnInit {
                         this.loadTipos();
                     },
                     error: (error) => {
-                        console.error('Error al actualizar:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -155,7 +153,6 @@ export class TiposMantenimientoComponent implements OnInit {
                         this.loadTipos();
                     },
                     error: (error) => {
-                        console.error('Error al crear:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -223,7 +220,6 @@ export class TiposMantenimientoComponent implements OnInit {
             }
             
             if (isNaN(date.getTime())) {
-                console.warn('Fecha inválida:', dateString);
                 return '-';
             }
             
@@ -235,7 +231,6 @@ export class TiposMantenimientoComponent implements OnInit {
             
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         } catch (error) {
-            console.error('Error formateando fecha:', dateString, error);
             return '-';
         }
     }

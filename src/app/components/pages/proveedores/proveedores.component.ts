@@ -65,7 +65,6 @@ export class ProveedoresComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar proveedores:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -167,7 +166,6 @@ export class ProveedoresComponent implements OnInit {
                         this.loadProveedores();
                     },
                     error: (error) => {
-                        console.error('Error al actualizar proveedor:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -187,7 +185,6 @@ export class ProveedoresComponent implements OnInit {
                         this.loadProveedores();
                     },
                     error: (error) => {
-                        console.error('Error al crear proveedor:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -224,7 +221,6 @@ export class ProveedoresComponent implements OnInit {
                         this.loadProveedores();
                     },
                     error: (error) => {
-                        console.error('Error al eliminar proveedor:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -256,7 +252,6 @@ export class ProveedoresComponent implements OnInit {
             }
             
             if (isNaN(date.getTime())) {
-                console.warn('Fecha inválida:', dateString);
                 return '-';
             }
             
@@ -268,7 +263,6 @@ export class ProveedoresComponent implements OnInit {
             
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         } catch (error) {
-            console.error('Error formateando fecha:', dateString, error);
             return '-';
         }
     }

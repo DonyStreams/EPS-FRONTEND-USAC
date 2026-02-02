@@ -34,16 +34,8 @@ export class KeycloakInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.keycloakService.getToken();
-
-    // console.log('🔑 Interceptor - URL:', req.url);
-    // console.log('🔑 Interceptor - Token disponible:', !!token);
-    // console.log('🔑 Interceptor - Usuario logueado:', this.keycloakService.isLoggedIn());
     
     if (token) {
-      // console.log('🔑 Interceptor - Agregando token Bearer al header');
-      // console.log('🔑 Interceptor - Token length:', token.length);
-      // console.log('🔑 Interceptor - Token preview:', token.substring(0, 50) + '...');
-      
       const cloned = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`
@@ -52,16 +44,12 @@ export class KeycloakInterceptor implements HttpInterceptor {
       
       return next.handle(cloned).pipe(
         catchError((error: HttpErrorResponse) => {
-          console.warn('🔴 Error HTTP:', error.status, error.url);
-          
           // Token expirado - intentar renovar o redirigir
           if (error.status === 401) {
             this.failedAttempts++;
-            console.warn(`🔴 401 detectado (intento ${this.failedAttempts}/${this.MAX_FAILED_ATTEMPTS})`);
             
             // Si ya fallamos varias veces, forzar redirect
             if (this.failedAttempts >= this.MAX_FAILED_ATTEMPTS) {
-              console.error('❌ Múltiples 401, sesión definitivamente expirada');
               this.failedAttempts = 0;
               this.isRefreshing = false;
               this.redirectToLogin();
@@ -70,11 +58,8 @@ export class KeycloakInterceptor implements HttpInterceptor {
             
             if (this.isRefreshing) {
               // Ya estamos intentando renovar, esperar
-              console.warn('⏳ Ya hay renovación en progreso...');
               return throwError(error);
             }
-            
-            console.warn('🔄 Token expirado (401), intentando renovar...');
             return this.handleTokenExpired(req, next);
           }
           
@@ -82,7 +67,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
           this.failedAttempts = 0;
           
           if (error.status === 403 && error.error?.codigo === 'USUARIO_DESACTIVADO') {
-            console.warn('🚫 Usuario desactivado detectado, redirigiendo...');
             this.router.navigate(['/acceso-denegado'], {
               queryParams: { 
                 motivo: 'usuario-desactivado',
@@ -95,11 +79,8 @@ export class KeycloakInterceptor implements HttpInterceptor {
       );
     } else {
       // No hay token - verificar si debería haber sesión activa
-      console.warn('❌ Interceptor - No hay token disponible');
-      
       // Si Keycloak dice que está autenticado pero no hay token, la sesión expiró
       if (this.keycloakService.isLoggedIn()) {
-        console.warn('⚠️ Keycloak dice autenticado pero no hay token - sesión corrupta');
         this.redirectToLogin();
         return throwError({ status: 401, message: 'Sesión expirada - token no disponible' });
       }
@@ -108,7 +89,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
       return next.handle(req).pipe(
         catchError((error: HttpErrorResponse) => {
           if (error.status === 401) {
-            console.warn('🔴 401 sin token - sesión expirada, redirigiendo...');
             this.redirectToLogin();
           }
           return throwError(error);
@@ -125,7 +105,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
 
     // Verificar primero si el usuario está logueado
     if (!this.keycloakService.isLoggedIn()) {
-      console.warn('❌ Usuario no está logueado, redirigiendo al login...');
       this.isRefreshing = false;
       this.failedAttempts = 0;
       this.redirectToLogin();
@@ -140,7 +119,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
         
         // Verificar que realmente tenemos un token válido
         if (!newToken) {
-          console.warn('❌ No hay token después de renovar, redirigiendo al login...');
           this.failedAttempts = 0;
           this.redirectToLogin();
           return throwError({ status: 401, message: 'No se pudo obtener token' });
@@ -148,12 +126,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
         
         // Reset de intentos fallidos ya que renovamos exitosamente
         this.failedAttempts = 0;
-        
-        if (refreshed) {
-          console.log('✅ Token renovado exitosamente');
-        } else {
-          console.log('ℹ️ Token aún válido');
-        }
         
         // Reintentar la petición con el token
         const cloned = req.clone({
@@ -166,7 +138,6 @@ export class KeycloakInterceptor implements HttpInterceptor {
       catchError((error) => {
         this.isRefreshing = false;
         this.failedAttempts = 0;
-        console.error('❌ Error al renovar token:', error);
         this.redirectToLogin();
         return throwError(error);
       })

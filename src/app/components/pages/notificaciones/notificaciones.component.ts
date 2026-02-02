@@ -10,6 +10,7 @@ import {
     ConfiguracionAlerta 
 } from './notificaciones.model';
 import { KeycloakService } from '../../../service/keycloak.service';
+import { NotificacionBadgeService } from '../../../service/notificacion-badge.service';
 
 @Component({
     selector: 'app-notificaciones',
@@ -45,7 +46,8 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
         private http: HttpClient,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        public keycloakService: KeycloakService
+        public keycloakService: KeycloakService,
+        private notificacionBadgeService: NotificacionBadgeService
     ) {}
 
     ngOnInit(): void {
@@ -71,20 +73,13 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
 
     cargarNotificaciones(): void {
         this.cargando = true;
-        console.log('🔄 Cargando notificaciones desde:', `${this.apiUrl}/notificaciones`);
         this.http.get<Notificacion[]>(`${this.apiUrl}/notificaciones`).subscribe({
             next: (data) => {
-                console.log('📋 Notificaciones recibidas:', data);
-                console.log('📊 Total notificaciones:', data?.length || 0);
-                if (data && data.length > 0) {
-                    console.log('📌 Primera notificación:', data[0]);
-                }
                 this.notificaciones = data || [];
                 this.filtrarNotificaciones();
                 this.cargando = false;
             },
             error: (err) => {
-                console.error('❌ Error al cargar notificaciones', err);
                 this.cargando = false;
                 this.messageService.add({
                     severity: 'error',
@@ -98,10 +93,10 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
     cargarContadores(): void {
         this.http.get<Contadores>(`${this.apiUrl}/notificaciones/contadores`).subscribe({
             next: (data) => {
-                console.log('📊 Contadores recibidos:', data);
                 this.contadores = data;
+                this.notificacionBadgeService.setCount(data?.total ?? 0);
             },
-            error: (err) => console.error('❌ Error al cargar contadores', err)
+            error: () => {}
         });
     }
 
@@ -113,14 +108,14 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                 this.horaEjecucion = data.horaEjecucion;
                 this.minutoEjecucion = data.minutoEjecucion;
             },
-            error: (err) => console.error('Error al cargar estado del scheduler', err)
+            error: () => {}
         });
     }
 
     cargarConfiguraciones(): void {
         this.http.get<ConfiguracionAlerta[]>(`${this.apiUrl}/notificaciones/configuracion`).subscribe({
             next: (data) => this.configuraciones = data,
-            error: (err) => console.error('Error al cargar configuraciones', err)
+            error: () => {}
         });
     }
 
@@ -162,7 +157,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                 });
             },
             error: (err) => {
-                console.error('Error al marcar como leída', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -188,7 +182,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                         });
                     },
                     error: (err) => {
-                        console.error('Error al marcar todas como leídas', err);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -217,7 +210,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                         });
                     },
                     error: (err) => {
-                        console.error('Error al eliminar todas las notificaciones', err);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -247,7 +239,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                         });
                     },
                     error: (err) => {
-                        console.error('Error al eliminar', err);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -305,16 +296,12 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
     }
 
     verDetalle(notif: Notificacion): void {
-        console.log('📋 Detalle notificación:', notif);
-        console.log('📅 Fecha creación raw:', notif.fechaCreacion, 'tipo:', typeof notif.fechaCreacion);
         this.notificacionSeleccionada = notif;
         this.mostrarDetalle = true;
     }
 
     formatearFecha(fecha: any): string {
         if (!fecha) return 'No disponible';
-        
-        console.log('Fecha raw:', fecha, 'tipo:', typeof fecha);
         
         let date: Date;
         
@@ -349,7 +336,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
         }
         
         if (isNaN(date.getTime())) {
-            console.error('Fecha inválida:', fecha);
             return 'Sin fecha';
         }
         
@@ -374,10 +360,8 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
         }
 
         this.ejecutandoVerificacion = true;
-        console.log('🔄 Ejecutando verificación manual...');
         this.http.post<any>(`${this.apiUrl}/notificaciones/scheduler/ejecutar`, {}).subscribe({
             next: (resultado) => {
-                console.log('✅ Resultado verificación:', resultado);
                 this.ejecutandoVerificacion = false;
                 this.cargarDatos();
                 this.messageService.add({
@@ -388,7 +372,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
             },
             error: (err) => {
                 this.ejecutandoVerificacion = false;
-                console.error('❌ Error al ejecutar verificación', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -418,7 +401,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                 });
             },
             error: (err) => {
-                console.error('Error al cambiar estado del scheduler', err);
                 this.schedulerHabilitado = !this.schedulerHabilitado;
             }
         });
@@ -447,7 +429,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                 });
             },
             error: (err) => {
-                console.error('Error al guardar horario', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -476,7 +457,6 @@ export class NotificacionesComponent implements OnInit, OnDestroy {
                 });
             },
             error: (err) => {
-                console.error('Error al actualizar configuración', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

@@ -1,8 +1,13 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MenuItem } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
+import { interval, Subscription } from 'rxjs';
 import { LayoutService } from "./service/app.layout.service";
 import { KeycloakService } from '../service/keycloak.service';
+import { environment } from '../../environments/environment';
+import { Contadores } from '../components/pages/notificaciones/notificaciones.model';
+import { NotificacionBadgeService } from '../service/notificacion-badge.service';
 
 @Component({
     selector: 'app-topbar',
@@ -126,6 +131,30 @@ import { KeycloakService } from '../service/keycloak.service';
         .menu-action-item.logout-item i {
             color: var(--red-600);
         }
+
+        .topbar-notificaciones {
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -2px;
+            background: var(--red-500);
+            color: #fff;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            padding: 0 4px;
+            font-weight: 700;
+            box-shadow: 0 0 0 2px var(--surface-card);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
         
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -145,12 +174,14 @@ import { KeycloakService } from '../service/keycloak.service';
         }
     `]
 })
-export class AppTopBarComponent {
+export class AppTopBarComponent implements OnInit, OnDestroy {
 
     items!: MenuItem[];
     userMenuItems: MenuItem[] = [];
     userMenuVisible: boolean = false;
     isDarkMode: boolean = false;
+    unreadNotificaciones: number = 0;
+    private notificacionesSub?: Subscription;
     
     // Temas: light y dark
     private lightTheme = 'lara-light-indigo';
@@ -165,7 +196,9 @@ export class AppTopBarComponent {
     constructor(
         public layoutService: LayoutService,
         private keycloakService: KeycloakService,
-        private router: Router
+        private router: Router,
+        private http: HttpClient,
+        private notificacionBadgeService: NotificacionBadgeService
     ) { 
         this.initUserMenu();
         this.initDarkMode();
@@ -174,6 +207,22 @@ export class AppTopBarComponent {
         document.addEventListener('click', (event) => {
             this.userMenuVisible = false;
         });
+    }
+
+    ngOnInit(): void {
+        this.notificacionBadgeService.count$.subscribe((count) => {
+            this.unreadNotificaciones = count ?? 0;
+        });
+        this.cargarContadorNotificaciones();
+        if (this.puedeVerNotificaciones()) {
+            this.notificacionesSub = interval(60000).subscribe(() => {
+                this.cargarContadorNotificaciones();
+            });
+        }
+    }
+
+    ngOnDestroy(): void {
+        this.notificacionesSub?.unsubscribe();
     }
 
     initDarkMode() {
@@ -196,6 +245,33 @@ export class AppTopBarComponent {
         
         // Guardar preferencia
         localStorage.setItem('darkMode', String(this.isDarkMode));
+    }
+
+    puedeVerNotificaciones(): boolean {
+        return this.keycloakService.canAccessNotificaciones();
+    }
+
+    cargarContadorNotificaciones(): void {
+        if (!this.puedeVerNotificaciones()) {
+            this.unreadNotificaciones = 0;
+            return;
+        }
+
+        this.http.get<Contadores>(`${environment.apiUrl}/notificaciones/contadores`).subscribe({
+            next: (data) => {
+                const total = data?.total ?? 0;
+                this.unreadNotificaciones = total;
+                this.notificacionBadgeService.setCount(total);
+            },
+            error: () => {
+                this.unreadNotificaciones = 0;
+                this.notificacionBadgeService.setCount(0);
+            }
+        });
+    }
+
+    goToNotificaciones(): void {
+        this.router.navigate(['/administracion/notificaciones']);
     }
 
     private applyTheme(theme: string, colorScheme: string) {
@@ -225,7 +301,6 @@ export class AppTopBarComponent {
                 label: 'Perfil',
                 icon: 'pi pi-user-edit',
                 command: () => {
-                    console.log('[Topbar] Accediendo a perfil...');
                     // Aquí podrías navegar a la página de perfil
                     // this.router.navigate(['/profile']);
                 }
@@ -234,7 +309,6 @@ export class AppTopBarComponent {
                 label: 'Configuración',
                 icon: 'pi pi-cog',
                 command: () => {
-                    console.log('[Topbar] Accediendo a configuración...');
                     // Aquí podrías navegar a la página de configuración
                     // this.router.navigate(['/settings']);
                 }
@@ -255,22 +329,18 @@ export class AppTopBarComponent {
     }
 
     openProfile() {
-        console.log('[Topbar] Accediendo a perfil...');
         this.userMenuVisible = false;
         // Aquí podrías navegar a la página de perfil
         // this.router.navigate(['/profile']);
     }
 
     openSettings() {
-        console.log('[Topbar] Accediendo a configuración...');
         this.userMenuVisible = false;
         // Aquí podrías navegar a la página de configuración
         // this.router.navigate(['/settings']);
     }
 
     logout() {
-        console.log('[Topbar] Iniciando logout...');
-        
         // Cerrar el menú
         this.userMenuVisible = false;
         
@@ -279,8 +349,6 @@ export class AppTopBarComponent {
         
         // Redirigir al login
         this.router.navigate(['/auth/login']);
-        
-        console.log('[Topbar] Logout completado, redirigiendo al login');
     }
 
     getUserName(): string {

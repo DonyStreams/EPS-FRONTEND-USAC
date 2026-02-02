@@ -129,10 +129,8 @@ export class ContratosComponent implements OnInit {
             next: (contratos) => {
                 this.contratos = contratos;
                 this.loading = false;
-                console.log('✅ Contratos cargados:', contratos.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar contratos:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -149,10 +147,8 @@ export class ContratosComponent implements OnInit {
         this.proveedoresService.getActivos().subscribe({
             next: (proveedores) => {
                 this.proveedores = proveedores;
-                console.log('✅ Proveedores cargados:', proveedores.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar proveedores:', error);
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Advertencia',
@@ -168,10 +164,8 @@ export class ContratosComponent implements OnInit {
         this.contratoService.getStats().subscribe({
             next: (stats) => {
                 this.stats = stats;
-                console.log('✅ Estadísticas cargadas:', stats);
             },
             error: (error) => {
-                console.error('❌ Error al cargar estadísticas:', error);
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Advertencia',
@@ -269,10 +263,8 @@ export class ContratosComponent implements OnInit {
                         tamanoFormateado: this.archivosService.formatearTamano(archivo.tamano)
                     }));
                 }
-                console.log('✅ Archivos del contrato cargados:', response.archivos.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar archivos del contrato:', error);
             }
         });
     }
@@ -317,7 +309,6 @@ export class ContratosComponent implements OnInit {
             // Subir archivo
             this.archivosService.subirArchivo(file, contratoId).subscribe({
                 next: (response: ArchivoResponse) => {
-                    console.log('✅ Archivo subido:', response);
                     archivosSubidos++;
                     
                     if (archivosSubidos + errores === totalArchivos) {
@@ -325,7 +316,6 @@ export class ContratosComponent implements OnInit {
                     }
                 },
                 error: (error) => {
-                    console.error('❌ Error al subir archivo:', error);
                     errores++;
                     
                     this.messageService.add({
@@ -372,10 +362,6 @@ export class ContratosComponent implements OnInit {
     saveContrato(): void {
         if (this.contratoForm.valid) {
             const formValue = this.contratoForm.value;
-            console.log('📋 Valores del formulario:', formValue);
-            console.log('🔍 idProveedor específico:', formValue.idProveedor);
-            console.log('📝 Tipo de idProveedor:', typeof formValue.idProveedor);
-            console.log('📦 Proveedores disponibles:', this.proveedores);
             
             // Convertir fechas a formato ISO string para el backend
             const contratoData = {
@@ -387,16 +373,10 @@ export class ContratosComponent implements OnInit {
                 // NO enviamos 'proveedor' - el backend lo resolverá con idProveedor
             };
             
-            console.log('📤 Enviando contrato al backend:', contratoData);
-            console.log('🔍 Estado específico enviado:', contratoData.estado, 'tipo:', typeof contratoData.estado);
-            console.log('🔍 Enviando idProveedor:', contratoData.idProveedor, 'tipo:', typeof contratoData.idProveedor);
-            
             if (this.isEditing && this.selectedContrato) {
                 // Actualizar contrato existente
                 this.contratoService.update(this.selectedContrato.id!, contratoData as any).subscribe({
                     next: (contrato) => {
-                        console.log('✅ Contrato actualizado:', contrato);
-                        
                         // Subir archivos nuevos si hay
                         if (this.uploadedFiles.length > 0) {
                             this.subirArchivosContrato(this.selectedContrato!.id!);
@@ -412,7 +392,6 @@ export class ContratosComponent implements OnInit {
                         }
                     },
                     error: (error) => {
-                        console.error('❌ Error al actualizar contrato:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -424,8 +403,6 @@ export class ContratosComponent implements OnInit {
                 // Crear nuevo contrato
                 this.contratoService.create(contratoData as any).subscribe({
                     next: (contrato) => {
-                        console.log('✅ Contrato creado:', contrato);
-                        
                         // Subir archivos si hay
                         if (this.uploadedFiles.length > 0 && contrato.id) {
                             this.subirArchivosContrato(contrato.id);
@@ -441,7 +418,6 @@ export class ContratosComponent implements OnInit {
                         }
                     },
                     error: (error) => {
-                        console.error('❌ Error al crear contrato:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -463,7 +439,6 @@ export class ContratosComponent implements OnInit {
 
     // 🆕 MÉTODO PARA NAVEGAR A LA PÁGINA DE GESTIÓN DE ARCHIVOS
     gestionarArchivos(contrato: Contrato): void {
-        console.log('📂 Navegando a gestión de archivos para contrato:', contrato.id);
         this.router.navigate(['/administracion/contratos/archivos', contrato.id]);
     }
     
@@ -494,14 +469,11 @@ export class ContratosComponent implements OnInit {
         // 🆕 Prevenir llamadas múltiples usando debounce
         const currentTime = Date.now();
         if (this.isClearing || (currentTime - this.lastClearTime) < 500) {
-            console.log('🚫 Evitando llamada múltiple a onFilesClear');
             return;
         }
         
         this.isClearing = true;
         this.lastClearTime = currentTime;
-        
-        console.log('🧹 Limpiando archivos...');
         
         // Limpiar nuestro array
         this.uploadedFiles = [];
@@ -521,8 +493,6 @@ export class ContratosComponent implements OnInit {
 
     // 🆕 MÉTODO MANUAL PARA LIMPIAR (sin depender del evento del componente)
     clearFilesManually(): void {
-        console.log('🧹 Limpieza manual de archivos');
-        
         // Limpiar nuestro array
         this.uploadedFiles = [];
         
@@ -844,7 +814,6 @@ export class ContratosComponent implements OnInit {
             
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         } catch (error) {
-            console.warn('Error formatting datetime:', dateValue, error);
             return '-';
         }
     }
@@ -876,7 +845,6 @@ export class ContratosComponent implements OnInit {
             // Docker ya está configurado con TZ=America/Guatemala
             return `${year}-${month}-${day}T12:00:00`;
         } catch (error) {
-            console.warn('Error formatting date for backend:', dateValue, error);
             return null;
         }
     }

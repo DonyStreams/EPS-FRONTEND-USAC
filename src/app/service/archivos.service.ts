@@ -34,8 +34,6 @@ export class ArchivosService {
      * Sube un archivo al servidor usando el sistema local
      */
     subirArchivo(file: File, contratoId: number): Observable<ArchivoResponse> {
-        console.log('📤 Subiendo archivo:', file.name, 'para contrato:', contratoId);
-        
         const headers = new HttpHeaders({
             'X-Filename': file.name
         });
@@ -138,8 +136,6 @@ export class ArchivosService {
      * Obtiene la lista de archivos de un contrato específico
      */
     getListaArchivosPorContrato(contratoId: number): Observable<any> {
-        console.log('📋 Obteniendo lista de archivos para contrato:', contratoId);
-        
         return this.http.get<any>(`${this.apiUrl}/contrato/${contratoId}/list`);
     }
 
@@ -147,8 +143,6 @@ export class ArchivosService {
      * Obtiene el conteo de archivos de un contrato específico
      */
     getConteoArchivosPorContrato(contratoId: number): Observable<any> {
-        console.log('📊 Obteniendo conteo de archivos para contrato:', contratoId);
-        
         return this.http.get<any>(`${this.apiUrl}/contrato/${contratoId}/count`);
     }
 
@@ -163,7 +157,6 @@ export class ArchivosService {
      * Elimina un archivo del servidor
      */
     eliminarArchivo(nombreSistema: string): Observable<any> {
-        console.log('🗑️ Eliminando archivo:', nombreSistema);
         // Codificar el nombre del archivo para manejar caracteres especiales
         const encodedFileName = encodeURIComponent(nombreSistema);
         return this.http.delete(`${this.apiUrl}/delete/${encodedFileName}`);

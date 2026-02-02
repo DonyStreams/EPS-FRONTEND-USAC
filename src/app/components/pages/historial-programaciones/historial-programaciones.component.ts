@@ -63,8 +63,6 @@ export class HistorialProgramacionesComponent implements OnInit {
         this.loading = true;
         this.programacionesService.getHistorialCompleto().subscribe({
             next: (data) => {
-                console.log('📋 Historial de programaciones recibido:', data);
-                
                 if (this.programacionIdFiltro) {
                     this.historial = data.filter((h: HistorialProgramacion) => h.idProgramacion === this.programacionIdFiltro);
                 } else {
@@ -74,7 +72,6 @@ export class HistorialProgramacionesComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar historial:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -91,7 +88,6 @@ export class HistorialProgramacionesComponent implements OnInit {
                 this.metricas = data;
             },
             error: (error) => {
-                console.error('Error al cargar métricas:', error);
             }
         });
     }
@@ -227,7 +223,6 @@ export class HistorialProgramacionesComponent implements OnInit {
                 this.loadMetricas();
             },
             error: (error) => {
-                console.error('Error al eliminar registros:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

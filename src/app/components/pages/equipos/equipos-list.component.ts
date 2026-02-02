@@ -249,7 +249,6 @@ export class EquiposListComponent implements OnInit {
         this.areas = areas;
       },
       error: (error) => {
-        console.error('Error al cargar áreas:', error);
       }
     });
   }
@@ -260,7 +259,6 @@ export class EquiposListComponent implements OnInit {
         this.categorias = categorias;
       },
       error: (error) => {
-        console.error('Error al cargar categorías:', error);
       }
     });
   }
@@ -439,7 +437,6 @@ export class EquiposListComponent implements OnInit {
         this.previewUrlEdit = e.target.result;
       };
       reader.onerror = (error) => {
-        console.error('Error al leer archivo (edición):', error);
         this.previewUrlEdit = null;
         this.errorImagenEdit = 'Error al cargar la vista previa de la imagen';
       };
@@ -537,7 +534,6 @@ export class EquiposListComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error al actualizar equipo:', error);
         if (error.status === 409) {
           // Error 409 = Conflict (código duplicado)
           this.messageService.add({
@@ -584,7 +580,6 @@ export class EquiposListComponent implements OnInit {
         this.previewUrl = e.target.result;
       };
       reader.onerror = (error) => {
-        console.error('Error al leer archivo:', error);
         this.previewUrl = null;
         this.errorImagen = 'Error al cargar la vista previa de la imagen';
       };
@@ -651,7 +646,6 @@ export class EquiposListComponent implements OnInit {
         life: 3000
       });
     } catch (error) {
-      console.error('Error al generar ficha:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -738,8 +732,6 @@ export class EquiposListComponent implements OnInit {
   // 🆕 MÉTODO PARA SUBIR IMÁGENES AL SISTEMA LOCAL
   private subirImagenLocal(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
-      console.log('📸 Subiendo imagen al sistema local:', file.name);
-      
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Filename': file.name
@@ -750,7 +742,6 @@ export class EquiposListComponent implements OnInit {
         responseType: 'text'
       }).subscribe({
         next: (response) => {
-          console.log('✅ Imagen subida exitosamente:', response);
           try {
             const jsonResponse = JSON.parse(response);
             resolve(jsonResponse.fileName); // Devolver solo el nombre del archivo
@@ -760,7 +751,6 @@ export class EquiposListComponent implements OnInit {
           }
         },
         error: (error) => {
-          console.error('❌ Error al subir imagen:', error);
           reject(error);
         }
       });

@@ -167,7 +167,6 @@ export class ProgramacionesComponent implements OnInit {
             if (params['equipoId']) {
                 this.filtroEquipoId = +params['equipoId'];
                 this.filtroEquipoNombre = params['equipoNombre'] || null;
-                console.log('🔍 Filtro por equipo:', this.filtroEquipoId, this.filtroEquipoNombre);
             } else {
                 this.filtroEquipoId = null;
                 this.filtroEquipoNombre = null;
@@ -177,20 +176,17 @@ export class ProgramacionesComponent implements OnInit {
                 // Buscar el nombre del tipo si está en la lista
                 const tipo = this.tiposMantenimiento.find(t => t.idTipo === this.filtroTipoMantenimientoId);
                 this.filtroTipoMantenimientoNombre = tipo ? tipo.nombre : null;
-                console.log('🔍 Filtro por tipo:', this.filtroTipoMantenimientoId, this.filtroTipoMantenimientoNombre);
             } else {
                 this.filtroTipoMantenimientoId = null;
                 this.filtroTipoMantenimientoNombre = null;
             }
             if (params['idProgramacion']) {
                 this.filtroProgramacionId = +params['idProgramacion'];
-                console.log('🔍 Filtro por programación ID:', this.filtroProgramacionId);
             } else {
                 this.filtroProgramacionId = null;
             }
             // Si viene desde el calendario con nuevaProgramacion=true
             if (params['nuevaProgramacion'] === 'true') {
-                console.log('📅 Nueva programación desde calendario');
                 // Esperar a que se carguen los datos antes de abrir el diálogo
                 setTimeout(() => {
                     this.openNewFromCalendar(params['fechaProximoMantenimiento']);
@@ -232,7 +228,6 @@ export class ProgramacionesComponent implements OnInit {
             const [year, month, day] = fechaStr.split('-').map(Number);
             const fecha = new Date(year, month - 1, day, 12, 0, 0); // Usar mediodía para evitar problemas de zona horaria
             this.programacion.fechaProximoMantenimiento = fecha;
-            console.log('📅 Fecha pre-llenada:', fecha, 'desde string:', fechaStr);
         }
         
         this.displayDialog = true;
@@ -320,8 +315,6 @@ export class ProgramacionesComponent implements OnInit {
 
         this.http.get<any[]>(`${this.API_URL}/programaciones`).subscribe({
             next: (data) => {
-                console.log('📋 Programaciones cargadas (raw):', data);
-                
                 // Convertir las fechas del formato backend a Date y asegurar estructura
                 this.programaciones = data.map(prog => ({
                     idProgramacion: prog.idProgramacion,
@@ -353,13 +346,10 @@ export class ProgramacionesComponent implements OnInit {
                         }
                     }
                 }));
-                
-                console.log('📋 Programaciones procesadas:', this.programaciones);
                 this.calculateStats();
                 this.loading = false;
             },
             error: (error) => {
-                console.error('❌ Error cargando programaciones:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -380,7 +370,6 @@ export class ProgramacionesComponent implements OnInit {
                 this.equipos = data;
             },
             error: (error) => {
-                console.error('Error cargando equipos:', error);
                 // Datos de fallback
                 this.equipos = [
                     { idEquipo: 1, nombre: 'Microscopio Óptico', codigoInacif: 'MIC-001', ubicacion: 'Laboratorio A' },
@@ -399,7 +388,6 @@ export class ProgramacionesComponent implements OnInit {
                 this.tiposMantenimiento = data;
             },
             error: (error) => {
-                console.error('Error cargando tipos de mantenimiento:', error);
                 // Datos de fallback
                 this.tiposMantenimiento = [
                     { idTipo: 1, nombre: 'Preventivo' },
@@ -414,13 +402,8 @@ export class ProgramacionesComponent implements OnInit {
      * Carga todos los contratos disponibles (al inicio)
      */
     loadAllContratos(): void {
-        console.log('🔍 Cargando todos los contratos vigentes...');
-
         this.http.get<any[]>(`${this.API_URL}/contratos/vigentes`).subscribe({
             next: (data) => {
-                console.log('✅ Contratos vigentes cargados:', data);
-                console.log('📊 Cantidad de contratos:', data.length);
-
                 // Transformar los datos para que tengan la estructura correcta
                 this.contratosDisponibles = data.map(contrato => {
                     const nombreProveedor = contrato.proveedorNombre || contrato.proveedor?.nombre || 'Sin proveedor';
@@ -437,15 +420,10 @@ export class ProgramacionesComponent implements OnInit {
                         }
                     };
                 });
-
-                console.log('📝 contratosDisponibles asignado:', this.contratosDisponibles);
-                console.log('📊 Cantidad en contratosDisponibles:', this.contratosDisponibles.length);
-
                 // Forzar detección de cambios
                 this.cdr.detectChanges();
             },
             error: (error) => {
-                console.error('❌ Error cargando contratos vigentes:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -461,12 +439,9 @@ export class ProgramacionesComponent implements OnInit {
      */
     loadContratosDisponibles(): void {
         if (!this.programacion.equipoId || !this.programacion.tipoMantenimientoId) {
-            console.log('⚠️ No hay equipoId o tipoMantenimientoId, cargando todos los contratos...');
             this.loadAllContratos();
             return;
         }
-
-        console.log('🔍 Buscando contratos para equipoId:', this.programacion.equipoId, 'tipoId:', this.programacion.tipoMantenimientoId);
 
         // Guardar el contratoId actual para asegurarse de que esté en la lista
         const contratoIdActual = this.programacion.contratoId;
@@ -489,16 +464,13 @@ export class ProgramacionesComponent implements OnInit {
                         }
                     };
                 });
-                console.log('✅ Contratos vigentes obtenidos:', this.contratosDisponibles);
                 
                 // Si el contrato actual no está en la lista, cargarlo
                 if (contratoIdActual && !this.contratosDisponibles.find(c => c.idContrato === contratoIdActual)) {
-                    console.log('⚠️ Contrato actual no está en la lista, cargando todos...');
                     this.loadAllContratos();
                 }
             },
             error: (error) => {
-                console.error('❌ Error cargando contratos vigentes:', error);
                 // Si falla, cargar todos los contratos como fallback
                 this.loadAllContratos();
             }
@@ -553,7 +525,6 @@ export class ProgramacionesComponent implements OnInit {
         this.displayDialog = true;
 
         // 🚨 CARGAR CONTRATOS CUANDO SE ABRE EL DIÁLOGO
-        console.log('🔄 Cargando contratos al abrir diálogo...');
         this.loadAllContratos();
     }
 
@@ -561,8 +532,6 @@ export class ProgramacionesComponent implements OnInit {
      * Abre el diálogo para editar programación
      */
     editProgramacion(programacion: ProgramacionMantenimiento): void {
-        console.log('📝 Editando programación:', programacion);
-        
         // Extraer los IDs de los objetos anidados para los dropdowns
         this.programacion = {
             ...programacion,
@@ -578,8 +547,6 @@ export class ProgramacionesComponent implements OnInit {
             fechaUltimoMantenimiento: this.parseBackendDate(programacion.fechaUltimoMantenimiento),
             fechaProximoMantenimiento: this.parseBackendDate(programacion.fechaProximoMantenimiento)
         };
-        
-        console.log('📋 Programación preparada para edición:', this.programacion);
         
         // Detectar si la frecuencia es única (0) o personalizada (no está en las opciones predefinidas)
         const frecuenciasPredefinidas = [0, 7, 15, 30, 60, 90, 120, 180, 365];
@@ -599,8 +566,6 @@ export class ProgramacionesComponent implements OnInit {
     loadContratosParaEdicion(programacion: ProgramacionMantenimiento): void {
         const contratoActual = programacion.contrato;
         const contratoIdActual = contratoActual?.idContrato || programacion.contratoId;
-        
-        console.log('🔍 Cargando contratos para edición. Contrato actual:', contratoIdActual);
 
         // Primero cargar contratos vigentes
         this.programacionesService.getContratosDisponibles(
@@ -627,8 +592,6 @@ export class ProgramacionesComponent implements OnInit {
                 
                 if (!contratoEnLista && contratoActual) {
                     // El contrato actual NO está vigente, añadirlo a la lista marcado como no vigente
-                    console.log('⚠️ Contrato actual no vigente, añadiéndolo a la lista');
-                    
                     const nombreProveedorActual = (contratoActual as any).proveedorNombre || contratoActual.proveedor?.nombre || 'Sin proveedor';
                     const contratoNoVigente: any = {
                         idContrato: contratoActual.idContrato,
@@ -657,12 +620,9 @@ export class ProgramacionesComponent implements OnInit {
                     // Marcar el contrato actual
                     contratoEnLista.esContratoActual = true;
                 }
-                
-                console.log('✅ Contratos disponibles para edición:', this.contratosDisponibles);
                 this.cdr.detectChanges();
             },
             error: (error) => {
-                console.error('❌ Error cargando contratos:', error);
                 // Si falla, al menos mostrar el contrato actual
                 if (contratoActual) {
                     this.contratosDisponibles = [{
@@ -687,7 +647,6 @@ export class ProgramacionesComponent implements OnInit {
      * Muestra el detalle de una programación
      */
     verDetalle(programacion: ProgramacionMantenimiento): void {
-        console.log('👁️ Ver detalle de programación:', programacion);
         this.selectedProgramacion = {
             ...programacion,
             fechaUltimoMantenimiento: this.parseBackendDate(programacion.fechaUltimoMantenimiento),
@@ -757,8 +716,6 @@ export class ProgramacionesComponent implements OnInit {
             observaciones: this.programacion.observaciones
         };
 
-        console.log('💾 Guardando programación:', programacionDTO);
-
         const url = this.isEditing ?
             `${this.API_URL}/programaciones/${this.programacion.idProgramacion}` :
             `${this.API_URL}/programaciones`;
@@ -767,7 +724,6 @@ export class ProgramacionesComponent implements OnInit {
 
         this.http.request(method, url, { body: programacionDTO }).subscribe({
             next: (response) => {
-                console.log('✅ Programación guardada exitosamente:', response);
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
@@ -777,7 +733,6 @@ export class ProgramacionesComponent implements OnInit {
                 this.loadProgramaciones();
             },
             error: (error) => {
-                console.error('❌ Error guardando programación:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -830,7 +785,6 @@ export class ProgramacionesComponent implements OnInit {
     calcularProximaFecha(): void {
         // Si es único (frecuencia 0), no recalcular la fecha - el usuario la define manualmente
         if (this.esUnico || this.programacion.frecuenciaDias === 0) {
-            console.log('📅 Programación única - fecha definida manualmente');
             return;
         }
 
@@ -850,7 +804,6 @@ export class ProgramacionesComponent implements OnInit {
 
         this.programacion.fechaProximoMantenimiento = fechaProxima;
 
-        console.log('📅 Próxima fecha calculada:', fechaProxima.toLocaleDateString('es-ES'));
     }
 
     /**
@@ -919,7 +872,6 @@ export class ProgramacionesComponent implements OnInit {
                             this.calculateStats();
                         },
                         error: (error) => {
-                            console.error('Error al cambiar estado:', error);
                             this.messageService.add({
                                 severity: 'error',
                                 summary: 'Error',
@@ -955,7 +907,6 @@ export class ProgramacionesComponent implements OnInit {
                             this.calculateStats();
                         },
                         error: (error) => {
-                            console.error('Error al eliminar programación:', error);
                             this.messageService.add({
                                 severity: 'error',
                                 summary: 'Error',
@@ -988,9 +939,7 @@ export class ProgramacionesComponent implements OnInit {
                 this.loading = true;
                 this.programacionesService.crearMantenimiento(programacion.idProgramacion!).subscribe({
                     next: (response) => {
-                        console.log('📝 Respuesta crearMantenimiento:', response);
                         const idEjecucion = response?.idEjecucion || response?.id;
-                        console.log('🆔 ID Ejecución obtenido:', idEjecucion);
                         const equipoNombre = programacion.equipo?.nombre || 'el equipo';
                         
                         this.messageService.add({
@@ -1030,7 +979,6 @@ export class ProgramacionesComponent implements OnInit {
                         this.loadProgramaciones();
                     },
                     error: (error) => {
-                        console.error('❌ Error creando ejecucion:', error);
                         this.loading = false;
                         const detail = this.getErrorDetail(error, 'No se pudo crear el mantenimiento');
                         this.messageService.add({
@@ -1107,7 +1055,6 @@ export class ProgramacionesComponent implements OnInit {
                         this.loadProgramaciones();
                     },
                     error: (error) => {
-                        console.error('❌ Error descartando programación:', error);
                         this.loading = false;
                         this.messageService.add({
                             severity: 'error',
@@ -1162,7 +1109,6 @@ export class ProgramacionesComponent implements OnInit {
         // toISOString() convierte a UTC y puede restar un día
         const fecha = this.reprogramarData.nuevaFecha;
         const fechaFormateada = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
-        console.log('📅 Fecha seleccionada:', fecha, '→ Enviando:', fechaFormateada);
 
         this.programacionesService.reprogramarProgramacion(
             this.reprogramarData.programacion.idProgramacion!,
@@ -1170,7 +1116,6 @@ export class ProgramacionesComponent implements OnInit {
             this.reprogramarData.motivo
         ).subscribe({
             next: (response) => {
-                console.log('✅ Reprogramación exitosa:', response);
                 this.displayReprogramarDialog = false;
                 this.loading = false;
                 this.messageService.add({
@@ -1183,7 +1128,6 @@ export class ProgramacionesComponent implements OnInit {
                 this.loadProgramaciones();
             },
             error: (error) => {
-                console.error('❌ Error reprogramando:', error);
                 this.loading = false;
                 this.messageService.add({
                     severity: 'error',
@@ -1329,7 +1273,6 @@ export class ProgramacionesComponent implements OnInit {
                 detail: `Programaciones exportadas como ${nombreArchivo}`
             });
         } catch (error) {
-            console.error('Error al exportar CSV:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -1482,7 +1425,6 @@ export class ProgramacionesComponent implements OnInit {
 
         // Verificar si la fecha es válida
         if (isNaN(parsedDate.getTime())) {
-            console.warn('⚠️ Fecha inválida recibida del backend:', dateString);
             return null;
         }
 

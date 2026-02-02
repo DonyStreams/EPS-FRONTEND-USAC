@@ -74,7 +74,6 @@ export class GestionArchivosComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar contratos:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -105,7 +104,6 @@ export class GestionArchivosComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar archivos:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -174,7 +172,6 @@ export class GestionArchivosComponent implements OnInit {
                     }
                 },
                 error: (error) => {
-                    console.error('Error al subir archivo:', error);
                     errores++;
                     
                     this.messageService.add({
@@ -217,8 +214,6 @@ export class GestionArchivosComponent implements OnInit {
 
     // Descarga de archivos
     descargarArchivo(archivo: ArchivoContrato): void {
-        console.log('📥 Descargando archivo:', archivo.nombreSistema);
-        
         this.archivosService.descargarArchivo(archivo.nombreSistema).subscribe({
             next: (blob: Blob) => {
                 // Crear un enlace de descarga
@@ -238,7 +233,6 @@ export class GestionArchivosComponent implements OnInit {
                 });
             },
             error: (error) => {
-                console.error('Error al descargar archivo:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error de descarga',
@@ -263,7 +257,6 @@ export class GestionArchivosComponent implements OnInit {
     eliminarArchivo(archivo: ArchivoContrato): void {
         this.archivosService.eliminarArchivo(archivo.nombreSistema).subscribe({
             next: (response) => {
-                console.log('✅ Archivo eliminado:', response);
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Archivo eliminado',
@@ -276,7 +269,6 @@ export class GestionArchivosComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('❌ Error al eliminar archivo:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

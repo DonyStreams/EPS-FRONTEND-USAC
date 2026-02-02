@@ -147,10 +147,8 @@ export class TicketsComponent implements OnInit {
                 this.allTickets = tickets || [];
                 this.applyUserTicketFilter();
                 this.calcularEstadisticas();
-                console.log('✅ Tickets cargados:', this.tickets.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar tickets:', error);
                 this.allTickets = [];
                 this.tickets = []; // Asegurarse de que tickets sea siempre un array
                 this.calcularEstadisticas();
@@ -183,10 +181,8 @@ export class TicketsComponent implements OnInit {
                                 : `Equipo #${equipo.idEquipo}`
                     }));
                 this.equipos = equiposLimpios;
-                console.log('✅ Equipos cargados:', this.equipos.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar equipos:', error);
                 this.equipos = [];
                 this.messageService.add({
                     severity: 'error',
@@ -208,11 +204,9 @@ export class TicketsComponent implements OnInit {
         this.usuariosService.getActivos().subscribe({
             next: (usuarios: Usuario[]) => {
                 this.usuarios = usuarios || [];
-                console.log('✅ Usuarios cargados:', this.usuarios.length);
                 this.establecerUsuarioActual();
             },
             error: (error) => {
-                console.error('❌ Error al cargar usuarios:', error);
                 this.usuarios = [];
                 this.messageService.add({
                     severity: 'error',
@@ -264,7 +258,6 @@ export class TicketsComponent implements OnInit {
                 this.applyUserTicketFilter();
             },
             error: (error) => {
-                console.error('❌ No se pudo auto-sincronizar usuario:', error);
             }
         });
     }
@@ -395,7 +388,6 @@ export class TicketsComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('❌ Error al crear ticket:', error);
                 let errorMessage = 'Error al crear el ticket';
                 if (error.error && error.error.error) {
                     errorMessage = error.error.error;
@@ -449,7 +441,6 @@ export class TicketsComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('❌ Error al crear ticket:', error);
                 let errorMessage = 'Error al crear el ticket';
                 if (error.error && error.error.error) {
                     errorMessage = error.error.error;
@@ -547,7 +538,6 @@ export class TicketsComponent implements OnInit {
                         this.cargarDatos();
                     },
                     error: (error) => {
-                        console.error('Error al cambiar estado:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -599,7 +589,6 @@ export class TicketsComponent implements OnInit {
                 this.cargarDatos();
             },
             error: (error) => {
-                console.error('Error al cambiar estado:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -635,10 +624,8 @@ export class TicketsComponent implements OnInit {
         this.ticketsService.getComentarios(ticketId).subscribe({
             next: (comentarios: ComentarioTicketResponse[]) => {
                 this.comentarios = comentarios || [];
-                console.log('💬 Comentarios cargados:', this.comentarios.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar comentarios:', error);
             }
         });
     }
@@ -681,7 +668,6 @@ export class TicketsComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('❌ Error al eliminar ticket:', error);
                 let errorMessage = 'Error al desactivar el ticket';
                 if (error.error && error.error.error) {
                     errorMessage = error.error.error;
@@ -711,7 +697,6 @@ export class TicketsComponent implements OnInit {
                 this.cargarDatos();
             },
             error: (error) => {
-                console.error('❌ Error al asignar ticket:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -742,7 +727,6 @@ export class TicketsComponent implements OnInit {
                         this.cargarDatos();
                     },
                     error: (error) => {
-                        console.error('❌ Error al cerrar ticket:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -969,12 +953,8 @@ export class TicketsComponent implements OnInit {
      * Abre el modal de edición de ticket
      */
     editarTicket(ticket: Ticket): void {
-        console.log('🔧 Editando ticket:', ticket);
-        console.log('📦 Equipos disponibles:', this.equipos.length);
-        
         // Si no hay equipos cargados, cargarlos primero
         if (this.equipos.length === 0) {
-            console.log('⏳ Cargando equipos antes de editar...');
             this.cargarEquipos();
             // Esperar un poco para que se carguen los equipos
             setTimeout(() => {
@@ -1008,17 +988,10 @@ export class TicketsComponent implements OnInit {
                         }
                     },
                     error: () => {
-                        console.warn('⚠️ No se pudo obtener el usuario asignado con ID:', asignadoId);
                     }
                 });
             }
         }
-        
-        console.log('📦 Equipos disponibles al abrir modal:', this.equipos);
-        console.log('📋 Todas las propiedades del ticket:', Object.keys(ticket));
-        console.log('🆔 Buscando equipo con ID:', ticket.equipoId);
-        console.log('🔍 También verificando equipo_id:', (ticket as any).equipo_id);
-        console.log('🔍 También verificando equipoNombre:', (ticket as any).equipoNombre);
         
         // Intentar múltiples campos posibles para el equipo ID
         const equipoId = ticket.equipoId || (ticket as any).equipo_id;
@@ -1027,10 +1000,8 @@ export class TicketsComponent implements OnInit {
         if (equipoId) {
             // Buscar por ID
             this.equipoSeleccionado = this.equipos.find(equipo => {
-                console.log('🔍 Comparando ID:', equipo.idEquipo, 'con', equipoId);
                 return equipo.idEquipo === equipoId;
             }) || null;
-            console.log('🎯 Equipo encontrado por ID:', this.equipoSeleccionado);
 
             // Si no está en la lista, intentar cargarlo por ID
             if (!this.equipoSeleccionado) {
@@ -1040,23 +1011,17 @@ export class TicketsComponent implements OnInit {
                         this.equipoSeleccionado = equipo;
                     },
                     error: () => {
-                        console.warn('⚠️ No se pudo cargar el equipo por ID:', equipoId);
                     }
                 });
             }
         } else if (equipoNombre) {
             // Buscar por nombre
             this.equipoSeleccionado = this.equipos.find(equipo => {
-                console.log('🔍 Comparando nombre:', equipo.nombre, 'con', equipoNombre);
                 return equipo.nombre === equipoNombre;
             }) || null;
-            console.log('🎯 Equipo encontrado por nombre:', this.equipoSeleccionado);
         } else {
             this.equipoSeleccionado = null;
-            console.log('❌ No se encontró ID ni nombre de equipo en el ticket');
         }
-        
-        console.log('✏️ Ticket para editar:', this.ticketEditando);
         
         this.dialogEditarTicket = true;
     }
@@ -1094,12 +1059,8 @@ export class TicketsComponent implements OnInit {
             usuarioAsignadoId: this.ticketEditando.usuarioAsignadoId ? Number(this.ticketEditando.usuarioAsignadoId) : undefined
         };
 
-        console.log('💾 Guardando edición de ticket:', payload);
-        console.log('🎯 Equipo seleccionado:', this.equipoSeleccionado);
-
         this.ticketsService.update(payload.id!, payload as Ticket).subscribe({
             next: (ticketActualizado) => {
-                console.log('✅ Ticket actualizado:', ticketActualizado);
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
@@ -1122,7 +1083,6 @@ export class TicketsComponent implements OnInit {
                 this.cargarDatos(); // Recargar la lista
             },
             error: (error) => {
-                console.error('❌ Error al actualizar ticket:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1136,10 +1096,6 @@ export class TicketsComponent implements OnInit {
      * Agrega un nuevo comentario (y opcionalmente cambia el estado)
      */
     agregarComentario(): void {
-        console.log('🔍 Debug - nuevoComentario:', this.nuevoComentario);
-        console.log('🔍 Debug - nuevoComentario.length:', this.nuevoComentario?.length);
-        console.log('🔍 Debug - nuevoComentario.trim():', this.nuevoComentario?.trim());
-        
         if (!this.nuevoComentario.trim()) {
             this.messageService.add({
                 severity: 'warn',
@@ -1159,15 +1115,8 @@ export class TicketsComponent implements OnInit {
             nuevoEstado: this.nuevoEstadoSeleccionado || undefined
         };
 
-        console.log('💬 Agregando comentario:', data);
-        console.log('🔍 DEBUG - nuevoEstadoSeleccionado:', this.nuevoEstadoSeleccionado);
-        console.log('🔍 DEBUG - tipoComentarioSeleccionado:', this.tipoComentarioSeleccionado);
-        console.log('🔍 DEBUG - nuevoComentario:', this.nuevoComentario);
-
         this.ticketsService.addComentario(this.ticketSeleccionado.id, data).subscribe({
             next: (response) => {
-                console.log('✅ Comentario agregado:', response);
-                
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
@@ -1185,7 +1134,6 @@ export class TicketsComponent implements OnInit {
                 this.cargarDatos();
             },
             error: (error) => {
-                console.error('❌ Error al agregar comentario:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1288,7 +1236,6 @@ export class TicketsComponent implements OnInit {
                 detail: `Tickets exportados exitosamente como ${nombreArchivo}`
             });
         } catch (error) {
-            console.error('Error al exportar CSV:', error);
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
@@ -1334,10 +1281,8 @@ export class TicketsComponent implements OnInit {
                     iconoCss: this.obtenerIconoArchivo(ev.nombreOriginal || ev.nombreArchivo),
                     tamanoFormateado: this.formatearTamano(ev.tamanio)
                 }));
-                console.log('📎 Evidencias cargadas:', this.evidencias.length);
             },
             error: (error) => {
-                console.error('❌ Error al cargar evidencias:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1392,7 +1337,6 @@ export class TicketsComponent implements OnInit {
         files.forEach((file: File) => {
             this.ticketsService.uploadEvidenciaArchivo(ticketId, file, '').subscribe({
                 next: (response) => {
-                    console.log('✅ Archivo subido:', response);
                     archivosSubidos++;
                     nombresArchivos.push(file.name);
                     
@@ -1401,7 +1345,6 @@ export class TicketsComponent implements OnInit {
                     }
                 },
                 error: (error) => {
-                    console.error('❌ Error al subir evidencia:', error);
                     errores++;
                     
                     this.messageService.add({
@@ -1420,8 +1363,6 @@ export class TicketsComponent implements OnInit {
 
     private finalizarSubidaDirecta(exitosos: number, errores: number, event: any, nombresArchivos: string[] = []): void {
         this.subiendoEvidencias = false;
-        
-        console.log('🏁 finalizarSubidaDirecta:', { exitosos, errores, nombresArchivos });
         
         // Limpiar el componente de upload
         if (event.files) {
@@ -1466,10 +1407,7 @@ export class TicketsComponent implements OnInit {
             .map(a => a.replace(/["'\\]/g, '').trim()) // Eliminar comillas y backslashes
             .filter(a => a.length > 0);
         
-        console.log('📝 agregarComentarioEvidencia llamado:', { accion, archivos, archivosValidos, ticketId: this.ticketSeleccionado?.id });
-        
         if (!this.ticketSeleccionado?.id || archivosValidos.length === 0) {
-            console.log('⚠️ No se puede agregar comentario: ticketId o archivos vacíos');
             return;
         }
 
@@ -1485,18 +1423,14 @@ export class TicketsComponent implements OnInit {
             ? `Evidencia adjuntada (${hora}) - ${archivosTexto}`
             : `Evidencia eliminada (${hora}) - ${archivosTexto}`;
 
-        console.log('📝 Enviando comentario:', comentario);
-
         this.ticketsService.addComentario(this.ticketSeleccionado.id, {
             comentario: comentario,
             tipoComentario: 'Seguimiento'
         }).subscribe({
             next: (response) => {
-                console.log('✅ Comentario de evidencia agregado:', response);
                 this.cargarComentarios(this.ticketSeleccionado!.id!);
             },
             error: (error) => {
-                console.error('❌ Error al agregar comentario de evidencia:', error);
             }
         });
     }
@@ -1562,7 +1496,6 @@ export class TicketsComponent implements OnInit {
         this.archivosEvidenciaSeleccionados.forEach((file, index) => {
             this.ticketsService.uploadEvidenciaArchivo(ticketId, file, descripcion).subscribe({
                 next: (response) => {
-                    console.log('✅ Archivo subido:', response);
                     archivosSubidos++;
                     
                     if (archivosSubidos + errores === this.archivosEvidenciaSeleccionados.length) {
@@ -1570,7 +1503,6 @@ export class TicketsComponent implements OnInit {
                     }
                 },
                 error: (error) => {
-                    console.error('❌ Error al subir evidencia:', error);
                     errores++;
                     
                     this.messageService.add({
@@ -1652,7 +1584,6 @@ export class TicketsComponent implements OnInit {
                         this.agregarComentarioEvidencia('eliminada', [nombreArchivo]);
                     },
                     error: (error) => {
-                        console.error('❌ Error al eliminar evidencia:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -1667,13 +1598,11 @@ export class TicketsComponent implements OnInit {
     onArchivoSeleccionado(event: any): void {
         // Cuando se seleccionan archivos, reemplazar el array completo
         this.archivosEvidenciaSeleccionados = event.currentFiles || event.files || [];
-        console.log('📎 Archivos seleccionados:', this.archivosEvidenciaSeleccionados.length);
     }
 
     onArchivoEliminado(event: any): void {
         // Cuando se remueven archivos desde el componente
         this.archivosEvidenciaSeleccionados = event.currentFiles || event.files || [];
-        console.log('📎 Archivos actualizados:', this.archivosEvidenciaSeleccionados.length);
     }
 
     eliminarArchivoSeleccionado(index: number): void {
@@ -1710,7 +1639,6 @@ export class TicketsComponent implements OnInit {
                 window.URL.revokeObjectURL(url);
             },
             error: (error) => {
-                console.error('❌ Error al descargar evidencia:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

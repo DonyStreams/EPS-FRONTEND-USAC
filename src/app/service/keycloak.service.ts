@@ -22,15 +22,11 @@ export class KeycloakService {
   }
 
   init(): Promise<boolean> {
-    console.log('[Keycloak Real] Inicializando servicio real...');
-    
     return (this.keycloakInstance.init({
       checkLoginIframe: false,
       onLoad: 'check-sso'  // Verificar si hay sesión válida
     }) as any).then((authenticated: boolean) => {
       this.initialized = true;
-      console.log('[Keycloak Real] Servicio inicializado correctamente');
-      console.log('[Keycloak Real] Usuario autenticado:', authenticated);
       
       // Configurar renovación automática de tokens
       if (authenticated) {
@@ -39,7 +35,6 @@ export class KeycloakService {
       
       return authenticated;
     }).catch((error: any) => {
-      console.error('[Keycloak Real] Error al inicializar:', error);
       // En caso de error, inicializar de todas formas pero sin autenticación
       this.initialized = true;
       return false;
@@ -53,10 +48,8 @@ export class KeycloakService {
       if (this.isLoggedIn() && !this.isTokenExpired(600)) { // 10 minutos
         this.updateToken(300).then((refreshed) => {
           if (refreshed) {
-            console.log('[Keycloak Real] Token renovado automáticamente');
           }
         }).catch((error) => {
-          console.error('[Keycloak Real] Error al renovar token:', error);
         });
       }
     }, 300000); // Cada 5 minutos
@@ -65,24 +58,19 @@ export class KeycloakService {
     // Solo mostrar mensaje de sesión expirada si realmente ya no está autenticado
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.keycloakInstance?.authenticated) {
-        console.log('[Keycloak] Pestaña activa, verificando token...');
         this.updateToken(60).then((refreshed) => {
           if (refreshed) {
-            console.log('[Keycloak] Token renovado al activar pestaña');
           } else {
-            console.log('[Keycloak] Token aún válido');
           }
         }).catch((error) => {
           // Solo notificar si realmente la sesión expiró
           if (!this.isLoggedIn() || this.isTokenExpired()) {
-            console.error('[Keycloak] Sesión expirada, redirigiendo a login:', error);
             this.sessionExpired$.next(true);
             setTimeout(() => {
               this.login();
             }, 2500);
           } else {
             // Si no está expirada, solo loguear el error
-            console.error('[Keycloak] Error al renovar token (pero sesión sigue activa):', error);
           }
         });
       }
@@ -459,7 +447,6 @@ export class KeycloakService {
   }
 
   logout(): void {
-    console.log('[Keycloak Real] Logout llamado');
     this.keycloakInstance?.logout({
       redirectUri: window.location.origin + '/auth/login'
     });
@@ -468,12 +455,6 @@ export class KeycloakService {
   isLoggedIn(): boolean {
     const hasToken = !!this.keycloakInstance?.token;
     const result = this.initialized && !!this.keycloakInstance?.authenticated && hasToken;
-    console.log('[Keycloak Real] isLoggedIn check:', {
-      initialized: this.initialized,
-      authenticated: this.keycloakInstance?.authenticated,
-      hasToken: hasToken,
-      result: result
-    });
     return result;
   }
 
@@ -482,7 +463,6 @@ export class KeycloakService {
   }
 
   login(): void {
-    console.log('[Keycloak Real] Login llamado - redirigiendo a Keycloak...');
     this.keycloakInstance?.login();
   }
 

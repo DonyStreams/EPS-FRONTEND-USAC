@@ -33,17 +33,12 @@ export class UsuariosComponent implements OnInit {
 
     loadUsuarios(): void {
         this.loading = true;
-        console.log('🔄 Cargando usuarios desde el backend...');
-        
         this.usuarioService.getAll().subscribe({
             next: (data) => {
-                console.log('✅ Usuarios cargados:', data);
-                console.log('📊 Total usuarios recibidos:', data.length);
                 this.usuarios = data;
                 this.loading = false;
             },
             error: (error) => {
-                console.error('❌ Error al cargar usuarios:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -60,9 +55,7 @@ export class UsuariosComponent implements OnInit {
             next: (data) => {
                 this.stats = data;
             },
-            error: (error) => {
-                console.error('Error al cargar estadísticas:', error);
-            }
+            error: () => {}
         });
     }
 
@@ -82,7 +75,6 @@ export class UsuariosComponent implements OnInit {
             accept: () => {
                 this.usuarioService.toggleEstado(usuario.id!).subscribe({
                     next: (response) => {
-                        console.log('✅ Respuesta del servidor:', response);
                         const accion = usuario.activo ? 'desactivado' : 'activado';
                         this.messageService.add({
                             severity: 'success',
@@ -93,7 +85,6 @@ export class UsuariosComponent implements OnInit {
                         this.loadStats();
                     },
                     error: (error) => {
-                        console.error('❌ Error al cambiar estado:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -135,7 +126,6 @@ export class UsuariosComponent implements OnInit {
             }
             
             if (isNaN(date.getTime())) {
-                console.warn('Fecha inválida:', dateString);
                 return '-';
             }
             
@@ -147,7 +137,6 @@ export class UsuariosComponent implements OnInit {
             
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         } catch (error) {
-            console.error('Error formateando fecha:', dateString, error);
             return '-';
         }
     }
@@ -201,12 +190,8 @@ export class UsuariosComponent implements OnInit {
             return;
         }
 
-        console.log('Usuario autenticado:', this.keycloakService.getUsername());
-        console.log('Token válido:', !this.keycloakService.isTokenExpired());
-
         this.usuarioService.getCurrentUser().subscribe({
             next: (user) => {
-                console.log('Usuario actual obtenido:', user);
                 if (!user.id) {
                     // Usuario no sincronizado - mostrar opción de auto-sync
                     this.messageService.add({
@@ -217,7 +202,6 @@ export class UsuariosComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('Error al verificar usuario actual:', error);
                 if (error.status === 401) {
                     this.messageService.add({
                         severity: 'error',
@@ -265,7 +249,6 @@ export class UsuariosComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error en auto-sincronización:', error);
                 let errorMessage = 'Error al auto-sincronizar usuario';
                 
                 if (error.status === 401) {
@@ -297,12 +280,8 @@ export class UsuariosComponent implements OnInit {
             return;
         }
 
-        console.log('🔍 Obteniendo información del usuario actual...');
-        
         this.usuarioService.getCurrentUser().subscribe({
             next: (user) => {
-                console.log('✅ Usuario obtenido:', user);
-                
                 // Crear información detallada
                 const userInfo = {
                     nombre: user.nombreCompleto || this.keycloakService.getUsername(),
@@ -319,12 +298,8 @@ export class UsuariosComponent implements OnInit {
                     detail: `${userInfo.nombre} | ${userInfo.estado} | Sync: ${userInfo.sincronizado}`,
                     life: 5000
                 });
-                
-                // También mostrar en consola para admins
-                console.table(userInfo);
             },
             error: (error) => {
-                console.error('❌ Error al obtener usuario actual:', error);
                 
                 if (error.status === 403 && error.error?.codigo === 'USUARIO_DESACTIVADO') {
                     this.messageService.add({

@@ -38,17 +38,9 @@ export class HistorialEquiposComponent implements OnInit {
         this.loading = true;
         this.historialService.getAll().subscribe({
             next: (data) => {
-                console.log('📋 Datos del historial recibidos:', data);
-                if (data && data.length > 0) {
-                    console.log('Ejemplo de registro:', data[0]);
-                    console.log('Tipo de cambio del primer registro:', data[0].tipoCambio);
-                    console.log('Tipo de tipoCambio:', typeof data[0].tipoCambio);
-                }
-                
                 // Filtrar por equipo si hay un filtro activo
                 if (this.equipoIdFiltro) {
                     this.historial = data.filter(h => h.idEquipo === this.equipoIdFiltro);
-                    console.log(`🔍 Filtrado ${this.historial.length} registros para equipo ID ${this.equipoIdFiltro}`);
                 } else {
                     this.historial = data;
                 }
@@ -56,7 +48,6 @@ export class HistorialEquiposComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar historial:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -83,7 +74,6 @@ export class HistorialEquiposComponent implements OnInit {
             
             // Verificar si la fecha es válida
             if (isNaN(d.getTime())) {
-                console.error('Fecha inválida:', date);
                 return 'Fecha inválida';
             }
             
@@ -96,7 +86,6 @@ export class HistorialEquiposComponent implements OnInit {
                 hour12: false
             });
         } catch (error) {
-            console.error('Error al formatear fecha:', date, error);
             return 'Error en fecha';
         }
     }
@@ -113,7 +102,6 @@ export class HistorialEquiposComponent implements OnInit {
                     this.loadHistorial();
                 },
                 error: (error) => {
-                    console.error('Error al eliminar:', error);
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Error',
@@ -125,7 +113,6 @@ export class HistorialEquiposComponent implements OnInit {
     }
 
     getTipoCambioLabel(tipoCambio: string | undefined): string {
-        console.log('getTipoCambioLabel llamado con:', tipoCambio);
         if (!tipoCambio) return 'General';
         
         const labels: { [key: string]: string } = {
@@ -139,9 +126,7 @@ export class HistorialEquiposComponent implements OnInit {
             'REPARACION': 'Reparación'
         };
         
-        const label = labels[tipoCambio] || tipoCambio;
-        console.log('Retornando label:', label);
-        return label;
+        return labels[tipoCambio] || tipoCambio;
     }
 
     getTipoCambioSeverity(tipoCambio: string | undefined): string {
@@ -222,7 +207,6 @@ export class HistorialEquiposComponent implements OnInit {
                 this.loadHistorial();
             },
             error: (error) => {
-                console.error('Error al eliminar registros:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

@@ -115,11 +115,9 @@ export class TicketsService {
                 next: (usuario) => {
                     if (usuario) {
                         this.currentUsuario = usuario;
-                        console.log('✅ Usuario actual cargado:', usuario.nombreCompleto);
                         return;
                     }
 
-                    console.warn('⚠️ Usuario no encontrado en BD, usando datos de Keycloak');
                     this.currentUsuario = {
                         id: 1,
                         keycloakId: keycloakId,
@@ -129,7 +127,6 @@ export class TicketsService {
                     };
                 },
                 error: (err) => {
-                    console.warn('⚠️ No se pudo cargar usuario de BD, usando datos de Keycloak');
                     // Usar datos de Keycloak como fallback
                     this.currentUsuario = {
                         id: 1, // ID por defecto
@@ -202,17 +199,13 @@ export class TicketsService {
 
     // Servicios para comentarios
     getComentarios(ticketId: number): Observable<ComentarioTicketResponse[]> {
-        console.log('🔍 Solicitando comentarios para ticket:', ticketId);
         return this.http.get(`${this.apiUrl}/${ticketId}/comentarios`, { responseType: 'text' })
             .pipe(
                 map(text => {
-                    console.log('📥 Respuesta RAW del backend (primeros 300 chars):', text?.substring(0, 300));
                     try {
                         const response = JSON.parse(text);
-                        console.log('✅ Comentarios encontrados:', response.comentarios?.length || 0);
                         return response.comentarios || [];
                     } catch (e) {
-                        console.warn('⚠️ Error parseando JSON, intentando limpiar...');
                         try {
                             // Limpiar varios patrones problemáticos
                             let cleanedText = text
@@ -222,10 +215,8 @@ export class TicketsService {
                                 .replace(/\\+"/g, '"')            // Backslash antes de comilla
                                 .replace(/: "([^"]*)\\",/g, ': "$1",'); // Backslash al final
                             const response = JSON.parse(cleanedText);
-                            console.log('✅ JSON limpiado y parseado, comentarios:', response.comentarios?.length || 0);
                             return response.comentarios || [];
                         } catch (e2) {
-                            console.error('❌ No se pudo parsear comentarios:', e2);
                             return [];
                         }
                     }

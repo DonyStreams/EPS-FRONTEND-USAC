@@ -22,13 +22,9 @@ export class AccesoDenegadoComponent implements OnInit {
             this.motivo = params['motivo'] || 'acceso-denegado';
             this.nombreUsuario = params['usuario'] || this.keycloakService.getUsername();
         });
-
-        console.log('🚫 Acceso denegado para usuario:', this.nombreUsuario);
-        console.log('📋 Motivo:', this.motivo);
     }
 
     logout(): void {
-        console.log('🔓 Cerrando sesión...');
         this.keycloakService.logout();
     }
 

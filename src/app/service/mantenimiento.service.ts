@@ -85,7 +85,6 @@ export class MantenimientoService {
    * Obtener todos los mantenimientos
    */
   getMantenimientos(): Observable<Mantenimiento[]> {
-    console.log('[MantenimientoService] GET:', this.apiUrl);
     return this.http.get<Mantenimiento[]>(this.apiUrl);
   }
 

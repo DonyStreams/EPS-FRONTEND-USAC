@@ -10,7 +10,6 @@ export class UsuarioInfoComponent implements OnInit {
   constructor(private keycloakService: KeycloakService) {}
 
   ngOnInit(): void {
-    console.log('Usuario info cargado:', this.usuarioInfo);
   }
 
   get usuarioInfo() {

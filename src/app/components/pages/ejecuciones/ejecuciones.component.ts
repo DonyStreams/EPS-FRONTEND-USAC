@@ -150,18 +150,12 @@ export class EjecucionesComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        console.log('🚀 Iniciando componente ejecuciones');
-        
         // Suscribirse a cambios en los queryParams
         this.route.queryParams.subscribe(params => {
-            console.log('📋 QueryParams recibidos:', params);
-            
             if (params['idEjecucion']) {
                 this.filtroIdEjecucion = +params['idEjecucion'];
-                console.log('🔍 Filtro por ejecución ID:', this.filtroIdEjecucion);
             } else {
                 this.filtroIdEjecucion = null;
-                console.log('❌ No hay filtro de ejecución');
             }
         });
         
@@ -172,67 +166,38 @@ export class EjecucionesComponent implements OnInit {
 
     cargarUsuarioActual() {
         const keycloakId = this.keycloakService.getUserId();
-        console.log('🔑 Cargando usuario actual...');
-        console.log('   Keycloak ID:', keycloakId);
-        
         if (keycloakId) {
             this.usuariosService.getActivos().subscribe({
                 next: (usuarios) => {
-                    console.log('   👥 Usuarios activos recibidos:', usuarios.length);
-                    console.log('   📋 KeycloakIds en BD:', usuarios.map(u => ({
-                        id: u.id,
-                        nombre: u.nombreCompleto,
-                        keycloakId: u.keycloakId
-                    })));
-                    
                     // Comparación case-insensitive para keycloakId
                     this.usuarioActual = usuarios.find(u => 
                         u.keycloakId?.toLowerCase() === keycloakId.toLowerCase()
                     );
-                    
-                    console.log('   ✅ Usuario actual encontrado:', this.usuarioActual);
-                    
-                    if (!this.usuarioActual) {
-                        console.warn('   ⚠️ Tu keycloakId no coincide con ningún usuario en BD');
-                        console.warn('   ⚠️ Verifica que tu usuario esté registrado en la tabla Usuarios');
-                    }
                 },
                 error: (err) => {
-                    console.error('   ❌ Error cargando usuarios:', err);
                 }
             });
-        } else {
-            console.log('   ⚠️ No hay keycloakId');
         }
     }
 
     loadEjecuciones() {
-        console.log('📥 Cargando ejecuciones...', { filtroActivo: this.filtroIdEjecucion });
         this.loading = true;
         this.ejecucionesService.getAll().subscribe({
             next: (data) => {
                 this.ejecuciones = data;
                 this.loading = false;
-                console.log('✅ Ejecuciones cargadas:', this.ejecuciones.length, 'registros');
-                
                 // Si hay un filtro activo por ID, abrir automáticamente el detalle
                 if (this.filtroIdEjecucion) {
-                    console.log('🔎 Buscando ejecución con ID:', this.filtroIdEjecucion);
                     const ejecucion = this.ejecuciones.find(e => e.idEjecucion === this.filtroIdEjecucion);
                     if (ejecucion) {
-                        console.log('✅ Ejecución encontrada:', ejecucion);
                         setTimeout(() => {
-                            console.log('🔓 Abriendo detalle...');
                             this.verDetalle(ejecucion);
                         }, 300);
                     } else {
-                        console.log('❌ Ejecución NO encontrada con ID:', this.filtroIdEjecucion);
-                        console.log('📋 IDs disponibles:', this.ejecuciones.map(e => e.idEjecucion));
                     }
                 }
             },
             error: (error) => {
-                console.error('❌ Error al cargar ejecuciones:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -247,10 +212,8 @@ export class EjecucionesComponent implements OnInit {
         this.contratosService.getActivos().subscribe({
             next: (data) => {
                 this.contratos = data;
-                console.log('Contratos cargados:', this.contratos);
             },
             error: (error) => {
-                console.error('Error al cargar contratos:', error);
                 // En caso de error, usar un array vacío para que no falle la interfaz
                 this.contratos = [];
                 this.messageService.add({
@@ -263,7 +226,6 @@ export class EjecucionesComponent implements OnInit {
     }
 
     openNew() {
-        console.log('openNew() called'); // Debug
         // Validar que contratos estén cargados antes de abrir el diálogo
         if (!this.contratos || this.contratos.length === 0) {
             this.messageService.add({
@@ -284,9 +246,7 @@ export class EjecucionesComponent implements OnInit {
         };
         this.isEditMode = false;
         this.showDialog = true;
-        console.log('Dialog should be visible:', this.showDialog); // Debug
         this.equiposContrato = [];
-        console.log('Contratos disponibles:', this.contratos);
     }
 
     editEjecucion(ejecucion: EjecucionMantenimiento) {
@@ -319,8 +279,6 @@ export class EjecucionesComponent implements OnInit {
                         });
                     },
                     error: (error) => {
-                        console.error('Error al eliminar ejecución:', error);
-                        
                         // Extraer mensaje de error del backend
                         let motivo = 'Error desconocido';
                         if (error?.error?.error) {
@@ -363,7 +321,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones();
             },
             error: (error) => {
-                console.error('Error al actualizar estado:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -407,7 +364,6 @@ export class EjecucionesComponent implements OnInit {
                         this.loadEjecuciones();
                     },
                     error: (error) => {
-                        console.error('Error al actualizar ejecución:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -427,7 +383,6 @@ export class EjecucionesComponent implements OnInit {
                         this.loadEjecuciones();
                     },
                     error: (error) => {
-                        console.error('Error al crear ejecución:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -474,7 +429,6 @@ export class EjecucionesComponent implements OnInit {
             
             // Verificar si la fecha es válida
             if (isNaN(d.getTime())) {
-                console.warn('Fecha inválida:', date);
                 return '';
             }
             
@@ -484,7 +438,6 @@ export class EjecucionesComponent implements OnInit {
                 day: '2-digit'
             });
         } catch (error) {
-            console.error('Error al formatear fecha:', date, error);
             return '';
         }
     }
@@ -581,7 +534,6 @@ export class EjecucionesComponent implements OnInit {
         if (equipoAnterior && this.equiposContrato.some(eq => eq.idEquipo === equipoAnterior)) {
             this.selectedEjecucion.idEquipo = equipoAnterior;
         }
-        console.log('Equipos del contrato:', this.equiposContrato);
     }
 
     // ==================== DETALLE ====================
@@ -646,7 +598,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones();
             },
             error: (error) => {
-                console.error('Error al iniciar trabajo:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -715,7 +666,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones();
             },
             error: (error) => {
-                console.error('Error al completar:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -997,7 +947,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadingEvidencias = false;
             },
             error: (error) => {
-                console.error('Error al cargar evidencias:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1067,7 +1016,6 @@ export class EjecucionesComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('Error al subir archivo:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1102,7 +1050,6 @@ export class EjecucionesComponent implements OnInit {
                 }
             },
             error: (error) => {
-                console.error('Error al subir archivo:', error);
                 this.uploading = false;
                 this.uploadProgress = 0;
                 this.messageService.add({
@@ -1145,7 +1092,6 @@ export class EjecucionesComponent implements OnInit {
                         }
                     },
                     error: (error) => {
-                        console.error('Error al eliminar evidencia:', error);
                         this.messageService.add({
                             severity: 'error',
                             summary: 'Error',
@@ -1159,9 +1105,6 @@ export class EjecucionesComponent implements OnInit {
 
     downloadEvidencia(evidencia: Evidencia) {
         if (!this.ejecucionEvidenciasId || !evidencia.nombreArchivo) return;
-        
-        console.log('📥 Descargando evidencia:', evidencia.nombreArchivo);
-        
         this.evidenciasService.descargarArchivo(this.ejecucionEvidenciasId, evidencia.nombreArchivo).subscribe({
             next: (blob: Blob) => {
                 const url = window.URL.createObjectURL(blob);
@@ -1180,7 +1123,6 @@ export class EjecucionesComponent implements OnInit {
                 });
             },
             error: (error) => {
-                console.error('Error al descargar:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1243,7 +1185,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadingComentarios = false;
             },
             error: (error) => {
-                console.error('Error al cargar comentarios:', error);
                 this.loadingComentarios = false;
                 this.messageService.add({
                     severity: 'error',
@@ -1271,9 +1212,6 @@ export class EjecucionesComponent implements OnInit {
             usuarioId: this.usuarioActual?.id
         };
 
-        console.log('📝 Agregando comentario:', request);
-        console.log('   Usuario actual:', this.usuarioActual);
-
         // Mostrar el comentario de inmediato en la lista local
         const now = new Date();
         this.comentarios.unshift({
@@ -1292,7 +1230,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones(); // Refrescar lista principal
             },
             error: (error) => {
-                console.error('Error al agregar comentario:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1361,7 +1298,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones();
             },
             error: (error) => {
-                console.error('Error al actualizar estado:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1394,7 +1330,6 @@ export class EjecucionesComponent implements OnInit {
                 this.loadEjecuciones();
             },
             error: (error) => {
-                console.error('Error al guardar observaciones:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -1489,7 +1424,6 @@ export class EjecucionesComponent implements OnInit {
                     }
                 },
                 error: (error) => {
-                    console.error('Error al subir archivo:', error);
                     completedCount++;
                     if (completedCount === totalFiles) {
                         this.uploading = false;

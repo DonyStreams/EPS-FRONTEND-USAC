@@ -76,7 +76,6 @@ export class CategoriasEquipoComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar categorías:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -95,7 +94,6 @@ export class CategoriasEquipoComponent implements OnInit {
                 this.treeLoading = false;
             },
             error: (error) => {
-                console.error('Error al cargar árbol de categorías:', error);
                 this.treeLoading = false;
             }
         });
@@ -259,7 +257,6 @@ export class CategoriasEquipoComponent implements OnInit {
     }
 
     private handleError(action: string, error: any): void {
-        console.error(`Error al ${action} categoría:`, error);
         this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -287,7 +284,6 @@ export class CategoriasEquipoComponent implements OnInit {
                 this.loadingEquipos = false;
             },
             error: (error) => {
-                console.error('Error al cargar equipos:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

@@ -34,7 +34,6 @@ export class LoginComponent implements OnInit {
 
     loginWithKeycloak() {
         this.loading = true;
-        console.log('[Login] Iniciando autenticación con Keycloak');
         this.keycloakService.login();
     }
 }

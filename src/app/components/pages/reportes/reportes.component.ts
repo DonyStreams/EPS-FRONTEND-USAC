@@ -97,7 +97,6 @@ export class ReportesComponent implements OnInit {
                 this.areas = areas;
             },
             error: (error) => {
-                console.error('Error al cargar áreas:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -144,8 +143,6 @@ export class ReportesComponent implements OnInit {
             idArea: this.areaSeleccionada
         };
 
-        console.log('Generando reporte con parámetros:', params);
-
         this.reportesService.generarReporte(params).subscribe({
             next: (blob) => {
                 // Determinar extensión correcta
@@ -178,7 +175,6 @@ export class ReportesComponent implements OnInit {
                 this.generando = false;
             },
             error: (error) => {
-                console.error('Error al generar reporte:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

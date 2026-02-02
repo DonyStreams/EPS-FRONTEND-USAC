@@ -39,12 +39,9 @@ export class HistorialTicketsComponent implements OnInit {
         // Usar el nuevo método que solo trae historial de tickets
         this.historialService.getTicketsHistory().subscribe({
             next: (data) => {
-                console.log('📋 Datos del historial de tickets recibidos:', data);
-                
                 // Filtrar por equipo si hay un filtro activo
                 if (this.equipoIdFiltro) {
                     this.historial = data.filter(h => h.idEquipo === this.equipoIdFiltro);
-                    console.log(`🔍 Filtrado ${this.historial.length} registros para equipo ID ${this.equipoIdFiltro}`);
                 } else {
                     this.historial = data;
                 }
@@ -52,7 +49,6 @@ export class HistorialTicketsComponent implements OnInit {
                 this.loading = false;
             },
             error: (error) => {
-                console.error('Error al cargar historial de tickets:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -76,7 +72,6 @@ export class HistorialTicketsComponent implements OnInit {
             const d = new Date(dateString);
             
             if (isNaN(d.getTime())) {
-                console.error('Fecha inválida:', date);
                 return 'Fecha inválida';
             }
             
@@ -89,7 +84,6 @@ export class HistorialTicketsComponent implements OnInit {
                 hour12: false
             });
         } catch (error) {
-            console.error('Error al formatear fecha:', date, error);
             return 'Error en fecha';
         }
     }
@@ -106,7 +100,6 @@ export class HistorialTicketsComponent implements OnInit {
                     this.loadHistorial();
                 },
                 error: (error) => {
-                    console.error('Error al eliminar:', error);
                     this.messageService.add({
                         severity: 'error',
                         summary: 'Error',
@@ -204,7 +197,6 @@ export class HistorialTicketsComponent implements OnInit {
                 this.loadHistorial();
             },
             error: (error) => {
-                console.error('Error al eliminar registros:', error);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',

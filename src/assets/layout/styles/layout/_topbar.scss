@@ -62,6 +62,12 @@
         }
     }
 
+    .layout-topbar-button .notification-badge {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
     .layout-menu-button {
         margin-left: 2rem;
     }

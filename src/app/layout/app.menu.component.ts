@@ -184,6 +184,12 @@ export class AppMenuComponent implements OnInit {
                         icon: 'pi pi-fw pi-chart-line', 
                         routerLink: ['/administracion/reportes'],
                         roles: ['ADMIN', 'SUPERVISOR']
+                    },
+                    {
+                        label: 'Configuración de correos',
+                        icon: 'pi pi-fw pi-envelope',
+                        routerLink: ['/administracion/configuracion-correos'],
+                        roles: ['ADMIN']
                     }
                 ]
             }

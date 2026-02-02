@@ -153,12 +153,10 @@ export class MantenimientosComponent implements OnInit {
         this.programacionesService.getAll().subscribe({
             next: (data) => {
                 this.programaciones = data || [];
-                console.log('📅 Programaciones cargadas:', this.programaciones.length);
                 this.generateEvents();
                 this.loading = false;
             },
             error: (err) => {
-                console.error('Error cargando programaciones:', err);
                 this.generateEvents();
                 this.loading = false;
             }
@@ -173,10 +171,8 @@ export class MantenimientosComponent implements OnInit {
                     proveedor: c.proveedor,
                     equipos: c.equipos || []
                 }));
-                console.log('📋 Contratos cargados:', this.contratos.length);
             },
             error: (err) => {
-                console.error('Error cargando contratos:', err);
             }
         });
     }
@@ -188,17 +184,11 @@ export class MantenimientosComponent implements OnInit {
         // Mostrar eventos: 3 meses atrás y hasta la fecha de fin de contrato (o 6 meses si no hay contrato)
         const tresMesesAtras = new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate());
 
-        console.log('🔄 Generando eventos del calendario...');
-        console.log('📅 Programaciones activas:', this.programaciones.filter(p => p.activa).length);
-
         // Generar eventos solo de programaciones ACTIVAS (las pausadas no se muestran)
         this.programaciones.forEach(prog => {
             if (prog.activa && prog.fechaProximoMantenimiento) {
                 // Verificar si el contrato está vencido para usar color diferente
                 const contratoVencido = this.isContratoVencido(prog);
-                if (contratoVencido) {
-                    console.log(`⚠️ Programación ${prog.idProgramacion}: contrato vencido (se mostrará con color gris)`);
-                }
                 // Determinar el límite superior: fecha de fin de contrato si existe, si no, 6 meses adelante
                 let fechaLimiteSuperior: Date;
                 if (prog.contrato?.fechaFin) {
@@ -213,8 +203,6 @@ export class MantenimientosComponent implements OnInit {
         });
 
         this.events = eventos;
-        console.log('📊 Total eventos en calendario:', this.events.length);
-        
         // Calcular estadísticas
         this.calcularEstadisticas();
         
@@ -282,7 +270,6 @@ export class MantenimientosComponent implements OnInit {
             }
         });
 
-        console.log('📊 Estadísticas calculadas:', this.stats);
     }
 
     private generarEventosRecurrentes(prog: ProgramacionMantenimiento, desde: Date, hasta: Date, contratoVencido: boolean = false): CalendarEvent[] {
@@ -316,7 +303,6 @@ export class MantenimientosComponent implements OnInit {
 
         // Validar que la fecha sea válida
         if (!fechaProxima || isNaN(fechaProxima.getTime())) {
-            console.warn(`⚠️ Fecha inválida en programación ${prog.idProgramacion}:`, prog.fechaProximoMantenimiento);
             return eventos;
         }
 
@@ -324,7 +310,6 @@ export class MantenimientosComponent implements OnInit {
         let fechaLimiteContrato: Date | null = null;
         if (prog.contrato?.fechaFin) {
             fechaLimiteContrato = this.parsearFecha(prog.contrato.fechaFin);
-            console.log(`   📜 Contrato vigente hasta: ${fechaLimiteContrato?.toLocaleDateString('es-GT')}`);
         }
         
         // El límite superior es el menor entre: hasta (6 meses) y fechaFin del contrato
@@ -341,11 +326,6 @@ export class MantenimientosComponent implements OnInit {
         // Si hay fecha de inicio de programación, no generar eventos antes de esa fecha
         const fechaLimiteInferior = fechaInicioProgramacion || fechaProxima;
         
-        console.log(`📅 Generando eventos para programación ${prog.idProgramacion}`);
-        console.log(`   📌 Fecha próximo mantenimiento: ${fechaProxima.toLocaleDateString('es-GT')}`);
-        console.log(`   📌 Límite inferior: ${fechaLimiteInferior.toLocaleDateString('es-GT')}`);
-        console.log(`   📌 Límite superior (contrato/6meses): ${fechaLimiteSuperior.toLocaleDateString('es-GT')}`);
-
         // Generar eventos solo hacia adelante desde la fecha próxima
         // Y opcionalmente hacia atrás pero solo hasta la fecha del último mantenimiento
         let fecha = new Date(fechaProxima);
@@ -416,7 +396,6 @@ export class MantenimientosComponent implements OnInit {
             fecha = new Date(fecha.getTime() + frecuencia * 24 * 60 * 60 * 1000);
         }
 
-        console.log(`  ✅ Generó ${contadorEventos} eventos para programación ${prog.idProgramacion}`);
         return eventos;
     }
 
@@ -429,13 +408,11 @@ export class MantenimientosComponent implements OnInit {
         
         const fechaProxima = this.parsearFecha(prog.fechaProximoMantenimiento);
         if (!fechaProxima) {
-            console.warn(`⚠️ Programación única ${prog.idProgramacion} sin fecha próxima válida`);
             return eventos;
         }
 
         // Solo mostrar si está en el rango visible
         if (fechaProxima < desde || fechaProxima > hasta) {
-            console.log(`📅 Programación única ${prog.idProgramacion} fuera del rango visible`);
             return eventos;
         }
 
@@ -481,7 +458,6 @@ export class MantenimientosComponent implements OnInit {
             }
         });
 
-        console.log(`✅ Evento único generado para programación ${prog.idProgramacion} en fecha ${fechaProxima.toLocaleDateString()}`);
         return eventos;
     }
 
@@ -621,8 +597,6 @@ export class MantenimientosComponent implements OnInit {
             day: 'numeric'
         });
         
-        console.log('📅 Fecha seleccionada en calendario:', fechaSeleccionada);
-        
         // Preguntar al usuario si desea crear una nueva programación
         this.confirmationService.confirm({
             message: `<div class="text-center">
@@ -750,7 +724,6 @@ export class MantenimientosComponent implements OnInit {
                 this.loadData();
             },
             error: (err) => {
-                console.error('Error al crear ejecucion:', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -832,9 +805,7 @@ export class MantenimientosComponent implements OnInit {
                 
                 this.programacionesService.crearMantenimiento(idProgramacion).subscribe({
                     next: (response) => {
-                        console.log('📝 Respuesta crearMantenimiento:', response);
                         const idEjecucion = response?.idEjecucion || response?.id;
-                        console.log('🆔 ID Ejecución obtenido:', idEjecucion);
                         this.messageService.add({
                             severity: 'success',
                             summary: '✓ Ejecución Creada',
@@ -857,7 +828,6 @@ export class MantenimientosComponent implements OnInit {
                                 acceptButtonStyleClass: 'p-button-success',
                                 rejectButtonStyleClass: 'p-button-text',
                                 accept: () => {
-                                    console.log('🚀 Navegando a ejecuciones con ID:', idEjecucion);
                                     if (idEjecucion) {
                                         this.router.navigate(['/administracion/ejecuciones'], { 
                                             queryParams: { idEjecucion: idEjecucion } 
@@ -872,7 +842,6 @@ export class MantenimientosComponent implements OnInit {
                         this.loadData();
                     },
                     error: (error) => {
-                        console.error('❌ Error creando ejecución:', error);
                         this.loading = false;
                         const detail = error?.error?.message || error?.error || 'No se pudo crear la ejecución';
                         this.messageService.add({

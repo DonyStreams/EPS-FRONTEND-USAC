@@ -69,6 +69,14 @@ import { AuthGuard } from '../../guards/auth.guard';
             canActivate: [AuthGuard],
             data: { roles: ['ADMIN', 'SUPERVISOR'] }
         },
+
+        // Configuración de correos - Solo ADMIN
+        {
+            path: 'configuracion-correos',
+            loadChildren: () => import('./configuracion-correos/configuracion-correos.module').then(m => m.ConfiguracionCorreosModule),
+            canActivate: [AuthGuard],
+            data: { roles: ['ADMIN'] }
+        },
         
         // Administración - Áreas para ADMIN/SUPERVISOR, Usuarios solo ADMIN
         { 

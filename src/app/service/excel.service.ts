@@ -13,8 +13,6 @@ export class ExcelService {
 
   async generarFichaTecnica(equipo: Equipo): Promise<void> {
     try {
-      console.log('📄 Generando ficha técnica para:', equipo.nombre);
-
       // Cargar la plantilla desde assets
       const response = await fetch('assets/plantillas/FOR-DG-GAC-029.xlsx');
       const arrayBuffer = await response.arrayBuffer();
@@ -75,13 +73,9 @@ export class ExcelService {
             // Insertar la imagen en el área A8:D16 (fotografía)
             // Usando la notación simplificada de ExcelJS
             worksheet.addImage(imageId, 'A8:D16');
-            
-            console.log('✅ Imagen insertada en el Excel');
           } else {
-            console.warn('⚠️ No se pudo cargar la imagen del equipo');
           }
         } catch (error) {
-          console.error('❌ Error al insertar imagen:', error);
           // No fallar si la imagen no se puede cargar
         }
       }
@@ -95,11 +89,7 @@ export class ExcelService {
       // Descargar el archivo
       const nombreArchivo = `Ficha_Tecnica_${equipo.codigoInacif || equipo.nombre}_${new Date().getTime()}.xlsx`;
       saveAs(blob, nombreArchivo);
-
-      console.log('✅ Ficha técnica generada:', nombreArchivo);
-
     } catch (error) {
-      console.error('❌ Error al generar ficha técnica:', error);
       throw error;
     }
   }

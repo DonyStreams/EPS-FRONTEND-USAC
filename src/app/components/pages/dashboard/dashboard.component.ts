@@ -143,7 +143,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 this.lastUpdated = new Date();
             },
             error: (error) => {
-                console.error('Error al cargar datos del dashboard:', error);
                 this.loading = false;
             }
         });

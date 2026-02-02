@@ -6,5 +6,6 @@ export const environment = {
   apiUrl: 'http://172.16.1.192:8081/MantenimientosBackend/api',
   keycloakUrl: 'http://172.16.1.192:8080',
   keycloakRealm: 'MantenimientosINACIF',
-  keycloakClientId: 'inacif-frontend'
+  keycloakClientId: 'inacif-frontend',
+  enableConsole: false
 };
