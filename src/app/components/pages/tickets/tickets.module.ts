@@ -21,6 +21,7 @@ import { PanelModule } from 'primeng/panel';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TooltipModule } from 'primeng/tooltip';
+import { SharedModule } from '../../../shared/shared.module';
 import { TabViewModule } from 'primeng/tabview';
 import { AccordionModule } from 'primeng/accordion';
 import { ChipModule } from 'primeng/chip';
@@ -62,6 +63,7 @@ import { HistorialTicketsComponent } from './historial-tickets/historial-tickets
         ChipModule,
         BadgeModule,
         MenuModule,
+        SharedModule,
         RouterModule.forChild([
             { path: '', component: TicketsComponent },
             { path: 'historial', component: HistorialTicketsComponent }

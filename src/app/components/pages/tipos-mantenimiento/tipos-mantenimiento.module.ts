@@ -14,6 +14,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
+import { MenuModule } from 'primeng/menu';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { TiposMantenimientoRoutingModule } from './tipos-mantenimiento-routing.module';
 import { TiposMantenimientoComponent } from './tipos-mantenimiento.component';
@@ -38,7 +40,9 @@ import { TiposMantenimientoComponent } from './tipos-mantenimiento.component';
         ConfirmDialogModule,
         ToastModule,
         ToolbarModule,
-        TagModule
+        TagModule,
+        MenuModule,
+        SharedModule
     ]
 })
 export class TiposMantenimientoModule { }

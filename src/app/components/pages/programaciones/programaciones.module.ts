@@ -20,6 +20,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { ProgramacionesRoutingModule } from './programaciones-routing.module';
 import { ProgramacionesComponent } from './programaciones.component';
@@ -55,7 +56,8 @@ import { ProgramacionesService } from '../../../service/programaciones.service';
         ToastModule,
         ToolbarModule,
         TagModule,
-        MenuModule
+        MenuModule,
+        SharedModule
     ]
 })
 export class ProgramacionesModule { }

@@ -53,6 +53,7 @@
                         label="Eliminar Seleccionados" 
                         icon="pi pi-trash" 
                         class="p-button-danger"
+                        *tienePermiso="{ modulo: 'tickets', accion: 'eliminar' }"
                         [disabled]="!registrosSeleccionados || registrosSeleccionados.length === 0"
                         (click)="eliminarSeleccionados()">
                     </button>
@@ -138,6 +139,7 @@
                             pRipple 
                             icon="pi pi-trash" 
                             class="p-button-text p-button-danger p-button-sm"
+                            *tienePermiso="{ modulo: 'tickets', accion: 'eliminar' }"
                             (click)="deleteHistorial(registro)"
                             pTooltip="Eliminar registro"></button>
                     </div>

@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { ReportesComponent } from './reportes.component';
 
@@ -20,7 +21,8 @@ import { ReportesComponent } from './reportes.component';
         ButtonModule,
         CalendarModule,
         DropdownModule,
-        ToastModule
+        ToastModule,
+        SharedModule
     ]
 })
 export class ReportesModule { }

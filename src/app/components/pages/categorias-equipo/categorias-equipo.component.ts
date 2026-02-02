@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService, TreeNode } from 'primeng/api';
+import { ConfirmationService, MessageService, MenuItem, TreeNode } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 import { CategoriasEquipoService, CategoriaEquipo } from '../../../service/categorias-equipo.service';
 import { EquiposService } from '../../../service/equipos.service';
 import { Equipo } from '../../../api/equipos';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
     selector: 'app-categorias-equipo',
@@ -11,6 +13,8 @@ import { Equipo } from '../../../api/equipos';
     providers: [ConfirmationService, MessageService]
 })
 export class CategoriasEquipoComponent implements OnInit {
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+
     categorias: CategoriaEquipo[] = [];
     treeData: TreeNode[] = [];
     loading = false;
@@ -37,12 +41,17 @@ export class CategoriasEquipoComponent implements OnInit {
         sinPadre: 0
     };
 
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    categoriaSeleccionadaMenu: CategoriaEquipo | null = null;
+
     constructor(
         private categoriasService: CategoriasEquipoService,
         private equiposService: EquiposService,
         private fb: FormBuilder,
         private confirmationService: ConfirmationService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private keycloakService: KeycloakService
     ) {
         this.categoriaForm = this.fb.group({
             nombre: ['', [Validators.required, Validators.maxLength(120), Validators.minLength(3)]],
@@ -138,6 +147,39 @@ export class CategoriasEquipoComponent implements OnInit {
         });
         this.refreshParentOptions();
         this.displayDialog = true;
+    }
+
+    /**
+     * Abre el menú contextual de acciones
+     */
+    openAccionesMenu(event: Event, categoria: CategoriaEquipo): void {
+        this.categoriaSeleccionadaMenu = categoria;
+        const items: MenuItem[] = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditCategorias(),
+                command: () => this.editCategoria(categoria)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                visible: this.keycloakService.canDeleteCategorias(),
+                command: () => this.deleteCategoria(categoria)
+            }
+        ];
+
+        this.accionesMenuItems = items.filter(item => item.visible !== false);
+        if (!this.accionesMenuItems.length) {
+            return;
+        }
+
+        this.menuAcciones.toggle(event);
+    }
+
+    tieneAccionesCategoria(): boolean {
+        return this.keycloakService.canEditCategorias() || this.keycloakService.canDeleteCategorias();
     }
 
     saveCategoria(): void {

@@ -150,7 +150,8 @@
                                             pTooltip="Descargar archivo"></button>
                                     
                                     <!-- Botón de eliminación -->
-                                    <button pButton pRipple type="button" 
+                                        <button pButton pRipple type="button" 
+                                            *tienePermiso="{ modulo: 'contratos', accion: 'eliminar' }"
                                             icon="pi pi-trash" 
                                             class="p-button-rounded p-button-text p-button-danger p-button-sm"
                                             (click)="confirmarEliminarArchivo(archivo)"

@@ -21,6 +21,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     items!: MenuItem[];
     subscription!: Subscription;
     loading: boolean = true;
+    lastUpdated: Date | null = null;
 
     // === KPIs PRINCIPALES ===
     totalProgramaciones: number = 0;
@@ -50,6 +51,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     tiposMantenimiento: TipoMantenimiento[] = [];
     proveedores: Proveedor[] = [];
     alertasRecientes: AlertaMantenimiento[] = [];
+    ticketsCriticosTop: Ticket[] = [];
+    programacionesVencidasTop: AlertaMantenimiento[] = [];
 
     // === GRÁFICOS ===
     equiposPorAreaData: any;
@@ -137,6 +140,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 this.updateAllCharts();
                 
                 this.loading = false;
+                this.lastUpdated = new Date();
             },
             error: (error) => {
                 console.error('Error al cargar datos del dashboard:', error);
@@ -155,6 +159,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 ...(this.dashboardAlertas.vencidas || []),
                 ...(this.dashboardAlertas.alertas || [])
             ].slice(0, 5);
+            this.programacionesVencidasTop = (this.dashboardAlertas.vencidas || []).slice(0, 5);
         }
 
         // Equipos
@@ -167,6 +172,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.ticketsEnProceso = this.tickets.filter(t => t.estado === 'En Proceso').length;
         this.ticketsResueltos = this.tickets.filter(t => t.estado === 'Resuelto' || t.estado === 'Cerrado').length;
         this.ticketsCriticos = this.tickets.filter(t => t.prioridad === 'Crítica' && t.estado !== 'Cerrado').length;
+        this.ticketsCriticosTop = this.tickets
+            .filter(t => t.prioridad === 'Crítica' && t.estado !== 'Cerrado')
+            .slice(0, 5);
 
         // Contratos - Calcular vigentes, por vencer y vencidos
         const hoy = new Date();
@@ -279,7 +287,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.ticketsPorEstadoOptions = { ...pieOptions };
         this.ejecucionesPorEstadoOptions = { ...pieOptions };
         this.equiposPorEstadoOptions = { ...pieOptions };
-        this.contratosPorEstadoOptions = { ...pieOptions };
 
         // Opciones para gráfico de líneas
         this.tendenciaMantenimientosOptions = {
@@ -441,22 +448,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         };
 
         // === Contratos por Estado (Vigencia) ===
-        this.contratosPorEstadoData = {
-            labels: ['Vigentes', 'Por Vencer (30d)', 'Vencidos'],
-            datasets: [{
-                data: [this.contratosActivos, this.contratosPorVencer, this.contratosVencidos],
-                backgroundColor: [
-                    documentStyle.getPropertyValue('--green-500'),
-                    documentStyle.getPropertyValue('--orange-500'),
-                    documentStyle.getPropertyValue('--red-500')
-                ],
-                hoverBackgroundColor: [
-                    documentStyle.getPropertyValue('--green-400'),
-                    documentStyle.getPropertyValue('--orange-400'),
-                    documentStyle.getPropertyValue('--red-400')
-                ]
-            }]
-        };
+        this.contratosPorEstadoData = null;
 
         // === Tendencia de Ejecuciones por Mes (últimos 6 meses) ===
         this.tendenciaMantenimientosData = this.calcularTendenciaEjecuciones();

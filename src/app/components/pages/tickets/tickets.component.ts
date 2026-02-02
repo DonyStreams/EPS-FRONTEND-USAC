@@ -25,6 +25,7 @@ export class TicketsComponent implements OnInit {
 
     // Datos principales
     tickets: Ticket[] = [];
+    allTickets: Ticket[] = [];
     ticketSeleccionado: Ticket | null = null;
     selectedTickets: Ticket[] = [];
     loading: boolean = false;
@@ -143,12 +144,14 @@ export class TicketsComponent implements OnInit {
         
         this.ticketsService.getAll().subscribe({
             next: (tickets: Ticket[]) => {
-                this.tickets = tickets || [];
+                this.allTickets = tickets || [];
+                this.applyUserTicketFilter();
                 this.calcularEstadisticas();
                 console.log('✅ Tickets cargados:', this.tickets.length);
             },
             error: (error) => {
                 console.error('❌ Error al cargar tickets:', error);
+                this.allTickets = [];
                 this.tickets = []; // Asegurarse de que tickets sea siempre un array
                 this.calcularEstadisticas();
                 this.messageService.add({
@@ -169,7 +172,17 @@ export class TicketsComponent implements OnInit {
     cargarEquipos(): void {
         this.equiposService.getEquipos({}).subscribe({
             next: (equipos: Equipo[]) => {
-                this.equipos = equipos || [];
+                const equiposLimpios = (equipos || [])
+                    .filter(equipo => !!equipo && equipo.idEquipo !== null && equipo.idEquipo !== undefined)
+                    .map(equipo => ({
+                        ...equipo,
+                        nombre: (equipo.nombre && equipo.nombre.trim())
+                            ? equipo.nombre
+                            : (equipo.codigoInacif && equipo.codigoInacif.trim())
+                                ? `Equipo ${equipo.codigoInacif}`
+                                : `Equipo #${equipo.idEquipo}`
+                    }));
+                this.equipos = equiposLimpios;
                 console.log('✅ Equipos cargados:', this.equipos.length);
             },
             error: (error) => {
@@ -188,6 +201,10 @@ export class TicketsComponent implements OnInit {
      * Carga la lista de usuarios para el dropdown
      */
     cargarUsuarios(): void {
+        this.loadUsuariosActivos();
+    }
+
+    private loadUsuariosActivos(): void {
         this.usuariosService.getActivos().subscribe({
             next: (usuarios: Usuario[]) => {
                 this.usuarios = usuarios || [];
@@ -218,17 +235,94 @@ export class TicketsComponent implements OnInit {
 
         if (this.usuarioActual) {
             this.sincronizarUsuarioCreador();
-        } else {
-            this.usuariosService.getByKeycloakId(keycloakId).subscribe({
-                next: (usuario) => {
+            this.applyUserTicketFilter();
+            return;
+        }
+
+        this.usuariosService.getByKeycloakId(keycloakId).subscribe({
+            next: (usuario) => {
+                if (usuario) {
                     this.usuarioActual = usuario;
                     this.sincronizarUsuarioCreador();
-                },
-                error: (error) => {
-                    console.error('❌ No se pudo obtener usuario por Keycloak:', error);
+                    this.applyUserTicketFilter();
+                    return;
                 }
-            });
+
+                this.autoSyncUsuarioActual();
+            },
+            error: () => {
+                this.autoSyncUsuarioActual();
+            }
+        });
+    }
+
+    private autoSyncUsuarioActual(): void {
+        this.usuariosService.autoSyncCurrentUser().subscribe({
+            next: (usuario) => {
+                this.usuarioActual = usuario;
+                this.sincronizarUsuarioCreador();
+                this.applyUserTicketFilter();
+            },
+            error: (error) => {
+                console.error('❌ No se pudo auto-sincronizar usuario:', error);
+            }
+        });
+    }
+
+    /**
+     * Filtra tickets para mostrar solo los asignados al usuario actual
+     */
+    private applyUserTicketFilter(): void {
+        if (!this.usuarioActual?.id) {
+            this.tickets = [];
+            this.calcularEstadisticas();
+            return;
         }
+
+        this.tickets = this.allTickets.filter(ticket => {
+            const asignadoId = ticket.usuarioAsignadoId
+                || (ticket as any).usuario_asignado_id
+                || ticket.usuarioAsignado?.id
+                || (ticket as any).usuarioAsignadoId;
+
+            return asignadoId === this.usuarioActual?.id;
+        });
+
+        this.calcularEstadisticas();
+    }
+
+    getUsuarioCreadorNombre(ticket: Ticket): string {
+        const creadorId = ticket.usuarioCreadorId
+            || (ticket as any).usuario_creador_id
+            || ticket.usuarioCreador?.id
+            || (ticket as any).usuarioCreadorId;
+
+        if (creadorId) {
+            const usuario = this.usuarios.find(u => u.id === creadorId);
+            if (usuario?.nombreCompleto) return usuario.nombreCompleto;
+        }
+
+        return ticket.usuarioCreador?.nombreCompleto
+            || (ticket as any).usuarioCreadorNombre
+            || (ticket as any).usuario_creador
+            || 'Sin asignar';
+    }
+
+    getUsuarioAsignadoNombre(ticket: Ticket): string {
+        const asignadoId = ticket.usuarioAsignadoId
+            || (ticket as any).usuario_asignado_id
+            || ticket.usuarioAsignado?.id
+            || (ticket as any).usuarioAsignadoId;
+
+        if (asignadoId) {
+            const usuario = this.usuarios.find(u => u.id === asignadoId);
+            if (usuario?.nombreCompleto) return usuario.nombreCompleto;
+        }
+
+        return ticket.usuarioAsignado?.nombreCompleto
+            || (ticket as any).usuarioAsignadoNombre
+            || (ticket as any).usuario_asignado
+            || 'Sin asignar';
     }
 
     private sincronizarUsuarioCreador(): void {
@@ -261,6 +355,69 @@ export class TicketsComponent implements OnInit {
         };
 
         if (!payload.usuarioCreadorId) {
+            this.usuariosService.autoSyncCurrentUser().subscribe({
+                next: (usuario) => {
+                    this.usuarioActual = usuario;
+                    this.nuevoTicket.usuarioCreadorId = usuario.id;
+                    this.crearTicketConUsuario();
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Usuario no identificado',
+                        detail: 'No se pudo obtener el usuario autenticado. Intente recargar o inicie sesión nuevamente.'
+                    });
+                }
+            });
+            return;
+        }
+
+        if (!this.validarTicket(payload)) {
+            return;
+        }
+
+        this.ticketsService.create(payload).subscribe({
+            next: (response: {message: string, success: boolean}) => {
+                if (response.success) {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Éxito',
+                        detail: response.message || 'Ticket creado correctamente'
+                    });
+                    this.dialogNuevoTicket = false;
+                    this.cargarDatos(); // Recargar la lista para mostrar el nuevo ticket
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: response.message || 'Error al crear el ticket'
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('❌ Error al crear ticket:', error);
+                let errorMessage = 'Error al crear el ticket';
+                if (error.error && error.error.error) {
+                    errorMessage = error.error.error;
+                }
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMessage
+                });
+            }
+        });
+    }
+
+    private crearTicketConUsuario(): void {
+        const payload: Partial<Ticket> = {
+            ...this.nuevoTicket,
+            equipoId: this.nuevoTicket.equipoId ? Number(this.nuevoTicket.equipoId) : undefined,
+            usuarioCreadorId: this.nuevoTicket.usuarioCreadorId ? Number(this.nuevoTicket.usuarioCreadorId) : undefined,
+            usuarioAsignadoId: this.nuevoTicket.usuarioAsignadoId ? Number(this.nuevoTicket.usuarioAsignadoId) : undefined
+        };
+
+        if (!payload.usuarioCreadorId) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Usuario no identificado',
@@ -282,7 +439,7 @@ export class TicketsComponent implements OnInit {
                         detail: response.message || 'Ticket creado correctamente'
                     });
                     this.dialogNuevoTicket = false;
-                    this.cargarDatos(); // Recargar la lista para mostrar el nuevo ticket
+                    this.cargarDatos();
                 } else {
                     this.messageService.add({
                         severity: 'error',
@@ -325,7 +482,7 @@ export class TicketsComponent implements OnInit {
             },
             { separator: true },
             {
-                label: 'Iniciar Trabajo',
+                label: 'Iniciar Ticket',
                 icon: 'pi pi-play',
                 visible: ticket.estado === 'Abierto' || ticket.estado === 'Asignado',
                 command: () => this.cambiarEstadoDirecto(ticket, 'En Proceso')
@@ -347,6 +504,7 @@ export class TicketsComponent implements OnInit {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
                 styleClass: 'text-red-500',
+                visible: this.keycloakService.hasRole('ADMIN'),
                 command: () => this.confirmarEliminarTicket(ticket)
             }
         ];
@@ -873,6 +1031,19 @@ export class TicketsComponent implements OnInit {
                 return equipo.idEquipo === equipoId;
             }) || null;
             console.log('🎯 Equipo encontrado por ID:', this.equipoSeleccionado);
+
+            // Si no está en la lista, intentar cargarlo por ID
+            if (!this.equipoSeleccionado) {
+                this.equiposService.getEquipoById(equipoId).subscribe({
+                    next: (equipo) => {
+                        this.equipos.push(equipo);
+                        this.equipoSeleccionado = equipo;
+                    },
+                    error: () => {
+                        console.warn('⚠️ No se pudo cargar el equipo por ID:', equipoId);
+                    }
+                });
+            }
         } else if (equipoNombre) {
             // Buscar por nombre
             this.equipoSeleccionado = this.equipos.find(equipo => {

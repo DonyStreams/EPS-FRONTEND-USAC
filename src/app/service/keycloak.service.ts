@@ -138,35 +138,218 @@ export class KeycloakService {
     return roles.some(role => userRoles.includes(role));
   }
 
-  // Métodos de compatibilidad adicionales
-  canManageEquipos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  // =====================================================
+  // PERMISOS DE EQUIPOS
+  // =====================================================
+  canAccessEquipos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
   }
 
   canCreateEquipos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS']);
   }
 
   canEditEquipos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS']);
+  }
+
+  canDeleteEquipos(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  canManageEquipos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS']);
+  }
+
+  // =====================================================
+  // PERMISOS DE CATEGORÍAS
+  // =====================================================
+  canAccessCategorias(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
+  }
+
+  canCreateCategorias(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
-  canAccessEquipos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO_EQUIPOS', 'USER']);
+  canEditCategorias(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canDeleteCategorias(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  // =====================================================
+  // PERMISOS DE MANTENIMIENTOS Y PROGRAMACIONES
+  // =====================================================
+  canAccessMantenimientos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'USER']);
   }
 
   canCreateMantenimientos(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
-  canAccessMantenimientos(): boolean {
-    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  canEditMantenimientos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canDeleteMantenimientos(): boolean {
+    return this.hasRole('ADMIN');
   }
 
   canExecuteMantenimientos(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
   }
 
+  canApproveMantenimientos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  // =====================================================
+  // PERMISOS DE EJECUCIONES
+  // =====================================================
+  canAccessEjecuciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'USER']);
+  }
+
+  canCreateEjecuciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  }
+
+  canEditEjecuciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  }
+
+  canApproveEjecuciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  // =====================================================
+  // PERMISOS DE TICKETS
+  // =====================================================
+  canAccessTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
+  }
+
+  canCreateTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
+  }
+
+  canEditTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS']);
+  }
+
+  canDeleteTickets(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  canResolveTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+  }
+
+  canCloseTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canAssignTickets(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  // =====================================================
+  // PERMISOS DE CONTRATOS
+  // =====================================================
+  canAccessContratos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'USER']);
+  }
+
+  canCreateContratos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canEditContratos(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canDeleteContratos(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  // =====================================================
+  // PERMISOS DE PROVEEDORES
+  // =====================================================
+  canAccessProveedores(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'USER']);
+  }
+
+  canCreateProveedores(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canEditProveedores(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canDeleteProveedores(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  // =====================================================
+  // PERMISOS DE ÁREAS
+  // =====================================================
+  canAccessAreas(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
+  }
+
+  canCreateAreas(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canEditAreas(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canDeleteAreas(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  // =====================================================
+  // PERMISOS DE USUARIOS
+  // =====================================================
+  canAccessUsuarios(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  canManageUsuarios(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  // =====================================================
+  // PERMISOS DE REPORTES
+  // =====================================================
+  canAccessReportes(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  canExportReportes(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  // =====================================================
+  // PERMISOS DE NOTIFICACIONES
+  // =====================================================
+  canAccessNotificaciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS', 'USER']);
+  }
+
+  canConfigureNotificaciones(): boolean {
+    return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+  }
+
+  // =====================================================
+  // PERMISOS DE PARTICIPANTES (Legacy)
+  // =====================================================
   canAccessParticipantes(): boolean {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
   }
@@ -175,8 +358,55 @@ export class KeycloakService {
     return this.hasAnyRole(['ADMIN', 'SUPERVISOR']);
   }
 
-  canAccessUsuarios(): boolean {
+  // =====================================================
+  // HELPERS GENERALES
+  // =====================================================
+  
+  /**
+   * Verifica si el usuario es administrador
+   */
+  isAdmin(): boolean {
     return this.hasRole('ADMIN');
+  }
+
+  /**
+   * Verifica si el usuario es supervisor
+   */
+  isSupervisor(): boolean {
+    return this.hasRole('SUPERVISOR');
+  }
+
+  /**
+   * Verifica si el usuario es técnico de mantenimiento
+   */
+  isTecnico(): boolean {
+    return this.hasRole('TECNICO');
+  }
+
+  /**
+   * Verifica si el usuario es técnico de equipos
+   */
+  isTecnicoEquipos(): boolean {
+    return this.hasRole('TECNICO_EQUIPOS');
+  }
+
+  /**
+   * Verifica si el usuario es solo lectura
+   */
+  isReadOnly(): boolean {
+    return this.hasRole('USER') && !this.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO', 'TECNICO_EQUIPOS']);
+  }
+
+  /**
+   * Obtiene el rol principal del usuario (el de mayor jerarquía)
+   */
+  getPrimaryRole(): string {
+    if (this.hasRole('ADMIN')) return 'ADMIN';
+    if (this.hasRole('SUPERVISOR')) return 'SUPERVISOR';
+    if (this.hasRole('TECNICO')) return 'TECNICO';
+    if (this.hasRole('TECNICO_EQUIPOS')) return 'TECNICO_EQUIPOS';
+    if (this.hasRole('USER')) return 'USER';
+    return 'UNKNOWN';
   }
 
   // Información completa del usuario para compatibilidad
@@ -189,6 +419,7 @@ export class KeycloakService {
       email: this.getUserEmail(),
       fullName: this.getUserFullName(),
       roles: this.getUserRoles(),
+      primaryRole: this.getPrimaryRole(),
       permissions: {
         equipos: {
           view: this.canAccessEquipos(),
@@ -199,18 +430,32 @@ export class KeycloakService {
         mantenimientos: {
           view: this.canAccessMantenimientos(),
           create: this.canCreateMantenimientos(),
-          execute: this.canExecuteMantenimientos()
+          edit: this.canEditMantenimientos(),
+          execute: this.canExecuteMantenimientos(),
+          approve: this.canApproveMantenimientos()
+        },
+        tickets: {
+          view: this.canAccessTickets(),
+          create: this.canCreateTickets(),
+          edit: this.canEditTickets(),
+          resolve: this.canResolveTickets(),
+          close: this.canCloseTickets()
+        },
+        contratos: {
+          view: this.canAccessContratos(),
+          create: this.canCreateContratos(),
+          edit: this.canEditContratos(),
+          delete: this.canDeleteContratos()
         },
         usuarios: {
           manage: this.canAccessUsuarios()
+        },
+        reportes: {
+          view: this.canAccessReportes(),
+          export: this.canExportReportes()
         }
       }
     };
-  }
-
-  // Método de compatibilidad para canDeleteEquipos
-  canDeleteEquipos(): boolean {
-    return this.hasRole('ADMIN');
   }
 
   logout(): void {

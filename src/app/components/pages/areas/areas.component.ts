@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 import { AreasService, Area } from '../../../service/areas.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
     selector: 'app-areas',
@@ -9,6 +11,8 @@ import { AreasService, Area } from '../../../service/areas.service';
     providers: [ConfirmationService, MessageService]
 })
 export class AreasComponent implements OnInit {
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+
     areas: Area[] = [];
     areaForm: FormGroup;
     displayDialog = false;
@@ -21,6 +25,10 @@ export class AreasComponent implements OnInit {
     totalAreas = 0;
     areasActivas = 0;
     areasInactivas = 0;
+
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    areaSeleccionadaMenu: Area | null = null;
 
     // Opciones para tipo de área
     tiposArea = [
@@ -35,7 +43,8 @@ export class AreasComponent implements OnInit {
         private areasService: AreasService,
         private fb: FormBuilder,
         private confirmationService: ConfirmationService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private keycloakService: KeycloakService
     ) {
         this.areaForm = this.fb.group({
             nombre: ['', [
@@ -95,6 +104,30 @@ export class AreasComponent implements OnInit {
             estado: area.estado
         });
         this.displayDialog = true;
+    }
+
+    /**
+     * Abre el menú contextual de acciones
+     */
+    openAccionesMenu(event: Event, area: Area): void {
+        this.areaSeleccionadaMenu = area;
+        this.accionesMenuItems = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditAreas(),
+                command: () => this.editArea(area)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                visible: this.keycloakService.canDeleteAreas(),
+                command: () => this.deleteArea(area)
+            }
+        ];
+
+        this.menuAcciones.toggle(event);
     }
 
     saveArea(): void {

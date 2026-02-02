@@ -150,7 +150,7 @@
                     <h5 class="mt-0 mb-2">No hay mantenimientos programados</h5>
                     <p class="text-600 mt-0 mb-3">Crea programaciones para ver cuándo corresponde cada mantenimiento</p>
                     <div class="mt-4">
-                        <button pButton pRipple label="Crear Programación" icon="pi pi-plus" 
+                        <button *tienePermiso="{ modulo: 'programaciones', accion: 'crear' }" pButton pRipple label="Crear Programación" icon="pi pi-plus" 
                                 class="p-button-sm"
                                 routerLink="/administracion/programaciones"></button>
                     </div>
@@ -300,7 +300,8 @@
                 
                 <!-- Botón para crear ejecución desde programación -->
                 <button pButton pRipple label="Registrar Ejecución" icon="pi pi-play" 
-                        class="p-button-success" 
+                    *tienePermiso="{ modulo: 'ejecuciones', accion: 'crear' }"
+                    class="p-button-success" 
                         (click)="crearDesdeProgamacion()"
                         pTooltip="Crear ejecución de mantenimiento"></button>
             </div>
@@ -379,7 +380,8 @@
         <button pButton pRipple label="Cancelar" icon="pi pi-times" 
                 class="p-button-text" (click)="closeCreateDialog()"></button>
         <button pButton pRipple label="Crear Ejecucion" icon="pi pi-check" 
-                class="p-button-success" 
+            *tienePermiso="{ modulo: 'ejecuciones', accion: 'crear' }"
+            class="p-button-success" 
                 [disabled]="!nuevaEjecucion.idContrato || !nuevaEjecucion.idEquipo"
                 (click)="crearEjecucion()"></button>
     </ng-template>

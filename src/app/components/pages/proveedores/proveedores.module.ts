@@ -14,6 +14,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { MenuModule } from 'primeng/menu';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { ProveedoresComponent } from './proveedores.component';
 
@@ -34,6 +36,8 @@ import { ProveedoresComponent } from './proveedores.component';
         ConfirmDialogModule,
         TagModule,
         TooltipModule,
+        MenuModule,
+        SharedModule,
         RouterModule.forChild([
             { path: '', component: ProveedoresComponent }
         ])

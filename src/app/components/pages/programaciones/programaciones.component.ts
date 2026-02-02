@@ -6,6 +6,7 @@ import { Menu } from 'primeng/menu';
 import { HttpClient } from '@angular/common/http';
 import { ProgramacionesService } from '../../../service/programaciones.service';
 import { environment } from '../../../../environments/environment';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 // Interfaces
 export interface ProgramacionMantenimiento {
@@ -156,7 +157,8 @@ export class ProgramacionesComponent implements OnInit {
         private programacionesService: ProgramacionesService,
         private cdr: ChangeDetectorRef,
         private route: ActivatedRoute,
-        private router: Router
+        private router: Router,
+        private keycloakService: KeycloakService
     ) { }
 
     ngOnInit() {
@@ -205,6 +207,20 @@ export class ProgramacionesComponent implements OnInit {
      * Abre el diálogo de nueva programación con fecha pre-llenada desde el calendario
      */
     openNewFromCalendar(fechaStr?: string): void {
+        if (!this.keycloakService.canCreateMantenimientos()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear programaciones.'
+            });
+            this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: {},
+                replaceUrl: true
+            });
+            return;
+        }
+
         this.programacion = this.initializeProgramacion();
         this.isEditing = false;
         this.frecuenciaPersonalizada = false;
@@ -521,6 +537,15 @@ export class ProgramacionesComponent implements OnInit {
      * Abre el diálogo para crear nueva programación
      */
     openNew(): void {
+        if (!this.keycloakService.canCreateMantenimientos()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear programaciones.'
+            });
+            return;
+        }
+
         this.programacion = this.initializeProgramacion();
         this.isEditing = false;
         this.frecuenciaPersonalizada = false;
@@ -686,6 +711,24 @@ export class ProgramacionesComponent implements OnInit {
      * Guarda la programación
      */
     saveProgramacion(): void {
+        if (this.isEditing && !this.keycloakService.canEditMantenimientos()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para editar programaciones.'
+            });
+            return;
+        }
+
+        if (!this.isEditing && !this.keycloakService.canCreateMantenimientos()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear programaciones.'
+            });
+            return;
+        }
+
         if (!this.isFormValid()) {
             this.messageService.add({
                 severity: 'warn',
@@ -989,16 +1032,33 @@ export class ProgramacionesComponent implements OnInit {
                     error: (error) => {
                         console.error('❌ Error creando ejecucion:', error);
                         this.loading = false;
-                        const detail = error?.error?.message || error?.error || 'No se pudo crear el mantenimiento';
+                        const detail = this.getErrorDetail(error, 'No se pudo crear el mantenimiento');
                         this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
+                            severity: error?.status === 403 ? 'warn' : 'error',
+                            summary: error?.status === 403 ? 'Sin permiso' : 'Error',
                             detail
                         });
                     }
                 });
             }
         });
+    }
+
+    private getErrorDetail(error: any, fallback: string): string {
+        if (!error) return fallback;
+
+        if (error?.status === 403) {
+            const mensaje403 = error?.error?.mensaje || error?.error?.message;
+            return mensaje403 || 'No tiene permisos para ejecutar este mantenimiento.';
+        }
+
+        if (typeof error === 'string') return error;
+        if (typeof error?.error === 'string') return error.error;
+        if (error?.error?.mensaje) return error.error.mensaje;
+        if (error?.error?.message) return error.error.message;
+        if (error?.message) return error.message;
+
+        return fallback;
     }
 
     /**
@@ -1158,12 +1218,13 @@ export class ProgramacionesComponent implements OnInit {
             {
                 label: 'Editar Programación',
                 icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditMantenimientos(),
                 command: () => this.editProgramacion(programacion)
             },
             {
                 label: 'Ejecutar Mantenimiento',
                 icon: 'pi pi-play',
-                visible: programacion.activa,
+                visible: programacion.activa && this.keycloakService.canExecuteMantenimientos(),
                 styleClass: 'font-semibold',
                 command: () => this.crearMantenimiento(programacion)
             },
@@ -1171,13 +1232,13 @@ export class ProgramacionesComponent implements OnInit {
             {
                 label: 'Reprogramar',
                 icon: 'pi pi-calendar',
-                visible: programacion.activa && !esUnica,
+                visible: programacion.activa && !esUnica && this.keycloakService.canEditMantenimientos(),
                 command: () => this.openReprogramarDialog(programacion)
             },
             {
                 label: 'Descartar (Vencida)',
                 icon: 'pi pi-forward',
-                visible: programacion.activa && esVencida && programacion.frecuenciaDias > 0,
+                visible: programacion.activa && esVencida && programacion.frecuenciaDias > 0 && this.keycloakService.canEditMantenimientos(),
                 styleClass: 'text-orange-600',
                 command: () => this.descartarProgramacion(programacion)
             },
@@ -1190,6 +1251,7 @@ export class ProgramacionesComponent implements OnInit {
             {
                 label: programacion.activa ? 'Pausar Programación' : 'Activar Programación',
                 icon: programacion.activa ? 'pi pi-pause' : 'pi pi-check-circle',
+                visible: this.keycloakService.canEditMantenimientos(),
                 command: () => this.toggleActiva(programacion)
             },
             { separator: true },
@@ -1197,6 +1259,7 @@ export class ProgramacionesComponent implements OnInit {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
                 styleClass: 'text-red-500',
+                visible: this.keycloakService.hasRole('ADMIN'),
                 command: () => this.deleteProgramacion(programacion)
             }
         ];

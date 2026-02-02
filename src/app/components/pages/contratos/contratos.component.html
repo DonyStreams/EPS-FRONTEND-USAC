@@ -158,20 +158,14 @@
                         </td>
                         <td>
                             <div class="flex gap-1 align-items-center">
-                                <button pButton pRipple 
-                                        icon="pi pi-pencil" 
-                                        class="p-button-rounded p-button-text p-button-warning" 
-                                        (click)="editContrato(contrato)"
-                                        pTooltip="Editar"
-                                        tooltipPosition="top"></button>
-                                
-                                <button pButton pRipple 
-                                        icon="pi pi-trash" 
-                                        class="p-button-rounded p-button-text p-button-danger" 
-                                        (click)="deleteContrato(contrato)"
-                                        pTooltip="Eliminar"
-                                        tooltipPosition="top"></button>
-                            </div>
+                            <button *ngIf="tieneAccionesContrato()" pButton pRipple 
+                                    icon="pi pi-ellipsis-v" 
+                                    class="p-button-rounded p-button-text p-button-secondary" 
+                                    (click)="openAccionesMenu($event, contrato)"
+                                    pTooltip="Acciones"
+                                    tooltipPosition="top"></button>
+                                <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
+                                </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -404,10 +398,11 @@
                                     </div>
                                 </div>
                                 <button pButton pRipple 
-                                        icon="pi pi-times" 
-                                        class="p-button-rounded p-button-text p-button-danger p-button-sm"
-                                        (click)="removeFile(i)"
-                                        pTooltip="Eliminar"></button>
+                                    *tienePermiso="{ modulo: 'contratos', accion: 'eliminar' }"
+                                    icon="pi pi-times" 
+                                    class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                                    (click)="removeFile(i)"
+                                    pTooltip="Eliminar"></button>
                             </div>
                         </div>
 
@@ -435,7 +430,8 @@
                                             class="p-button-rounded p-button-text p-button-info p-button-sm"
                                             (click)="downloadFile(archivo)"
                                             pTooltip="Descargar"></button>
-                                    <button pButton pRipple 
+                                        <button pButton pRipple 
+                                            *tienePermiso="{ modulo: 'contratos', accion: 'eliminar' }"
                                             icon="pi pi-trash" 
                                             class="p-button-rounded p-button-text p-button-danger p-button-sm"
                                             (click)="deleteFile(archivo)"

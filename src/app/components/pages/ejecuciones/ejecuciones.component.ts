@@ -979,6 +979,7 @@ export class EjecucionesComponent implements OnInit {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
                 styleClass: 'text-red-500',
+                visible: this.keycloakService.hasRole('ADMIN'),
                 command: () => this.deleteEjecucion(ejecucion)
             }
         ];

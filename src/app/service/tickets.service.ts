@@ -113,8 +113,20 @@ export class TicketsService {
         if (keycloakId) {
             this.usuariosService.getByKeycloakId(keycloakId).subscribe({
                 next: (usuario) => {
-                    this.currentUsuario = usuario;
-                    console.log('✅ Usuario actual cargado:', usuario.nombreCompleto);
+                    if (usuario) {
+                        this.currentUsuario = usuario;
+                        console.log('✅ Usuario actual cargado:', usuario.nombreCompleto);
+                        return;
+                    }
+
+                    console.warn('⚠️ Usuario no encontrado en BD, usando datos de Keycloak');
+                    this.currentUsuario = {
+                        id: 1,
+                        keycloakId: keycloakId,
+                        nombreCompleto: this.keycloakService.getUserFullName() || 'Usuario',
+                        correo: this.keycloakService.getUserEmail() || '',
+                        activo: true
+                    };
                 },
                 error: (err) => {
                     console.warn('⚠️ No se pudo cargar usuario de BD, usando datos de Keycloak');

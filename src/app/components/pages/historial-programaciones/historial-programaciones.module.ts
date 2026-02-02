@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { HistorialProgramacionesComponent } from './historial-programaciones.component';
 
@@ -26,6 +27,7 @@ import { HistorialProgramacionesComponent } from './historial-programaciones.com
         TagModule,
         ToastModule,
         ConfirmDialogModule,
+        SharedModule,
         RouterModule.forChild([
             { path: '', component: HistorialProgramacionesComponent }
         ])

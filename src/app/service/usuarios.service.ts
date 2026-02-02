@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Usuario {
@@ -30,7 +31,10 @@ export class UsuariosService {
      * Obtiene solo usuarios activos
      */
     getActivos(): Observable<Usuario[]> {
-        return this.http.get<Usuario[]>(`${this.apiUrl}/activos`);
+        return this.autoSyncCurrentUser().pipe(
+            switchMap(() => this.http.get<Usuario[]>(`${this.apiUrl}/activos`)),
+            catchError(() => this.http.get<Usuario[]>(`${this.apiUrl}/activos`))
+        );
     }
 
     /**
@@ -45,5 +49,12 @@ export class UsuariosService {
      */
     getByKeycloakId(keycloakId: string): Observable<Usuario> {
         return this.http.get<Usuario>(`${this.apiUrl}/keycloak/${keycloakId}`);
+    }
+
+    /**
+     * Auto-sincroniza el usuario actual desde JWT
+     */
+    autoSyncCurrentUser(): Observable<Usuario> {
+        return this.http.post<Usuario>(`${this.apiUrl}/auto-sync`, {});
     }
 }

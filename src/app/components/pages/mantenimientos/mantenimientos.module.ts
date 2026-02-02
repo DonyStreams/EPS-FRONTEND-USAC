@@ -16,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SharedModule } from '../../../shared/shared.module';
 
 @NgModule({
     imports: [
@@ -34,7 +35,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
         TagModule,
         TooltipModule,
         FullCalendarModule,
-        ConfirmDialogModule
+        ConfirmDialogModule,
+        SharedModule
     ],
     declarations: [MantenimientosComponent]
 })

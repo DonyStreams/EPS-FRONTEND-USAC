@@ -115,6 +115,7 @@
                         label="Eliminar Seleccionados" 
                         icon="pi pi-trash" 
                         class="p-button-danger"
+                        *tienePermiso="{ modulo: 'programaciones', accion: 'eliminar' }"
                         [disabled]="!registrosSeleccionados || registrosSeleccionados.length === 0"
                         (click)="eliminarSeleccionados()">
                     </button>

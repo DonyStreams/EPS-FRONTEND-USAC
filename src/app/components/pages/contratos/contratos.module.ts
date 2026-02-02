@@ -21,6 +21,8 @@ import { PanelModule } from 'primeng/panel';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TooltipModule } from 'primeng/tooltip';
+import { MenuModule } from 'primeng/menu';
+import { SharedModule } from '../../../shared/shared.module';
 
 // Componentes
 import { ContratosComponent } from './contratos.component';
@@ -52,6 +54,8 @@ import { GestionArchivosComponent } from './gestion-archivos.component';
         ConfirmDialogModule,
         CheckboxModule,
         TooltipModule,
+        MenuModule,
+        SharedModule,
         RouterModule.forChild([
             { path: '', component: ContratosComponent },
             { path: 'archivos', component: GestionArchivosComponent },

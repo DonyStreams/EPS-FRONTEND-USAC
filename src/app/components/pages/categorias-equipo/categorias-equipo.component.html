@@ -94,15 +94,16 @@
                             <span class="text-sm">{{ categoria.padreNombre || getParentName(categoria.idPadre) }}</span>
                         </td>
                         <td>
-                            <button pButton type="button" 
-                                    [label]="(categoria.totalEquipos || 0).toString()" 
-                                    class="p-button-link font-semibold p-0"
-                                    [class.cursor-pointer]="categoria.totalEquipos > 0"
-                                    [disabled]="!categoria.totalEquipos || categoria.totalEquipos === 0"
-                                    (click)="showEquiposPorCategoria(categoria)"
-                                    [pTooltip]="categoria.totalEquipos > 0 ? 'Ver equipos' : 'Sin equipos'"
-                                    tooltipPosition="top">
-                            </button>
+                            <p-tag *ngIf="categoria.totalEquipos > 0"
+                                   [value]="categoria.totalEquipos + ' equipo' + (categoria.totalEquipos > 1 ? 's' : '')"
+                                   severity="info"
+                                   [styleClass]="'cursor-pointer'"
+                                   (click)="showEquiposPorCategoria(categoria)"
+                                   pTooltip="Click para ver equipos"
+                                   tooltipPosition="top">
+                            </p-tag>
+                            <span *ngIf="!categoria.totalEquipos || categoria.totalEquipos === 0" 
+                                  class="text-400 text-sm">Sin equipos</span>
                         </td>
                         <td>
                             <p-tag [value]="categoria.estado ? 'Activa' : 'Inactiva'" [severity]="getEstadoSeverity(categoria.estado)"></p-tag>
@@ -112,8 +113,9 @@
                         </td>
                         <td>
                             <div class="flex gap-2">
-                                <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="editCategoria(categoria)" tooltip="Editar"></button>
-                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteCategoria(categoria)" tooltip="Eliminar"></button>
+                                <button *ngIf="tieneAccionesCategoria()" pButton icon="pi pi-ellipsis-v" class="p-button-rounded p-button-text p-button-secondary" 
+                                        (click)="openAccionesMenu($event, categoria)" tooltip="Acciones"></button>
+                                <p-menu #menuAcciones [popup]="true" [model]="accionesMenuItems" appendTo="body"></p-menu>
                             </div>
                         </td>
                     </tr>

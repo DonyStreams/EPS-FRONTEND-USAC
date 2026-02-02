@@ -70,7 +70,7 @@
                 [columns]="cols"
                 responsiveLayout="scroll"
                 [rows]="10"
-                [globalFilterFields]="['descripcion','estado','prioridad']"
+                [globalFilterFields]="['descripcion','estado','prioridad','usuarioCreador.nombreCompleto','usuarioAsignado.nombreCompleto']"
                 [paginator]="true"
                 [rowsPerPageOptions]="[10,20,30]"
                 [showCurrentPageReport]="true"
@@ -81,7 +81,7 @@
                 dataKey="id">
                 <ng-template pTemplate="caption">
                     <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                        <h5 class="m-0">Gestión de Tickets</h5>
+                        <h5 class="m-0">Tickets asignados</h5>
                         <span class="block mt-2 md:mt-0 p-input-icon-left">
                             <i class="pi pi-search"></i>
                             <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." class="w-full sm:w-auto"/>
@@ -96,6 +96,8 @@
                         <th pSortableColumn="descripcion">Descripción <p-sortIcon field="descripcion"></p-sortIcon></th>
                         <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
                         <th pSortableColumn="prioridad">Prioridad <p-sortIcon field="prioridad"></p-sortIcon></th>
+                        <th pSortableColumn="usuarioCreador">Creado por</th>
+                        <th pSortableColumn="usuarioAsignado">Asignado a</th>
                         <th pSortableColumn="fechaCreacion">Fecha <p-sortIcon field="fechaCreacion"></p-sortIcon></th>
                         <th></th>
                     </tr>
@@ -120,6 +122,14 @@
                             <span class="p-column-title">Prioridad</span>
                             <p-tag [value]="ticket.prioridad" [severity]="getPrioridadSeverity(ticket.prioridad)"></p-tag>
                         </td>
+                        <td style="width:14%; min-width:12rem;">
+                            <span class="p-column-title">Creado por</span>
+                            {{ getUsuarioCreadorNombre(ticket) }}
+                        </td>
+                        <td style="width:14%; min-width:12rem;">
+                            <span class="p-column-title">Asignado a</span>
+                            {{ getUsuarioAsignadoNombre(ticket) }}
+                        </td>
                         <td style="width:14%; min-width:10rem;">
                             <span class="p-column-title">Fecha</span>
                             {{ticket.fechaCreacion | date:'short'}}
@@ -136,7 +146,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="6" class="text-center p-5">
+                        <td colspan="8" class="text-center p-5">
                             <div class="flex flex-column align-items-center justify-content-center">
                                 <i class="pi pi-ticket text-5xl text-400 mb-3"></i>
                                 <p class="text-xl font-medium mt-0 mb-2">No hay tickets registrados</p>
@@ -360,7 +370,9 @@
             </div>
             <ng-template pTemplate="footer">
                 <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteTicketDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="eliminarTicketConfirmado()"></button>
+                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" 
+                    *tienePermiso="{ modulo: 'tickets', accion: 'eliminar' }"
+                    (click)="eliminarTicketConfirmado()"></button>
             </ng-template>
         </p-dialog>
 
@@ -371,7 +383,9 @@
             </div>
             <ng-template pTemplate="footer">
                 <button pButton pRipple icon="pi pi-times" class="p-button-text" label="No" (click)="deleteTicketsDialog = false"></button>
-                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" (click)="eliminarTicketsSeleccionados()"></button>
+                <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sí" 
+                    *tienePermiso="{ modulo: 'tickets', accion: 'eliminar' }"
+                    (click)="eliminarTicketsSeleccionados()"></button>
             </ng-template>
         </p-dialog>
 
@@ -610,8 +624,9 @@
                                                         class="p-button-rounded p-button-text p-button-sm"
                                                         (click)="descargarEvidencia(evidencia)" pTooltip="Descargar"></button>
                                                 <button pButton pRipple icon="pi pi-trash" 
-                                                        class="p-button-rounded p-button-text p-button-sm p-button-danger"
-                                                        (click)="eliminarEvidencia(evidencia)" pTooltip="Eliminar"></button>
+                                                    *tienePermiso="{ modulo: 'tickets', accion: 'eliminar' }"
+                                                    class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                                                    (click)="eliminarEvidencia(evidencia)" pTooltip="Eliminar"></button>
                                             </div>
                                         </div>
                                     </div>

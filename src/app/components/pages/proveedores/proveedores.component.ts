@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 import { ProveedoresService, Proveedor } from '../../../service/proveedores.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
     selector: 'app-proveedores',
@@ -9,6 +11,8 @@ import { ProveedoresService, Proveedor } from '../../../service/proveedores.serv
     providers: [ConfirmationService, MessageService]
 })
 export class ProveedoresComponent implements OnInit {
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+
     proveedores: Proveedor[] = [];
     proveedorForm: FormGroup;
     displayDialog = false;
@@ -22,11 +26,16 @@ export class ProveedoresComponent implements OnInit {
     proveedoresActivos = 0;
     proveedoresInactivos = 0;
 
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    proveedorSeleccionadoMenu: Proveedor | null = null;
+
     constructor(
         private proveedoresService: ProveedoresService,
         private fb: FormBuilder,
         private confirmationService: ConfirmationService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private keycloakService: KeycloakService
     ) {
         this.proveedorForm = this.fb.group({
             nit: ['', [
@@ -89,6 +98,39 @@ export class ProveedoresComponent implements OnInit {
             estado: proveedor.estado
         });
         this.displayDialog = true;
+    }
+
+    /**
+     * Abre el menú contextual de acciones
+     */
+    openAccionesMenu(event: Event, proveedor: Proveedor): void {
+        this.proveedorSeleccionadoMenu = proveedor;
+        const items: MenuItem[] = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditProveedores(),
+                command: () => this.editProveedor(proveedor)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                visible: this.keycloakService.canDeleteProveedores(),
+                command: () => this.deleteProveedor(proveedor)
+            }
+        ];
+
+        this.accionesMenuItems = items.filter(item => item.visible !== false);
+        if (!this.accionesMenuItems.length) {
+            return;
+        }
+
+        this.menuAcciones.toggle(event);
+    }
+
+    tieneAccionesProveedor(): boolean {
+        return this.keycloakService.canEditProveedores() || this.keycloakService.canDeleteProveedores();
     }
 
     // Validación de NIT único

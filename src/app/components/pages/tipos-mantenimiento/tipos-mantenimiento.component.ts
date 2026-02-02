@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 import { TiposMantenimientoService, TipoMantenimiento } from '../../../service/tipos-mantenimiento.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
     selector: 'app-tipos-mantenimiento',
@@ -9,6 +11,8 @@ import { TiposMantenimientoService, TipoMantenimiento } from '../../../service/t
     providers: [ConfirmationService, MessageService]
 })
 export class TiposMantenimientoComponent implements OnInit {
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
+
     tipos: TipoMantenimiento[] = [];
     tiposFiltrados: TipoMantenimiento[] = [];
     tipoForm: FormGroup;
@@ -23,11 +27,16 @@ export class TiposMantenimientoComponent implements OnInit {
     tiposActivos = 0;
     tiposInactivos = 0;
 
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    tipoSeleccionadoMenu: TipoMantenimiento | null = null;
+
     constructor(
         private tiposService: TiposMantenimientoService,
         private fb: FormBuilder,
         private confirmationService: ConfirmationService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private keycloakService: KeycloakService
     ) {
         this.tipoForm = this.fb.group({
             nombre: ['', [
@@ -84,6 +93,30 @@ export class TiposMantenimientoComponent implements OnInit {
             estado: tipo.estado
         });
         this.displayDialog = true;
+    }
+
+    /**
+     * Abre el menú contextual de acciones
+     */
+    openAccionesMenu(event: Event, tipo: TipoMantenimiento): void {
+        this.tipoSeleccionadoMenu = tipo;
+        this.accionesMenuItems = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditMantenimientos(),
+                command: () => this.editTipo(tipo)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                visible: this.keycloakService.canDeleteMantenimientos(),
+                command: () => this.deleteTipo(tipo)
+            }
+        ];
+
+        this.menuAcciones.toggle(event);
     }
 
     saveTipo(): void {

@@ -675,8 +675,9 @@
                                                 class="p-button-rounded p-button-text p-button-sm p-button-info"
                                                 (click)="downloadEvidencia(evidencia)" pTooltip="Descargar"></button>
                                         <button pButton pRipple icon="pi pi-trash" 
-                                                class="p-button-rounded p-button-text p-button-sm p-button-danger"
-                                                (click)="deleteEvidencia(evidencia)" pTooltip="Eliminar"></button>
+                                            *tienePermiso="{ modulo: 'ejecuciones', accion: 'eliminar' }"
+                                            class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                                            (click)="deleteEvidencia(evidencia)" pTooltip="Eliminar"></button>
                                     </div>
                                 </div>
                             </div>

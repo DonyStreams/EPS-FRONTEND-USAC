@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { EquiposListComponent } from './equipos-list.component';
 import { HistorialEquiposComponent } from './historial-equipos/historial-equipos.component';
@@ -40,6 +41,7 @@ import { EquiposRoutingModule } from './equipos-routing.module';
     ConfirmDialogModule,
     CheckboxModule,
     MenuModule,
+    SharedModule,
     EquiposRoutingModule
   ]
 })

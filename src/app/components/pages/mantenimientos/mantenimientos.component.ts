@@ -9,6 +9,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { ProgramacionesService, ProgramacionMantenimiento } from 'src/app/service/programaciones.service';
 import { EjecucionesService, EjecucionMantenimiento } from 'src/app/service/ejecuciones.service';
 import { ContratosService } from 'src/app/service/contratos.service';
+import { KeycloakService } from 'src/app/service/keycloak.service';
 
 interface ContratoCalendario {
     id: number;
@@ -109,7 +110,8 @@ export class MantenimientosComponent implements OnInit {
         private contratosService: ContratosService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        private router: Router
+        private router: Router,
+        private keycloakService: KeycloakService
     ) {}
 
     ngOnInit(): void {
@@ -595,6 +597,15 @@ export class MantenimientosComponent implements OnInit {
     }
 
     handleDateSelect(info: DateSelectArg): void {
+        if (!this.puedeCrearProgramaciones()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear programaciones.'
+            });
+            return;
+        }
+
         // Formatear fecha como YYYY-MM-DD en zona local (sin conversión UTC)
         const fecha = info.start;
         const year = fecha.getFullYear();
@@ -641,6 +652,15 @@ export class MantenimientosComponent implements OnInit {
     }
 
     crearEjecucionManual(): void {
+        if (!this.puedeCrearEjecuciones()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear ejecuciones.'
+            });
+            return;
+        }
+
         this.selectedDate = new Date();
         this.nuevaEjecucion = {
             fechaEjecucion: new Date(),
@@ -701,6 +721,15 @@ export class MantenimientosComponent implements OnInit {
     }
 
     crearEjecucion(): void {
+        if (!this.puedeCrearEjecuciones()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para crear ejecuciones.'
+            });
+            return;
+        }
+
         if (!this.nuevaEjecucion.idContrato || !this.nuevaEjecucion.idEquipo) {
             this.messageService.add({
                 severity: 'warn',
@@ -761,6 +790,15 @@ export class MantenimientosComponent implements OnInit {
     }
 
     crearDesdeProgamacion(): void {
+        if (!this.puedeRegistrarEjecucionDesdeProgramacion()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Sin permiso',
+                detail: 'No tiene permisos para registrar ejecuciones.'
+            });
+            return;
+        }
+
         if (!this.selectedEvent?.extendedProps) return;
         
         const props = this.selectedEvent.extendedProps;
@@ -876,5 +914,17 @@ export class MantenimientosComponent implements OnInit {
             summary: 'Actualizado',
             detail: 'Calendario actualizado'
         });
+    }
+
+    puedeCrearProgramaciones(): boolean {
+        return this.keycloakService.hasAnyRole(['ADMIN', 'SUPERVISOR']);
+    }
+
+    puedeRegistrarEjecucionDesdeProgramacion(): boolean {
+        return this.keycloakService.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
+    }
+
+    puedeCrearEjecuciones(): boolean {
+        return this.keycloakService.hasAnyRole(['ADMIN', 'SUPERVISOR', 'TECNICO']);
     }
 }

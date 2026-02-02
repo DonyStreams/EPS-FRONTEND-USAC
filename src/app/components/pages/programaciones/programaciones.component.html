@@ -90,7 +90,7 @@
             <!-- Barra de herramientas -->
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
-                    <button pButton pRipple label="Nueva Programación" icon="pi pi-plus" class="p-button-success mr-2"
+                    <button *ngIf="keycloakService.canCreateMantenimientos()" pButton pRipple label="Nueva Programación" icon="pi pi-plus" class="p-button-success mr-2"
                         (click)="openNew()"></button>
                     <button pButton pRipple label="Ver Calendario" icon="pi pi-calendar" class="p-button-outlined mr-2"
                         routerLink="/administracion/mantenimientos"

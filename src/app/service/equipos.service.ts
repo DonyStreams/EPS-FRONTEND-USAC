@@ -33,6 +33,10 @@ export class EquiposService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
+  getEquipoById(id: number): Observable<Equipo> {
+    return this.http.get<Equipo>(`${this.apiUrl}/${id}`);
+  }
+
   getEquiposByCategoria(idCategoria: number): Observable<Equipo[]> {
     return this.http.get<Equipo[]>(`${this.apiUrl}`, { 
       params: new HttpParams().set('idCategoria', idCategoria.toString()) 

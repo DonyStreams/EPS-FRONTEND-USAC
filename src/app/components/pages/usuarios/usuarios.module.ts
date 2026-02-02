@@ -16,6 +16,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageModule } from 'primeng/message';
+import { SharedModule } from '../../../shared/shared.module';
 
 @NgModule({
     imports: [
@@ -32,7 +33,8 @@ import { MessageModule } from 'primeng/message';
         ConfirmDialogModule,
         TagModule,
         TooltipModule,
-        MessageModule
+        MessageModule,
+        SharedModule
     ],
     declarations: [UsuariosComponent]
 })

@@ -16,6 +16,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { TreeModule } from 'primeng/tree';
+import { MenuModule } from 'primeng/menu';
+import { SharedModule } from '../../../shared/shared.module';
 
 import { CategoriasEquipoComponent } from './categorias-equipo.component';
 
@@ -38,6 +40,8 @@ import { CategoriasEquipoComponent } from './categorias-equipo.component';
         TagModule,
         TooltipModule,
         TreeModule,
+        MenuModule,
+        SharedModule,
         RouterModule.forChild([
             { path: '', component: CategoriasEquipoComponent }
         ])

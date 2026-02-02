@@ -1,10 +1,12 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { MessageService, ConfirmationService, MenuItem } from 'primeng/api';
+import { Menu } from 'primeng/menu';
 import { Router } from '@angular/router';
 import { ContratoService, Contrato, EstadisticasContratos } from '../../../service/contrato.service';
 import { ProveedoresService, Proveedor } from '../../../service/proveedores.service';
 import { ArchivosService, ArchivoResponse } from '../../../service/archivos.service';
+import { KeycloakService } from '../../../service/keycloak.service';
 
 @Component({
     selector: 'app-contratos',
@@ -14,6 +16,7 @@ import { ArchivosService, ArchivoResponse } from '../../../service/archivos.serv
 export class ContratosComponent implements OnInit {
     
     @ViewChild('fileUpload') fileUpload: any;
+    @ViewChild('menuAcciones') menuAcciones!: Menu;
     
     contratos: Contrato[] = [];
     proveedores: Proveedor[] = [];
@@ -40,6 +43,10 @@ export class ContratosComponent implements OnInit {
     // Archivos
     uploadedFiles: any[] = [];
     maxFileSize: number = 10000000; // 10MB
+
+    // Menú de acciones
+    accionesMenuItems: MenuItem[] = [];
+    contratoSeleccionadoMenu: Contrato | null = null;
     
     constructor(
         private fb: FormBuilder,
@@ -48,7 +55,8 @@ export class ContratosComponent implements OnInit {
         private contratoService: ContratoService,
         private proveedoresService: ProveedoresService,
         public archivosService: ArchivosService,  // 🆕 Hacer público para usar en template
-        private router: Router  // 🆕 Agregar Router
+        private router: Router,  // 🆕 Agregar Router
+        private keycloakService: KeycloakService
     ) {
         this.contratoForm = this.createForm();
     }
@@ -215,6 +223,39 @@ export class ContratosComponent implements OnInit {
         }
         
         this.displayDialog = true;
+    }
+
+    /**
+     * Abre el menú contextual de acciones
+     */
+    openAccionesMenu(event: Event, contrato: Contrato): void {
+        this.contratoSeleccionadoMenu = contrato;
+        const items: MenuItem[] = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                visible: this.keycloakService.canEditContratos(),
+                command: () => this.editContrato(contrato)
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                styleClass: 'text-red-500',
+                visible: this.keycloakService.canDeleteContratos(),
+                command: () => this.deleteContrato(contrato)
+            }
+        ];
+
+        this.accionesMenuItems = items.filter(item => item.visible !== false);
+        if (!this.accionesMenuItems.length) {
+            return;
+        }
+
+        this.menuAcciones.toggle(event);
+    }
+
+    tieneAccionesContrato(): boolean {
+        return this.keycloakService.canEditContratos() || this.keycloakService.canDeleteContratos();
     }
     
     // Cargar archivos de un contrato específico

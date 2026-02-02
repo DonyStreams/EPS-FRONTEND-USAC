@@ -1,0 +1,295 @@
+<div class="card">
+    <h5><i class="pi pi-bell mr-2"></i>Panel de Notificaciones</h5>
+    <p>Centro de notificaciones y alertas del sistema de mantenimientos.</p>
+    
+    <!-- Contadores -->
+    <div class="grid">
+        <div class="col-12 md:col-3">
+            <div class="card bg-blue-50 cursor-pointer hover:shadow-4" (click)="filtrarPor('todas')">
+                <div class="flex justify-content-between align-items-center">
+                    <div>
+                        <span class="block text-blue-900 font-medium mb-2">Total No Leídas</span>
+                        <div class="text-blue-900 font-bold text-3xl">{{ contadores.total }}</div>
+                    </div>
+                    <i class="pi pi-bell text-blue-500 text-4xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 md:col-3">
+            <div class="card bg-red-50 cursor-pointer hover:shadow-4" (click)="filtrarPor('Alta')">
+                <div class="flex justify-content-between align-items-center">
+                    <div>
+                        <span class="block text-red-900 font-medium mb-2">Críticas</span>
+                        <div class="text-red-900 font-bold text-3xl">{{ contadores.criticas }}</div>
+                    </div>
+                    <i class="pi pi-times-circle text-red-500 text-4xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 md:col-3">
+            <div class="card bg-orange-50 cursor-pointer hover:shadow-4" (click)="filtrarPor('Media')">
+                <div class="flex justify-content-between align-items-center">
+                    <div>
+                        <span class="block text-orange-900 font-medium mb-2">Alertas</span>
+                        <div class="text-orange-900 font-bold text-3xl">{{ contadores.alertas }}</div>
+                    </div>
+                    <i class="pi pi-exclamation-triangle text-orange-500 text-4xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 md:col-3">
+            <div class="card bg-green-50 cursor-pointer hover:shadow-4" (click)="filtrarPor('Baja')">
+                <div class="flex justify-content-between align-items-center">
+                    <div>
+                        <span class="block text-green-900 font-medium mb-2">Informativas</span>
+                        <div class="text-green-900 font-bold text-3xl">{{ contadores.informativas }}</div>
+                    </div>
+                    <i class="pi pi-info-circle text-green-500 text-4xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <p-toolbar styleClass="mb-4 mt-4">
+        <ng-template pTemplate="left">
+            <button pButton label="Marcar todas como leídas" icon="pi pi-check" 
+                    class="p-button-success mr-2" (click)="marcarTodasLeidas()"
+                    [disabled]="contadores.total === 0"></button>
+                <button pButton label="Eliminar todas" icon="pi pi-trash" 
+                    *tienePermiso="{ modulo: 'notificaciones', accion: 'eliminar' }"
+                    class="p-button-danger mr-2" (click)="eliminarTodas()"
+                    [disabled]="notificaciones.length === 0"
+                    pTooltip="Elimina todas las notificaciones"></button>
+            <button pButton label="Ejecutar Verificación" icon="pi pi-sync" 
+                    *tienePermiso="{ modulo: 'notificaciones', accion: 'ejecutar' }"
+                    class="p-button-info mr-2" (click)="ejecutarVerificacion()"
+                    [loading]="ejecutandoVerificacion"
+                    pTooltip="Busca mantenimientos y contratos próximos a vencer"></button>
+            <button pButton label="Configuración" icon="pi pi-cog" 
+                    *tienePermiso="{ modulo: 'notificaciones', accion: 'configurar' }"
+                    class="p-button-secondary" (click)="mostrarConfiguracion = true"></button>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input pInputText type="text" [(ngModel)]="filtroGlobal" 
+                       placeholder="Buscar..." class="p-inputtext-sm"
+                       (input)="filtrarNotificaciones()">
+            </span>
+        </ng-template>
+    </p-toolbar>
+
+    <!-- Estado del Scheduler -->
+    <div class="card surface-100 mb-4" *ngIf="estadoScheduler">
+        <div class="flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-clock text-2xl" [ngClass]="estadoScheduler.habilitado ? 'text-green-500' : 'text-gray-400'"></i>
+                <div>
+                    <span class="font-bold">Scheduler Automático:</span>
+                    <p-tag [value]="estadoScheduler.habilitado ? 'Activo' : 'Inactivo'" 
+                           [severity]="estadoScheduler.habilitado ? 'success' : 'danger'" 
+                           class="ml-2"></p-tag>
+                </div>
+            </div>
+            <div class="flex align-items-center gap-4 text-sm">
+                <span><i class="pi pi-calendar mr-1"></i> Hora programada: <strong>{{ estadoScheduler.horaProgramada }}</strong></span>
+                <span><i class="pi pi-history mr-1"></i> Última ejecución: <strong>{{ estadoScheduler.ultimaEjecucion }}</strong></span>
+                <span *ngIf="estadoScheduler.ultimoResultado"><i class="pi pi-info-circle mr-1"></i> {{ estadoScheduler.ultimoResultado }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Notificaciones como Cards -->
+    <div class="grid" *ngIf="!cargando && notificacionesFiltradas.length > 0">
+        <div class="col-12" *ngFor="let notif of notificacionesFiltradas">
+            <div class="card mb-2 p-3 border-left-3" 
+                 [ngClass]="{
+                     'border-red-500 surface-0': notif.prioridad === 'Alta' && !notif.leida,
+                     'border-yellow-500 surface-0': notif.prioridad === 'Media' && !notif.leida,
+                     'border-blue-500 surface-0': notif.prioridad === 'Baja' && !notif.leida,
+                     'border-gray-300 surface-100': notif.leida
+                 }">
+                <div class="flex align-items-start justify-content-between">
+                    <!-- Contenido principal -->
+                    <div class="flex align-items-start gap-3 flex-1">
+                        <div class="flex-shrink-0">
+                            <i class="pi text-2xl" [ngClass]="{
+                                'pi-envelope text-primary': !notif.leida,
+                                'pi-envelope-open text-gray-400': notif.leida
+                            }"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex align-items-center gap-2 mb-2">
+                                <p-tag [value]="getTipoLabel(notif.tipoNotificacion)" 
+                                       [severity]="getTipoSeverity(notif.tipoNotificacion)"
+                                       [icon]="getTipoIcon(notif.tipoNotificacion)" 
+                                       styleClass="text-xs"></p-tag>
+                                <p-tag [value]="notif.prioridad" 
+                                       [severity]="getPrioridadSeverity(notif.prioridad)"
+                                       styleClass="text-xs"></p-tag>
+                                <span class="text-xs text-gray-500">
+                                    <i class="pi pi-clock mr-1"></i>
+                                    {{ formatearFecha(notif.fechaCreacion) }}
+                                </span>
+                            </div>
+                            <h5 class="m-0 mb-2" [ngClass]="{'font-bold': !notif.leida, 'text-gray-600': notif.leida}">
+                                {{ notif.titulo }}
+                            </h5>
+                            <p class="m-0 text-sm" [ngClass]="{'text-gray-700': !notif.leida, 'text-gray-500': notif.leida}">
+                                {{ notif.mensaje }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Menú contextual de 3 puntitos -->
+                    <div class="flex-shrink-0">
+                        <button pButton type="button" icon="pi pi-ellipsis-v" 
+                                class="p-button-rounded p-button-text p-button-plain"
+                                (click)="menu.toggle($event)"></button>
+                        <p-menu #menu [popup]="true" [model]="getMenuItems(notif)" appendTo="body"></p-menu>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div *ngIf="!cargando && notificacionesFiltradas.length === 0" class="card">
+        <div class="text-center p-6">
+            <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+            <h4 class="text-gray-500 m-0">No hay notificaciones{{ filtroActivo ? ' con el filtro actual' : '' }}</h4>
+            <p class="text-gray-400 mt-2">Las alertas de mantenimientos y contratos aparecerán aquí</p>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="cargando" class="card">
+        <div class="text-center p-6">
+            <p-progressSpinner [style]="{width: '50px', height: '50px'}"></p-progressSpinner>
+            <p class="text-gray-500 mt-3">Cargando notificaciones...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Diálogo de Detalle -->
+<p-dialog header="Detalle de Notificación" [(visible)]="mostrarDetalle" [modal]="true" 
+          [style]="{width: '500px'}" [closable]="true">
+    <div *ngIf="notificacionSeleccionada" class="p-fluid">
+        <div class="field">
+            <label class="font-bold">Tipo:</label>
+            <p-tag [value]="getTipoLabel(notificacionSeleccionada.tipoNotificacion)" 
+                   [severity]="getTipoSeverity(notificacionSeleccionada.tipoNotificacion)"></p-tag>
+        </div>
+        <div class="field">
+            <label class="font-bold">Título:</label>
+            <p>{{ notificacionSeleccionada.titulo }}</p>
+        </div>
+        <div class="field">
+            <label class="font-bold">Mensaje:</label>
+            <p class="white-space-pre-line">{{ notificacionSeleccionada.mensaje }}</p>
+        </div>
+        <div class="field">
+            <label class="font-bold">Prioridad:</label>
+            <p-tag [value]="notificacionSeleccionada.prioridad" 
+                   [severity]="getPrioridadSeverity(notificacionSeleccionada.prioridad)"></p-tag>
+        </div>
+        <div class="field">
+            <label class="font-bold">Fecha de creación:</label>
+            <p>{{ formatearFecha(notificacionSeleccionada.fechaCreacion) }}</p>
+        </div>
+        <div class="field" *ngIf="notificacionSeleccionada.fechaLectura">
+            <label class="font-bold">Fecha de lectura:</label>
+            <p>{{ formatearFecha(notificacionSeleccionada.fechaLectura) }}</p>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Cerrar" icon="pi pi-times" class="p-button-text" 
+                (click)="mostrarDetalle = false"></button>
+        <button pButton label="Marcar como leída" icon="pi pi-check" 
+                (click)="marcarLeida(notificacionSeleccionada!); mostrarDetalle = false"
+                *ngIf="notificacionSeleccionada && !notificacionSeleccionada.leida"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo de Configuración -->
+<p-dialog header="Configuración del Scheduler" [(visible)]="mostrarConfiguracion" [modal]="true" 
+          [style]="{width: '600px'}" [closable]="true">
+    <div class="p-fluid" *ngIf="estadoScheduler">
+        <div class="field">
+            <label class="font-bold">Scheduler Automático</label>
+            <div class="flex align-items-center gap-2 mt-2">
+                <p-inputSwitch [(ngModel)]="schedulerHabilitado" 
+                               (onChange)="toggleScheduler()"
+                               [disabled]="!puedeConfigurarNotificaciones()"></p-inputSwitch>
+                <span>{{ schedulerHabilitado ? 'Habilitado' : 'Deshabilitado' }}</span>
+            </div>
+            <small class="text-gray-500">El scheduler verifica automáticamente mantenimientos y contratos próximos a vencer.</small>
+        </div>
+        
+        <div class="field mt-4">
+            <label class="font-bold">Hora de Ejecución Diaria</label>
+            <div class="flex align-items-center gap-2 mt-2">
+                <p-inputNumber [(ngModel)]="horaEjecucion" [min]="0" [max]="23" 
+                               [showButtons]="true" buttonLayout="horizontal"
+                               incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"
+                           suffix=" hrs" [style]="{width: '150px'}"
+                           [disabled]="!puedeConfigurarNotificaciones()"></p-inputNumber>
+                <span>:</span>
+                <p-inputNumber [(ngModel)]="minutoEjecucion" [min]="0" [max]="59" 
+                               [showButtons]="true" buttonLayout="horizontal"
+                               incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus"
+                           suffix=" min" [style]="{width: '150px'}"
+                           [disabled]="!puedeConfigurarNotificaciones()"></p-inputNumber>
+                <button pButton label="Guardar" icon="pi pi-save" class="p-button-success"
+                    (click)="guardarHorario()"
+                    [disabled]="!puedeConfigurarNotificaciones()"></button>
+            </div>
+            <small class="text-gray-500">El scheduler se ejecutará diariamente a esta hora.</small>
+        </div>
+
+        <div class="field mt-4">
+            <label class="font-bold">Configuración de Alertas</label>
+            <p-table [value]="configuraciones" styleClass="p-datatable-sm mt-2">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Tipo de Alerta</th>
+                        <th>Días de Anticipación</th>
+                        <th>Estado</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-config>
+                    <tr>
+                        <td>
+                            <span class="font-medium">{{ config.nombre }}</span>
+                            <br><small class="text-gray-500">{{ config.descripcion }}</small>
+                        </td>
+                        <td>
+                            <span *ngIf="!config.tipoAlerta.includes('vencido')" class="font-medium">
+                                {{ config.diasAnticipacion }} días
+                            </span>
+                            <span *ngIf="config.tipoAlerta.includes('vencido')" class="text-gray-500">
+                                <i class="pi pi-info-circle mr-1"></i>No aplica
+                            </span>
+                        </td>
+                        <td>
+                            <p-inputSwitch [(ngModel)]="config.activa"
+                                           (onChange)="actualizarConfiguracion(config)"
+                                           [disabled]="!puedeConfigurarNotificaciones()"></p-inputSwitch>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Cerrar" icon="pi pi-times" class="p-button-text" 
+                (click)="mostrarConfiguracion = false"></button>
+    </ng-template>
+</p-dialog>
+
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
