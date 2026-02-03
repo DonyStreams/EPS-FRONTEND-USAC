@@ -7,5 +7,7 @@
 			"path": "../MantenimientosBackend"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "disabled"
+	}
 }
