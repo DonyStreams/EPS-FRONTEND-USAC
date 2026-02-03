@@ -6,6 +6,12 @@
 # Etapa 1: Build con Node
 FROM node:18-alpine AS builder
 
+# Variables de entorno para el build
+ARG BACKEND_URL=http://172.16.33.11:8081/MantenimientosBackend
+ARG KEYCLOAK_URL=http://172.16.1.192:8080/auth
+ARG KEYCLOAK_REALM=MantenimientosINACIF
+ARG KEYCLOAK_CLIENT_ID=inacif-frontend
+
 WORKDIR /app
 
 # Copiar package files
@@ -16,6 +22,14 @@ RUN npm ci
 
 # Copiar código fuente
 COPY . .
+
+# Reemplazar variables en environment.prod.ts antes del build
+RUN sed -i "s|apiUrl:.*|apiUrl: '${BACKEND_URL}/api',|g" src/environments/environment.prod.ts && \
+    sed -i "s|keycloakUrl:.*|keycloakUrl: '${KEYCLOAK_URL}',|g" src/environments/environment.prod.ts && \
+    sed -i "s|keycloakRealm:.*|keycloakRealm: '${KEYCLOAK_REALM}',|g" src/environments/environment.prod.ts && \
+    sed -i "s|keycloakClientId:.*|keycloakClientId: '${KEYCLOAK_CLIENT_ID}',|g" src/environments/environment.prod.ts && \
+    echo "=== environment.prod.ts después de reemplazos ===" && \
+    cat src/environments/environment.prod.ts
 
 # Build para producción (se configurará con environment.prod.ts)
 RUN npm run build -- --configuration production

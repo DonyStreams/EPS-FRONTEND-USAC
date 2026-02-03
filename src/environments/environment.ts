@@ -8,7 +8,7 @@ export const environment = {
   keycloakUrl: 'http://172.16.1.192:8080/auth',
   keycloakRealm: 'MantenimientosINACIF',
   keycloakClientId: 'inacif-frontend',
-  enableConsole: false
+  enableConsole: true
 };
 
 /*
