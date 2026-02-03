@@ -30,7 +30,7 @@ LABEL description="Frontend Sistema de Mantenimientos INACIF"
 LABEL version="2.0.0"
 
 # Copiar build de Angular
-COPY --from=builder /app/dist/eps-frontend /usr/share/nginx/html
+COPY --from=builder /app/dist/sakai-ng /usr/share/nginx/html
 
 # Copiar configuración de Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
