@@ -15,27 +15,48 @@ export class KeycloakService {
   public onSessionExpired = this.sessionExpired$.asObservable();
 
   constructor() {
+    console.log('🔐 KeycloakService: Inicializando con configuración:', {
+      url: environment.keycloakUrl,
+      realm: environment.keycloakRealm,
+      clientId: environment.keycloakClientId
+    });
+    
     this.keycloakInstance = new (Keycloak as any)({
       url: environment.keycloakUrl,
       realm: environment.keycloakRealm,
       clientId: environment.keycloakClientId
     });
+    
+    console.log('✅ Instancia de Keycloak creada');
   }
 
   init(): Promise<boolean> {
+    console.log('🚀 Iniciando Keycloak con check-sso...');
+    
     return (this.keycloakInstance.init({
       checkLoginIframe: false,
       onLoad: 'check-sso'  // Verificar si hay sesión válida
     }) as any).then((authenticated: boolean) => {
+      console.log('✅ Keycloak inicializado correctamente. Autenticado:', authenticated);
       this.initialized = true;
       
       // Configurar renovación automática de tokens
       if (authenticated) {
+        console.log('👤 Usuario autenticado, configurando renovación de tokens');
         this.setupTokenRefresh();
+      } else {
+        console.log('👤 Usuario NO autenticado');
       }
       
       return authenticated;
     }).catch((error: any) => {
+      console.error('❌ Error al inicializar Keycloak:', error);
+      console.error('Detalles del error:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
+      
       // En caso de error, inicializar de todas formas pero sin autenticación
       this.initialized = true;
       return false;
@@ -464,7 +485,20 @@ export class KeycloakService {
   }
 
   login(): void {
-    this.keycloakInstance?.login();
+    console.log('🔑 Iniciando proceso de login en Keycloak...');
+    console.log('📍 URL actual:', window.location.href);
+    console.log('🔧 Configuración Keycloak:', {
+      url: environment.keycloakUrl,
+      realm: environment.keycloakRealm,
+      clientId: environment.keycloakClientId
+    });
+    
+    try {
+      this.keycloakInstance?.login();
+      console.log('✅ Comando de login enviado a Keycloak');
+    } catch (error) {
+      console.error('❌ Error al intentar login:', error);
+    }
   }
 
   // Método para obtener el token actualizado
