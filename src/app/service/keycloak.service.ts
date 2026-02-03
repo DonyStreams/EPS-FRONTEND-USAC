@@ -35,8 +35,9 @@ export class KeycloakService {
     
     return (this.keycloakInstance.init({
       checkLoginIframe: false,
-      onLoad: 'check-sso'  // Verificar si hay sesión válida
-    }) as any).then((authenticated: boolean) => {
+      onLoad: 'check-sso',  // Verificar si hay sesión válida
+      enableLogging: true
+    } as any) as any).then((authenticated: boolean) => {
       console.log('✅ Keycloak inicializado correctamente. Autenticado:', authenticated);
       this.initialized = true;
       
