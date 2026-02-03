@@ -278,7 +278,13 @@ export class TicketsComponent implements OnInit {
                 || ticket.usuarioAsignado?.id
                 || (ticket as any).usuarioAsignadoId;
 
-            return asignadoId === this.usuarioActual?.id;
+            const creadorId = ticket.usuarioCreadorId
+                || (ticket as any).usuario_creador_id
+                || ticket.usuarioCreador?.id
+                || (ticket as any).usuarioCreadorId;
+
+            // Mostrar tickets asignados AL usuario O creados POR el usuario
+            return asignadoId === this.usuarioActual?.id || creadorId === this.usuarioActual?.id;
         });
 
         this.calcularEstadisticas();
