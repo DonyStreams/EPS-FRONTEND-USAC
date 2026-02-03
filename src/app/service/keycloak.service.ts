@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Keycloak from 'keycloak-js';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -15,9 +16,9 @@ export class KeycloakService {
 
   constructor() {
     this.keycloakInstance = new (Keycloak as any)({
-      url: 'http://172.16.1.192:8080/auth',
-      realm: 'MantenimientosINACIF',
-      clientId: 'inacif-frontend'
+      url: environment.keycloakUrl,
+      realm: environment.keycloakRealm,
+      clientId: environment.keycloakClientId
     });
   }
 

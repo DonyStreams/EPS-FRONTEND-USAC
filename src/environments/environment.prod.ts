@@ -3,8 +3,8 @@
 export const environment = {
   production: true,
   // Cambiar por la IP/dominio del servidor de producción
-  apiUrl: 'http://172.16.1.192:8081/MantenimientosBackend/api',
-  keycloakUrl: 'http://172.16.1.192:8080',
+  apiUrl: 'http://172.16.33.11:8081/MantenimientosBackend/api',
+  keycloakUrl: 'http://172.16.1.192:8080/auth',
   keycloakRealm: 'MantenimientosINACIF',
   keycloakClientId: 'inacif-frontend',
   enableConsole: false
