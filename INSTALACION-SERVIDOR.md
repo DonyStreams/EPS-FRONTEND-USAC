@@ -50,8 +50,8 @@ sudo apt install git -y
 cd /opt
 sudo mkdir inacif && sudo chown $USER:$USER inacif
 cd inacif
-git clone https://github.com/tu-usuario/EPS-FRONTEND.git
-git clone https://github.com/tu-usuario/MantenimientosBackend.git
+git clone https://github.com/DonyStreams/EPS-FRONTEND-USAC.git
+git clone https://github.com/DonyStreams/MantenimientosBackend.git
 
 # 8. Configurar variables de entorno
 cd EPS-FRONTEND
@@ -88,8 +88,8 @@ Restart-Computer
 cd C:\
 mkdir inacif
 cd inacif
-git clone https://github.com/tu-usuario/EPS-FRONTEND.git
-git clone https://github.com/tu-usuario/MantenimientosBackend.git
+git clone https://github.com/DonyStreams/EPS-FRONTEND-USAC.git
+git clone https://github.com/DonyStreams/MantenimientosBackend.git
 
 # 7. Configurar variables
 cd EPS-FRONTEND
