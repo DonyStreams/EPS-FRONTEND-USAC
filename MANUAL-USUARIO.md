@@ -10,16 +10,21 @@
 
 1. [Introducción](#1-introducción)
 2. [Inicio de Sesión](#2-inicio-de-sesión)
-3. [Roles y Permisos](#3-roles-y-permisos)
-4. [Dashboard](#4-dashboard)
-5. [Gestión de Equipos](#5-gestión-de-equipos)
-6. [Gestión de Mantenimientos](#6-gestión-de-mantenimientos)
-7. [Sistema de Tickets](#7-sistema-de-tickets)
-8. [Contratos y Proveedores](#8-contratos-y-proveedores)
-9. [Administración](#9-administración)
-10. [Notificaciones y Scheduler](#10-notificaciones-y-scheduler)
-11. [Reportes](#11-reportes)
-12. [Preguntas Frecuentes](#12-preguntas-frecuentes)
+3. [Navegación e Interfaz](#3-navegación-e-interfaz)
+4. [Perfil de Usuario](#4-perfil-de-usuario)
+5. [Roles y Permisos](#5-roles-y-permisos)
+6. [Dashboard](#6-dashboard)
+7. [Gestión de Equipos](#7-gestión-de-equipos)
+8. [Gestión de Mantenimientos](#8-gestión-de-mantenimientos)
+9. [Sistema de Tickets](#9-sistema-de-tickets)
+10. [Contratos y Proveedores](#10-contratos-y-proveedores)
+11. [Administración](#11-administración)
+12. [Notificaciones y Scheduler](#12-notificaciones-y-scheduler)
+13. [Reportes](#13-reportes)
+14. [Ejemplos Prácticos](#14-ejemplos-prácticos)
+15. [Glosario de Términos](#15-glosario-de-términos)
+16. [Solución de Problemas](#16-solución-de-problemas)
+17. [Preguntas Frecuentes](#17-preguntas-frecuentes)
 
 ---
 
@@ -60,6 +65,11 @@ Este sistema permite:
 2. Ingresa la URL del sistema proporcionada por tu administrador
 3. Haz clic en **"Iniciar Sesión"**
 
+---
+**[CAPTURA 2.1: Pantalla de bienvenida del sistema]**
+
+---
+
 ### 2.2 Autenticación con Keycloak
 
 El sistema utiliza **Keycloak** para la autenticación, lo que significa:
@@ -72,6 +82,11 @@ El sistema utiliza **Keycloak** para la autenticación, lo que significa:
 1. Escribe tu **usuario institucional**
 2. Escribe tu **contraseña**
 3. Haz clic en **"Acceder"**
+
+---
+**[CAPTURA 2.2: Formulario de login de Keycloak con campos usuario y contraseña]**
+
+---
 
 ### 2.3 ¿Qué pasa si olvidé mi contraseña?
 
@@ -87,7 +102,198 @@ Siempre cierra sesión cuando termines:
 
 ---
 
-## 3. Roles y Permisos
+## 3. Navegación e Interfaz
+
+### 3.1 Elementos Principales de la Interfaz
+
+Una vez dentro del sistema, verás estos elementos:
+
+---
+**[CAPTURA 3.1: Vista general de la interfaz con todos los elementos]**
+
+---
+
+| Elemento | Ubicación | Función |
+|----------|-----------|----------|
+| **Logo INACIF** | Arriba izquierda | Identifica la aplicación |
+| **Menú Lateral** | Izquierda | Navegación entre módulos |
+| **Barra Superior** | Arriba | Búsqueda, notificaciones, perfil |
+| **Área de Contenido** | Centro | Información del módulo activo |
+| **Breadcrumb** | Arriba del contenido | Muestra dónde estás (ej: Inicio > Equipos > Detalle) |
+
+### 3.2 El Menú Lateral
+
+**¿Cómo funciona?**
+- Los módulos se agrupan por categorías
+- Solo ves los módulos que tu rol permite
+- Algunos módulos tienen sub-menús (flecha expandible)
+- El módulo activo se resalta en color
+
+**Estructura del Menú:**
+
+```
+📊 Inicio
+   └─ Dashboard
+
+🖥️ Gestión de Equipos
+   ├─ Equipos
+   ├─ Categorías de Equipo
+   └─ Bitácora/Historial
+
+🔧 Gestión de Mantenimientos
+   ├─ Calendario
+   ├─ Programaciones
+   ├─ Ejecuciones
+   ├─ Tipos de Mantenimiento
+   └─ Bitácora/Historial
+
+🎫 Tickets
+   ├─ Todos los Tickets
+   └─ Bitácora/Historial
+
+📄 Contratos
+   ├─ Contratos
+   └─ Proveedores
+
+⚙️ Administración
+   ├─ Áreas
+   └─ Usuarios
+
+🔔 Notificaciones
+   └─ Panel de Notificaciones
+
+📊 Reportes
+   ├─ Reportes Técnicos
+   └─ Configuración de correos
+```
+
+### 3.3 Barra de Búsqueda Global
+
+---
+**[CAPTURA 3.2: Barra de búsqueda con resultados]**
+
+---
+
+**¿Para qué sirve?**
+Buscar rápidamente equipos, tickets o programaciones sin navegar por el menú.
+
+**Cómo usar:**
+1. Clic en el ícono de lupa 🔍
+2. Escribe parte del nombre o código
+3. Selecciona de los resultados
+4. Te lleva directamente al detalle
+
+**Busca:**
+- Equipos por nombre o código INACIF
+- Tickets por ID o descripción
+- Programaciones por equipo
+
+### 3.4 Campana de Notificaciones
+
+---
+**[CAPTURA 3.3: Menú desplegable de notificaciones]**
+
+---
+
+**¿Cómo funciona?**
+- El ícono 🔔 muestra un número con notificaciones pendientes
+- Color rojo = notificaciones críticas
+- Clic en la campana = ver resumen rápido
+- Clic en una notificación = ir al detalle
+
+### 3.5 Menú de Usuario
+
+**Ubicación:** Esquina superior derecha (tu nombre)
+
+**Opciones:**
+- **Mi Perfil** - Ver y editar tu información
+- **Configuración** - Preferencias personales
+- **Cerrar Sesión** - Salir del sistema
+
+### 3.6 Configuración de Apariencia (Modo Oscuro/Claro)
+
+**Acceso:** Botón de **engranaje** ⚙️ en la barra superior derecha
+
+---
+**[CAPTURA 3.3: Panel de configuración de apariencia]**
+
+---
+
+**¿Qué puedes configurar?**
+
+| Configuración | Descripción | Opciones |
+|---------------|-------------|----------|
+| **Esquema de Color** | Tema visual del sistema | • Light (Claro) <br> • Dark (Oscuro) |
+| **Tema** | Variante de colores | • Lara Light Indigo <br> • Lara Dark Indigo <br> • MD Light Indigo <br> • MD Dark Indigo <br> • Bootstrap Dark Blue <br> • Vela Blue <br> • Arya Blue |
+| **Tamaño de Fuente** | Escala de texto | 12, 13, 14, 15, 16 px |
+| **Estilo de Entrada** | Apariencia de campos | • Outlined (Con borde) <br> • Filled (Relleno) |
+| **Efecto Ripple** | Animación al hacer clic | Activar/Desactivar |
+| **Modo de Menú** | Comportamiento del menú lateral | • Static (Fijo) <br> • Overlay (Superpuesto) |
+
+**¿Cómo cambiar a Modo Oscuro?**
+1. Haz clic en el botón ⚙️ en la barra superior
+2. En "Esquema de Color", selecciona **"Dark"**
+3. Opcionalmente, elige un tema oscuro (ej: "Lara Dark Indigo")
+4. Los cambios se aplican inmediatamente
+
+**Beneficios del Modo Oscuro:**
+- Reduce fatiga visual en ambientes con poca luz
+- Ahorra batería en pantallas OLED
+- Apariencia más moderna y profesional
+
+> ℹ️ **Nota:** Tus preferencias se guardan automáticamente en tu navegador
+
+---
+
+## 4. Perfil de Usuario
+
+### 4.1 Ver Mi Perfil
+
+**Acceso:** Menú Usuario (esquina superior derecha) → **"Mi Perfil"**
+
+---
+**[CAPTURA 4.1: Pantalla de perfil de usuario]**
+
+---
+
+### 4.2 Información Disponible
+
+| Sección | Información |
+|---------|-------------|
+| **Datos Personales** | Nombre completo, email, usuario |
+| **Información Institucional** | Área asignada, cargo |
+| **Rol en el Sistema** | Tu rol actual (ADMIN, SUPERVISOR, etc.) |
+| **Permisos** | Lista de acciones que puedes realizar |
+| **Actividad Reciente** | Últimas acciones realizadas |
+
+### 4.3 Editar Mi Información
+
+**Campos editables:**
+- Correo electrónico de contacto
+- Teléfono
+- Foto de perfil
+
+**Campos NO editables:**
+- Nombre (viene de Keycloak)
+- Usuario (viene de Keycloak)
+- Rol (lo asigna el administrador)
+
+**Para editar:**
+1. Clic en **"Editar Perfil"**
+2. Modifica los campos permitidos
+3. Clic en **"Guardar Cambios"**
+
+### 4.4 Ver Mis Estadísticas
+
+**¿Qué puedo ver?**
+- Mantenimientos que he ejecutado (si eres TECNICO)
+- Tickets que he creado
+- Tickets asignados a mí
+- Programaciones creadas (si eres SUPERVISOR)
+
+---
+
+## 5. Roles y Permisos
 
 El sistema tiene **5 roles**. Cada rol tiene permisos específicos según su función.
 
@@ -220,6 +426,11 @@ El sistema tiene **5 roles**. Cada rol tiene permisos específicos según su fun
 
 El **Dashboard** es la página principal del sistema. Muestra un resumen visual de toda la información importante en tiempo real.
 
+---
+**[CAPTURA 4.1: Vista general del Dashboard con KPIs, gráficos y alertas]**
+
+---
+
 ### 4.2 ¿Qué información muestra?
 
 #### KPIs de Equipos
@@ -252,15 +463,90 @@ El **Dashboard** es la página principal del sistema. Muestra un resumen visual 
 
 ### 4.3 Gráficos Disponibles
 
-- **Equipos por Área** - ¿Cuántos equipos hay en cada laboratorio?
-- **Equipos por Estado** - Distribución: Activos vs Inactivos vs Críticos
-- **Tickets por Prioridad** - Baja, Media, Alta, Crítica
-- **Tickets por Estado** - Abierto, Asignado, En Proceso, Resuelto, Cerrado
-- **Ejecuciones por Estado** - Programado, En Proceso, Completado, Cancelado
-- **Contratos por Estado** - Vigentes, Por Vencer, Vencidos
-- **Tendencia de Mantenimientos** - Histórico mensual
+#### 4.3.1 Equipos por Área
+- **Tipo:** Gráfico de barras horizontales
+- **Muestra:** Cantidad de equipos en cada laboratorio/área
+- **Interacción:** Hacer clic en una barra para ver detalle
+- **Útil para:** Identificar áreas con más equipos
 
-### 4.4 Acciones Rápidas
+#### 4.3.2 Equipos por Estado
+- **Tipo:** Gráfico de dona (donut chart)
+- **Muestra:** Proporción de equipos Activos/Inactivos/Críticos
+- **Colores:** 🟢 Verde (Activo), ⚫ Gris (Inactivo), 🔴 Rojo (Crítico)
+- **Útil para:** Ver rápidamente la salud general del inventario
+
+#### 4.3.3 Tickets por Prioridad
+- **Tipo:** Gráfico de pastel (pie chart)
+- **Muestra:** Distribución de tickets por nivel de urgencia
+- **Niveles:** Baja, Media, Alta, Crítica
+- **Útil para:** Priorizar recursos técnicos
+
+#### 4.3.4 Tickets por Estado
+- **Tipo:** Gráfico de barras
+- **Muestra:** Cantidad de tickets en cada estado del flujo
+- **Estados:** Abierto, Asignado, En Proceso, Resuelto, Cerrado
+- **Útil para:** Monitorear el avance de resolución
+
+#### 4.3.5 Ejecuciones por Estado
+- **Tipo:** Gráfico de barras apiladas
+- **Muestra:** Mantenimientos PROGRAMADO, EN_PROCESO, COMPLETADO, CANCELADO
+- **Período:** Últimos 6 meses
+- **Útil para:** Analizar cumplimiento de mantenimientos
+
+#### 4.3.6 Tendencia de Mantenimientos
+- **Tipo:** Gráfico de líneas
+- **Muestra:** Evoluci ón mensual de mantenimientos completados
+- **Período:** Último año
+- **Útil para:** Identificar tendencias y planificar recursos
+
+#### 4.3.7 Contratos por Estado
+- **Tipo:** Gráfico de dona
+- **Muestra:** Contratos Activos vs Por Vencer vs Vencidos
+- **Útil para:** Gestión proactiva de renovaciones
+
+### 4.4 Tablas de Datos
+
+#### 4.4.1 Alertas Recientes (Top 5)
+Muestra las últimas alertas generadas automáticamente:
+- Mantenimientos próximos a vencer (7 días)
+- Mantenimientos vencidos
+- Contratos por vencer (30, 15, 7 días)
+- Contratos vencidos
+
+**Columnas:**
+| Columna | Descripción |
+|---------|-------------|
+| **Tipo** | Tipo de alerta (mantenimiento/contrato) |
+| **Descripción** | Detalle del problema |
+| **Fecha** | Cuándo se generó la alerta |
+| **Prioridad** | Nivel de urgencia |
+
+#### 4.4.2 Top 5 Tickets Críticos
+Tickets de máxima prioridad ordenados por antigüedad:
+- ID del ticket
+- Equipo afectado
+- Estado actual
+- Técnico asignado
+- Días abierto
+
+**Acción:** Clic en un ticket para ver el detalle completo
+
+#### 4.4.3 Programaciones Vencidas
+Mantenimientos que debieron ejecutarse:
+- Equipo
+- Tipo de mantenimiento
+- Fecha programada
+- Días de retraso
+
+**Color:** 🔴 Rojo = urgente, requiere atención inmediata
+
+### 4.5 Actualización de Datos
+
+- **Frecuencia:** Datos actualizados cada vez que cargas el dashboard
+- **Última actualización:** Se muestra en la esquina superior (ej: "Actualizado: 04-Feb-2026 10:30")
+- **Refrescar manualmente:** Haz clic en el botón **"Actualizar"** ↻
+
+### 4.6 Acciones Rápidas
 
 Desde el Dashboard puedes ir directamente a:
 - ➕ Crear nuevo equipo
@@ -288,6 +574,11 @@ Un **equipo** es cualquier activo de laboratorio que requiere mantenimiento. Pue
 ### 5.2 Estados de un Equipo
 
 Los equipos tienen **3 estados posibles**:
+
+---
+**[CAPTURA 5.1: Listado de equipos mostrando los diferentes estados con colores]**
+
+---
 
 | Estado | Color | ¿Qué significa? | ¿Cuándo usarlo? |
 |--------|-------|-----------------|-----------------|
@@ -401,6 +692,11 @@ y cada cuánto
 
 1. Ir a **Gestión de Mantenimientos** → **Programaciones**
 2. Clic en **"+ Nueva Programación"**
+
+---
+**[CAPTURA 6.1: Formulario de nueva programación con todos los campos]**
+
+---
 3. Completar:
    - **Equipo** - Seleccionar el equipo
    - **Tipo de Mantenimiento** - Preventivo, Correctivo, etc.
@@ -456,6 +752,11 @@ y cada cuánto
 #### Gestionar una Ejecución
 
 Al abrir una ejecución puedes:
+
+---
+**[CAPTURA 6.2: Pantalla de gestión de ejecución con botones de Iniciar, Completar, Cancelar]**
+
+---
 - **Iniciar trabajo** - Marca que empezaste a trabajar
 - **Completar** - Marca que terminaste
 - **Cancelar** - Cancela con un motivo
@@ -546,6 +847,15 @@ Supervisor verifica y cierra
 
 1. Ir a **Tickets** → **Todos los Tickets**
 2. Clic en **"+ Nuevo Ticket"**
+
+---
+**[CAPTURA 7.1: Listado de tickets con estados y prioridades]**
+
+---
+
+**[CAPTURA 7.2: Formulario de nuevo ticket]**
+
+---
 3. Completar:
    - **Equipo** - Cuál equipo tiene el problema
    - **Descripción** - Explicar claramente qué pasa
@@ -676,6 +986,11 @@ Las **notificaciones** son alertas automáticas que el sistema genera cuando:
 
 **Acceso:** Menú → **Notificaciones** → **Panel de Notificaciones**
 
+---
+**[CAPTURA 10.1: Panel de notificaciones con filtros y lista de alertas]**
+
+---
+
 Aquí puedes:
 - Ver todas tus notificaciones
 - Filtrar por prioridad (Crítica, Alerta, Informativa)
@@ -710,6 +1025,11 @@ Cada día, automáticamente:
    - Mantiene el sistema limpio
 
 #### Configuración del Scheduler
+
+---
+**[CAPTURA 10.2: Configuración del Scheduler mostrando parámetros]**
+
+---
 
 | Parámetro | Valor por defecto | Descripción |
 |-----------|-------------------|-------------|
@@ -756,15 +1076,493 @@ Los **reportes** son documentos que muestran información consolidada del sistem
 
 ### 11.3 Generar un Reporte
 
+---
+**[CAPTURA 11.1: Pantalla de reportes con opciones y filtros]**
+
+---
+
 1. Ir a **Reportes** → **Reportes Técnicos**
 2. Seleccionar el tipo de reporte
 3. Configurar filtros (fechas, área, etc.)
 4. Clic en **"Generar"**
 5. Se descarga el archivo
 
+### 11.4 Configuración de Correos Electrónicos
+
+**Acceso:** Menú → **Reportes** → **Configuración de correos**
+
+**Rol requerido:** Solo ADMIN
+
+---
+**[CAPTURA 11.2: Pantalla de configuración de correos electrónicos]**
+
 ---
 
-## 12. Preguntas Frecuentes
+**¿Qué es?** Módulo para configurar las direcciones de correo que recibirán notificaciones automáticas del sistema.
+
+**Tipos de Alertas Configurables:**
+
+| Tipo de Alerta | ¿Cuándo se envía? | Ejemplo |
+|----------------|-------------------|---------|
+| **MANTENIMIENTO_PROXIMO** | 7 días antes de un mantenimiento | "Mantenimiento de Microscopio LAB-001 programado para 10-Feb-2026" |
+| **MANTENIMIENTO_VENCIDO** | Cuando un mantenimiento no se ejecutó a tiempo | "Mantenimiento de Balanza LAB-015 vencido desde 03-Feb-2026" |
+| **CONTRATO_POR_VENCER_30** | 30 días antes de que expire un contrato | "Contrato #2024-001 expira el 10-Mar-2026" |
+| **CONTRATO_POR_VENCER_15** | 15 días antes de expiración | "Contrato #2024-001 expira en 15 días" |
+| **CONTRATO_POR_VENCER_7** | 7 días antes de expiración | "⚠️ Contrato #2024-001 expira en 7 días" |
+| **CONTRATO_VENCIDO** | Cuando un contrato ya expiró | "🔴 Contrato #2024-001 VENCIDO desde 05-Feb-2026" |
+| **TICKET_CRITICO** | Cuando se crea un ticket de prioridad CRÍTICA | "🚨 Ticket CRÍTICO: Equipo LAB-032 fuera de servicio" |
+
+**Cómo configurar:**
+
+1. **Ver configuraciones existentes:**
+   - El sistema muestra una tabla con todos los tipos de alerta
+   - Cada fila tiene el tipo y los correos configurados
+
+2. **Agregar correos electrónicos:**
+   ```
+   Formato: correo1@ejemplo.com, correo2@ejemplo.com, correo3@ejemplo.com
+   ```
+   - Separar múltiples correos con comas
+   - Ejemplo: `jperez@inacif.gob.gt, mlopez@inacif.gob.gt, admin@inacif.gob.gt`
+
+3. **Guardar cambios:**
+   - **Guardar individual:** Botón 💾 "Guardar" en cada fila
+   - **Guardar todo:** Botón "Guardar Todo" (guarda todas las configuraciones)
+
+4. **Validación automática:**
+   - El sistema valida formato correcto de correos
+   - Muestra advertencia si hay correos inválidos
+
+**Ejemplo de configuración:**
+```
+MANTENIMIENTO_PROXIMO:
+supervisor1@inacif.gob.gt, supervisor2@inacif.gob.gt, tecnico@inacif.gob.gt
+
+TICKET_CRITICO:
+admin@inacif.gob.gt, jefatura@inacif.gob.gt, soporte@inacif.gob.gt
+
+CONTRATO_VENCIDO:
+compras@inacif.gob.gt, admin@inacif.gob.gt
+```
+
+**Notas importantes:**
+- ✅ Puedes configurar diferentes correos para cada tipo de alerta
+- ✅ Un mismo correo puede estar en múltiples tipos de alerta
+- ✅ Los correos se pueden modificar en cualquier momento
+- ⚠️ Si no hay correos configurados, NO se envían alertas de ese tipo
+- ⚠️ Los correos deben ser válidos y estar activos
+
+**¿Cómo saber si funciona?**
+- El scheduler ejecuta a las 8:00 AM todos los días
+- Si hay alertas, se envían correos automáticamente
+- Puedes verificar en tu bandeja de entrada
+
+---
+
+## 14. Ejemplos Prácticos
+
+### 14.1 Ejemplo 1: Programar Mantenimiento Preventivo Mensual
+
+**Situación:** Necesitas programar limpieza mensual de un microscopio.
+
+**Paso a paso:**
+
+1. **Ir al módulo**
+   - Menú → Gestión de Mantenimientos → Programaciones
+
+2. **Crear nueva programación**
+   - Clic en "+ Nueva Programación"
+
+3. **Llenar formulario:**
+   - **Equipo:** Buscar y seleccionar "Microscopio Óptico LAB-2026-001"
+   - **Tipo de Mantenimiento:** Mantenimiento Preventivo
+   - **Contrato:** (dejar vacío si es interno)
+   - **Frecuencia:** Mensual (30 días)
+   - **Fecha Último Mantenimiento:** 01/02/2026
+   - **Fecha Próximo Mantenimiento:** 01/03/2026 (calcula automático)
+   - **Días de Alerta Previa:** 7
+   - **Activa:** ✅ Sí
+   - **Observaciones:** "Limpieza y revisión de lentes"
+
+4. **Guardar**
+   - El sistema crea la programación
+   - A partir de ahora, generará alertas automáticas
+
+5. **Resultado:**
+   - 7 días antes del 01/03/2026 recibirás notificación
+   - Después de ejecutar, se programa automáticamente para 01/04/2026
+
+---
+
+### 14.2 Ejemplo 2: Reportar y Resolver una Falla
+
+**Situación:** Una balanza no enciende.
+
+**Rol USER (quien reporta):**
+
+1. **Crear ticket**
+   - Menú → Tickets → Todos los Tickets
+   - Clic en "+ Nuevo Ticket"
+
+2. **Completar:**
+   - **Equipo:** Balanza Analítica LAB-2026-015
+   - **Descripción:** "La balanza no enciende al presionar el botón de power. Se revisó la conexión eléctrica y está bien conectada."
+   - **Prioridad:** Alta (afecta el trabajo)
+
+3. **Guardar**
+   - Estado: ABIERTO
+   - Esperas que un supervisor lo asigne
+
+**Rol SUPERVISOR (quien asigna):**
+
+4. **Asignar técnico**
+   - Ver el ticket
+   - Clic en "Asignar"
+   - Seleccionar técnico: Juan Pérez
+   - Estado: ASIGNADO
+
+**Rol TECNICO (quien resuelve):**
+
+5. **Trabajar en el ticket**
+   - Ver ticket asignado
+   - Clic en "Iniciar Trabajo"
+   - Estado: EN PROCESO
+
+6. **Diagnosticar y reparar**
+   - Agregar comentario: "Se revisó el equipo, fusible interno dañado"
+   - Subir foto del fusible
+   - Agregar comentario: "Fusible reemplazado, equipo funcionando"
+   - Subir foto del equipo encendido
+
+7. **Resolver**
+   - Clic en "Resolver"
+   - Descripción de solución: "Reemplazo de fusible F1 de 2A. Equipo probado y funcionando correctamente."
+   - Estado: RESUELTO
+
+**Rol SUPERVISOR (quien cierra):**
+
+8. **Cerrar ticket**
+   - Revisar solución
+   - Si está correcto: Clic en "Cerrar"
+   - Estado: CERRADO
+
+---
+
+### 14.3 Ejemplo 3: Ejecutar Mantenimiento Programado
+
+**Situación:** Hoy debes hacer mantenimiento a una centrífuga.
+
+**Paso a paso:**
+
+1. **Ver programaciones pendientes**
+   - Menú → Gestión de Mantenimientos → Programaciones
+   - Filtrar por estado: Próximas
+   - Identificar: Centrífuga LAB-2026-032
+
+2. **Ir a ejecuciones**
+   - Menú → Gestión de Mantenimientos → Ejecuciones
+   - Buscar la ejecución programada para hoy
+
+3. **Iniciar trabajo**
+   - Abrir la ejecución
+   - Clic en "Iniciar Trabajo"
+   - Estado cambia: PROGRAMADO → EN_PROCESO
+
+4. **Realizar el mantenimiento físico**
+   - Hacer la limpieza y revisión del equipo
+   - Tomar fotos del proceso
+
+5. **Documentar**
+   - Agregar comentario tipo "Técnico":
+     "Se realizó limpieza completa del rotor y cámara. Se revisaron balancines, están en buen estado."
+   - Subir fotos (3 archivos)
+   - Agregar comentario tipo "Observación":
+     "Equipo funcionando correctamente. Próximo mantenimiento en 3 meses."
+
+6. **Completar**
+   - Clic en "Completar"
+   - Llenar campos finales:
+     - **Bitácora:** "Mantenimiento preventivo completado exitosamente"
+     - **Observaciones:** "Ninguna observación adicional"
+   - Estado: COMPLETADO
+
+7. **Resultado:**
+   - El sistema actualiza automáticamente la fecha de último mantenimiento
+   - Si la programación es recurrente, crea el siguiente mantenimiento
+   - El historial del equipo se actualiza
+
+---
+
+### 14.4 Ejemplo 4: Generar Reporte de Equipos por Área
+
+**Situación:** El jefe necesita un reporte de todos los equipos del Laboratorio de Química.
+
+**Paso a paso:**
+
+1. **Ir a reportes**
+   - Menú → Reportes → Reportes Técnicos
+
+2. **Seleccionar tipo**
+   - Seleccionar: "Reporte de Equipos"
+
+3. **Configurar filtros:**
+   - **Área:** Laboratorio de Química
+   - **Estado:** Todos
+   - **Fecha:** No aplica para este reporte
+   - **Formato:** PDF
+
+4. **Generar**
+   - Clic en "Generar Reporte"
+   - Esperar unos segundos
+   - Se descarga el archivo: `Reporte_Equipos_Lab_Quimica_04-02-2026.pdf`
+
+5. **Contenido del reporte:**
+   - Listado completo de equipos
+   - Estado de cada equipo
+   - Ubicación exacta
+   - Último mantenimiento
+   - Próximo mantenimiento programado
+
+---
+
+## 15. Glosario de Términos
+
+### Términos Técnicos
+
+| Término | Definición |
+|---------|------------|
+| **Activo** | Bien o equipo propiedad de la institución |
+| **Calibración** | Proceso de ajustar un equipo a estándares precisos |
+| **Dashboard** | Tablero o panel de control con información resumida |
+| **Ejecución** | Registro de un mantenimiento que fue realizado físicamente |
+| **JWT (JSON Web Token)** | Tipo de token de seguridad para autenticación |
+| **Keycloak** | Sistema de autenticación y autorización centralizado |
+| **KPI (Key Performance Indicator)** | Indicador clave de rendimiento |
+| **Mantenimiento Correctivo** | Reparación cuando algo está dañado |
+| **Mantenimiento Preventivo** | Mantenimiento programado para evitar fallas |
+| **NIT** | Número de Identificación Tributaria |
+| **Programación** | Planificación de cuándo debe hacerse un mantenimiento |
+| **Rol** | Conjunto de permisos asignados a un tipo de usuario |
+| **Scheduler** | Programador automático de tareas |
+| **Ticket** | Reporte de un problema o falla |
+| **Trazabilidad** | Capacidad de rastrear historial de cambios |
+
+### Términos del Sistema
+
+| Término | Significado en el Sistema |
+|---------|---------------------------|
+| **Área** | Laboratorio o departamento |
+| **Bitácora** | Registro cronológico de eventos |
+| **Categoría** | Clasificación de equipos por tipo |
+| **Código INACIF** | Identificador único institucional |
+| **Contrato** | Acuerdo con proveedor externo |
+| **Crítico** | Estado de equipo que requiere atención urgente |
+| **Evidencia** | Documento o foto que respalda una acción |
+| **Frecuencia** | Cada cuánto tiempo se repite un mantenimiento |
+| **Historial** | Registro de todos los cambios |
+| **Proveedor** | Empresa externa que presta servicios |
+| **Vigente** | Contrato activo actualmente |
+
+### Estados de Equipo
+
+| Estado | Significado |
+|--------|-------------|
+| **Activo** | Funciona correctamente, disponible |
+| **Inactivo** | Temporalmente fuera de servicio |
+| **Crítico** | Requiere atención urgente |
+
+### Estados de Ejecución
+
+| Estado | Significado |
+|--------|-------------|
+| **PROGRAMADO** | Planificado, no iniciado |
+| **EN_PROCESO** | Trabajando actualmente |
+| **COMPLETADO** | Finalizado exitosamente |
+| **CANCELADO** | Cancelado con motivo |
+
+### Estados de Ticket
+
+| Estado | Significado |
+|--------|-------------|
+| **Abierto** | Recién creado, sin asignar |
+| **Asignado** | Con técnico responsable |
+| **En Proceso** | Técnico trabajando |
+| **Resuelto** | Problema solucionado |
+| **Cerrado** | Finalizado y archivado |
+
+### Prioridades
+
+| Prioridad | Nivel de Urgencia |
+|-----------|-------------------|
+| **Baja** | Puede esperar días |
+| **Media** | Atención en 1-2 días |
+| **Alta** | Atención en horas |
+| **Crítica** | Atención inmediata |
+
+---
+
+## 16. Solución de Problemas
+
+### 16.1 Problemas de Acceso
+
+#### No puedo iniciar sesión
+
+**Problema:** Al ingresar usuario y contraseña, aparece error.
+
+**Soluciones:**
+1. Verifica que estás usando el usuario correcto (sin espacios)
+2. Revisa que Caps Lock esté desactivado
+3. Intenta resetear tu contraseña con "¿Olvidaste tu contraseña?"
+4. Contacta al administrador si el problema persiste
+
+#### El sistema dice "Sesión expirada"
+
+**Problema:** Estabas trabajando y te sacó del sistema.
+
+**Soluciones:**
+1. Esto es normal por seguridad (sesión expira después de inactividad)
+2. Vuelve a iniciar sesión
+3. Tu trabajo guardado está seguro
+4. Configura el navegador para recordar contraseña si es tu computadora
+
+#### No veo algunos menús que otros ven
+
+**Problema:** Tu compañero ve módulos que tú no.
+
+**Soluciones:**
+1. Es normal - cada rol ve diferentes módulos
+2. Verifica tu rol en "Mi Perfil"
+3. Si necesitas más permisos, solicítalo al administrador
+
+---
+
+### 16.2 Problemas con Equipos
+
+#### No puedo editar un equipo
+
+**Problema:** El botón de editar no aparece o está deshabilitado.
+
+**Soluciones:**
+1. Verifica tu rol (solo ADMIN, SUPERVISOR, TECNICO_EQUIPOS pueden editar)
+2. Otro usuario puede estar editando el equipo simultáneamente
+3. El equipo puede estar bloqueado por una ejecución en proceso
+
+#### No encuentro un equipo en el listado
+
+**Problema:** Sé que existe un equipo pero no lo veo.
+
+**Soluciones:**
+1. Usa la búsqueda global (lupa) con el código o nombre
+2. Revisa filtros activos en la tabla
+3. Verifica que no esté en estado "Inactivo" si filtraste por "Activo"
+4. Puede estar en otra área si tienes filtro de área activo
+
+---
+
+### 16.3 Problemas con Mantenimientos
+
+#### No puedo completar una ejecución
+
+**Problema:** El botón "Completar" está deshabilitado.
+
+**Soluciones:**
+1. Debes primero "Iniciar Trabajo"
+2. Verifica que tengas permisos (TECNICO, SUPERVISOR o ADMIN)
+3. Revisa que no falten campos obligatorios
+4. La ejecución no debe estar ya completada o cancelada
+
+#### Las alertas no me llegan
+
+**Problema:** No recibo notificaciones de mantenimientos próximos.
+
+**Soluciones:**
+1. Verifica que la programación esté marcada como "Activa"
+2. Revisa el Panel de Notificaciones (puede estar ahí sin que lo veas)
+3. Si son correos, verifica que tu email esté en "Configuración de Correos"
+4. Revisa la configuración del Scheduler (solo ADMIN)
+
+#### No puedo crear una programación
+
+**Problema:** Al guardar programación aparece error.
+
+**Soluciones:**
+1. Verifica que todos los campos obligatorios estén llenos
+2. La fecha de próximo mantenimiento debe ser futura
+3. Si asocias un contrato, debe estar vigente
+4. Verifica tu rol (solo ADMIN y SUPERVISOR pueden crear)
+
+---
+
+### 16.4 Problemas con Tickets
+
+#### No veo todos los tickets
+
+**Problema:** Otros ven más tickets que yo.
+
+**Soluciones:**
+1. El rol USER solo ve tickets que creó
+2. El rol TECNICO solo ve tickets asignados a él
+3. ADMIN y SUPERVISOR ven todos
+4. Revisa filtros activos (por estado, prioridad)
+
+#### No puedo cerrar un ticket
+
+**Problema:** El botón "Cerrar" no aparece.
+
+**Soluciones:**
+1. Solo ADMIN y SUPERVISOR pueden cerrar
+2. El ticket debe estar primero en estado "Resuelto"
+3. Verifica que tengas los permisos correctos
+
+---
+
+### 16.5 Problemas de Rendimiento
+
+#### El sistema está lento
+
+**Problema:** Las páginas tardan mucho en cargar.
+
+**Soluciones:**
+1. Verifica tu conexión a internet
+2. Cierra pestañas innecesarias del navegador
+3. Borra caché y cookies del navegador
+4. Prueba en otro navegador (Chrome o Firefox recomendados)
+5. Si el problema persiste, contacta soporte
+
+#### No se cargan las imágenes/archivos
+
+**Problema:** Las fotos de equipos o evidencias no se ven.
+
+**Soluciones:**
+1. Verifica tu conexión a internet
+2. El archivo puede estar corrupto
+3. Intenta recargar la página (F5)
+4. Prueba descargar el archivo en vez de verlo en línea
+
+---
+
+### 16.6 ¿Cuándo Contactar Soporte?
+
+**Contacta al administrador si:**
+- ❌ No puedes acceder después de múltiples intentos
+- ❌ Necesitas cambiar tu rol o permisos
+- ❌ Ves errores de "500 Internal Server Error"
+- ❌ Los datos no se guardan correctamente
+- ❌ El Scheduler no está funcionando
+- ❌ Necesitas recuperar información eliminada
+
+**Email de soporte:** soporte.sistemas@inacif.gob.gt
+
+**Al contactar incluye:**
+1. Tu usuario
+2. Módulo donde ocurre el problema
+3. Descripción detallada del error
+4. Captura de pantalla si es posible
+5. Navegador y versión que usas
+
+---
+
+## 17. Preguntas Frecuentes
 
 ### ¿Cómo sé cuál es mi rol?
 Tu rol determina qué menús puedes ver. Si no ves un módulo, tu rol no tiene acceso.
